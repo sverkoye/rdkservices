@@ -19,29 +19,29 @@
 
 #include "Module.h"
 
+#include <cstdio>
+#include <memory>
+#include <syslog.h>
+
+#ifdef WEBKIT_GLIB_API
+
+#include <wpe/webkit-web-extension.h>
+
+using namespace WPEFramework;
+
+#else
+
 #include <WPE/WebKit.h>
 #include <WPE/WebKit/WKBundleFrame.h>
 #include <WPE/WebKit/WKBundlePage.h>
 #include <WPE/WebKit/WKURL.h>
 
-#include <cstdio>
-#include <memory>
-#include <syslog.h>
-
 #include "ClassDefinition.h"
 #include "NotifyWPEFramework.h"
 #include "Utils.h"
-#include "WhiteListedOriginDomainsList.h"
-#include "RequestHeaders.h"
-#include "BridgeObject.h"
-
-#if defined(ENABLE_AAMP_JSBINDINGS)
-#include "AAMPJSBindings.h"
-#endif
 
 using namespace WPEFramework;
 using JavaScript::ClassDefinition;
-using WebKit::WhiteListedOriginDomainsList;
 
 WKBundleRef g_Bundle;
 std::string g_currentURL;
@@ -58,6 +58,11 @@ std::string GetURL() {
 }
 
 } } }
+
+#endif
+
+#include "WhiteListedOriginDomainsList.h"
+using WebKit::WhiteListedOriginDomainsList;
 
 static Core::NodeId GetConnectionNode()
 {
@@ -87,7 +92,7 @@ public:
     }
 
 public:
-    void Initialize(WKBundleRef bundle)
+    void Initialize(WKBundleRef bundle, const void* userData = nullptr)
     {
         // We have something to report back, do so...
         uint32_t result = _comClient->Open(RPC::CommunicationTimeOut);
@@ -97,8 +102,30 @@ public:
             // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
             Trace::TraceUnit::Instance().Open(_comClient->ConnectionId());
         }
+#ifdef WEBKIT_GLIB_API
+        _bundle = WEBKIT_WEB_EXTENSION(g_object_ref(bundle));
 
+        const char *uid;
+        const char *whitelist;
+        g_variant_get((GVariant*) userData, "(&sm&s)", &uid, &whitelist);
+
+        _scriptWorld = webkit_script_world_new_with_name(uid);
+
+        g_signal_connect(_scriptWorld, "window-object-cleared",
+                G_CALLBACK(windowObjectClearedCallback), nullptr);
+        g_signal_connect(bundle, "page-created",
+                G_CALLBACK(pageCreatedCallback), this);
+
+        if (whitelist != nullptr) {
+            _whiteListedOriginDomainPairs =
+                    WhiteListedOriginDomainsList::RequestFromWPEFramework(
+                            whitelist);
+            WhiteList(bundle);
+        }
+#else
         _whiteListedOriginDomainPairs = WhiteListedOriginDomainsList::RequestFromWPEFramework();
+#endif
+
     }
 
     void Deinitialize()
@@ -106,18 +133,85 @@ public:
         if (_comClient.IsValid() == true) {
             _comClient.Release();
         }
-
+#ifdef WEBKIT_GLIB_API
+        g_object_unref(_scriptWorld);
+        g_object_unref(_bundle);
+#endif
         Core::Singleton::Dispose();
     }
 
     void WhiteList(WKBundleRef bundle)
     {
-
         // Whitelist origin/domain pairs for CORS, if set.
         if (_whiteListedOriginDomainPairs) {
             _whiteListedOriginDomainPairs->AddWhiteListToWebKit(bundle);
         }
     }
+
+#ifdef WEBKIT_GLIB_API
+
+private:
+    static void automationMilestone(const char* arg1, const char* arg2, const char* arg3)
+    {
+        g_printerr("TEST TRACE: \"%s\" \"%s\" \"%s\"\n", arg1, arg2, arg3);
+        TRACE_GLOBAL(Trace::Information, (_T("TEST TRACE: \"%s\" \"%s\" \"%s\""), arg1, arg2, arg3));
+    }
+
+    static void windowObjectClearedCallback(WebKitScriptWorld* world, WebKitWebPage*, WebKitFrame* frame)
+    {
+        if (webkit_frame_is_main_frame(frame) == false)
+            return;
+
+        JSCContext* jsContext = webkit_frame_get_js_context_for_script_world(frame, world);
+
+        JSCValue* automation = jsc_value_new_object(jsContext, nullptr, nullptr);
+        JSCValue* function = jsc_value_new_function(jsContext, nullptr, reinterpret_cast<GCallback>(automationMilestone),
+            nullptr, nullptr, G_TYPE_NONE, 3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+        jsc_value_object_set_property(automation, "Milestone", function);
+        g_object_unref(function);
+        jsc_context_set_value(jsContext, "automation", automation);
+        g_object_unref(automation);
+
+        static const char wpeNotifyWPEFramework[] = "var wpe = {};\n"
+            "wpe.NotifyWPEFramework = function() {\n"
+            "  let retval = new Array;\n"
+            "  for (let i = 0; i < arguments.length; i++) {\n"
+            "    retval[i] = arguments[i];\n"
+            "  }\n"
+            "  window.webkit.messageHandlers.wpeNotifyWPEFramework.postMessage(retval);\n"
+            "}";
+        JSCValue* result = jsc_context_evaluate(jsContext, wpeNotifyWPEFramework, -1);
+        g_object_unref(result);
+
+        g_object_unref(jsContext);
+    }
+
+    static void pageCreatedCallback(WebKitWebExtension*, WebKitWebPage* page, PluginHost* host)
+    {
+        // Enforce the creation of the script world global context in the main frame.
+        JSCContext* jsContext = webkit_frame_get_js_context_for_script_world(webkit_web_page_get_main_frame(page), host->_scriptWorld);
+        g_object_unref(jsContext);
+
+        g_signal_connect(page, "console-message-sent", G_CALLBACK(consoleMessageSentCallback), nullptr);
+    }
+
+    static void consoleMessageSentCallback(WebKitWebPage* page, WebKitConsoleMessage* message)
+    {
+        string messageString = Core::ToString(webkit_console_message_get_text(message));
+
+        const uint16_t maxStringLength = Trace::TRACINGBUFFERSIZE - 1;
+        if (messageString.length() > maxStringLength) {
+            messageString = messageString.substr(0, maxStringLength);
+        }
+
+        // TODO: use "Trace" classes for different levels.
+        TRACE_GLOBAL(Trace::Information, (messageString));
+    }
+
+    WKBundleRef _bundle;
+    WebKitScriptWorld* _scriptWorld;
+
+#endif
 
 private:
     Core::ProxyType<RPC::InvokeServerType<2, 0, 4> > _engine;
@@ -135,17 +229,32 @@ __attribute__((destructor)) static void unload()
     _wpeFrameworkClient.Deinitialize();
 }
 
-// Adds class to JS world.
-static void InjectInJSWorld(ClassDefinition& classDef, WKBundleFrameRef frame, WKBundleScriptWorldRef scriptWorld)
+#ifdef WEBKIT_GLIB_API
+
+// Declare module name for tracer.
+MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+
+G_MODULE_EXPORT void webkit_web_extension_initialize_with_user_data(WebKitWebExtension* extension, GVariant* userData)
 {
+    _wpeFrameworkClient.Initialize(extension, userData);
+}
+
+#else
+
+// Adds class to JS world.
+void InjectInJSWorld(ClassDefinition& classDef, WKBundleFrameRef frame, WKBundleScriptWorldRef scriptWorld)
+{
+    // @Zan: for how long should "ClassDefinition.staticFunctions" remain valid? Can it be
+    // released after "JSClassCreate"?
+
     JSGlobalContextRef context = WKBundleFrameGetJavaScriptContextForWorld(frame, scriptWorld);
 
     ClassDefinition::FunctionIterator function = classDef.GetFunctions();
     uint32_t functionCount = function.Count();
 
     // We need an extra entry that we set to all zeroes, to signal end of data.
-    std::vector<JSStaticFunction> staticFunctions;
-    staticFunctions.reserve(functionCount + 1);
+    // TODO: memleak.
+    JSStaticFunction* staticFunctions = new JSStaticFunction[functionCount + 1];
 
     int index = 0;
     while (function.Next()) {
@@ -154,13 +263,14 @@ static void InjectInJSWorld(ClassDefinition& classDef, WKBundleFrameRef frame, W
 
     staticFunctions[functionCount] = { nullptr, nullptr, 0 };
 
-    JSClassDefinition jsClassDefinition = {
+    // TODO: memleak.
+    JSClassDefinition* JsClassDefinition = new JSClassDefinition{
         0, // version
         kJSClassAttributeNone, //attributes
         classDef.GetClassName().c_str(), // className
         0, // parentClass
         nullptr, // staticValues
-        staticFunctions.data(), // staticFunctions
+        staticFunctions, // staticFunctions
         nullptr, //initialize
         nullptr, //finalize
         nullptr, //hasProperty
@@ -174,7 +284,7 @@ static void InjectInJSWorld(ClassDefinition& classDef, WKBundleFrameRef frame, W
         nullptr, //convertToType
     };
 
-    JSClassRef jsClass = JSClassCreate(&jsClassDefinition);
+    JSClassRef jsClass = JSClassCreate(JsClassDefinition);
     JSValueRef jsObject = JSObjectMake(context, jsClass, nullptr);
     JSClassRelease(jsClass);
 
@@ -185,37 +295,9 @@ static void InjectInJSWorld(ClassDefinition& classDef, WKBundleFrameRef frame, W
     JSStringRelease(extensionString);
 }
 
-static bool shouldGoToBackForwardListItem(WKBundlePageRef, WKBundleBackForwardListItemRef item, WKTypeRef*, const void*)
-{
-    bool result = true;
-    if (item) {
-        auto itemUrl = WKBundleBackForwardListItemCopyURL(item);
-        auto blankUrl = WKURLCreateWithUTF8CString("about:blank");
-        result = !WKURLIsEqual(itemUrl, blankUrl);
-        WKRelease(blankUrl);
-        WKRelease(itemUrl);
-    }
-    return result;
-}
-
 static WKBundlePageLoaderClientV6 s_pageLoaderClient = {
     { 6, nullptr },
-    // didStartProvisionalLoadForFrame
-    [](WKBundlePageRef page, WKBundleFrameRef frame, WKTypeRef*, const void *) {
-        #if defined(ENABLE_AAMP_JSBINDINGS)
-        JavaScript::AAMP::UnloadJSBindings(frame);
-        #endif
-
-        if (WKBundleFrameIsMainFrame(frame)) {
-            auto blankUrl = WKURLCreateWithUTF8CString("about:blank");
-            auto frameUrl = WKBundleFrameCopyURL(frame);
-            if (WKURLIsEqual(frameUrl, blankUrl)) {
-                WKBundleBackForwardListClear(WKBundlePageGetBackForwardList(page));
-            }
-            WKRelease(blankUrl);
-            WKRelease(frameUrl);
-        }
-    },
+    nullptr, // didStartProvisionalLoadForFrame
     nullptr, // didReceiveServerRedirectForProvisionalLoadForFrame
     nullptr, // didFailProvisionalLoadWithErrorForFrame
     nullptr, // didCommitLoadForFrame
@@ -239,15 +321,7 @@ static WKBundlePageLoaderClientV6 s_pageLoaderClient = {
     nullptr, // didDisplayInsecureContentForFrame
     nullptr, // didRunInsecureContentForFrame
     // didClearWindowObjectForFrame
-    [](WKBundlePageRef page, WKBundleFrameRef frame, WKBundleScriptWorldRef scriptWorld, const void*) {
-        bool isMainCtx = (WKBundleFrameGetJavaScriptContext(frame) == WKBundleFrameGetJavaScriptContextForWorld(frame, scriptWorld));
-        if (isMainCtx) {
-            #if defined(ENABLE_AAMP_JSBINDINGS)
-            JavaScript::AAMP::LoadJSBindings(frame);
-            #endif
-            JavaScript::BridgeObject::InjectJS(frame);
-        }
-
+    [](WKBundlePageRef, WKBundleFrameRef frame, WKBundleScriptWorldRef scriptWorld, const void*) {
         // Add JS classes to JS world.
         ClassDefinition::Iterator ite = ClassDefinition::GetClassDefinitions();
         while (ite.Next()) {
@@ -260,7 +334,7 @@ static WKBundlePageLoaderClientV6 s_pageLoaderClient = {
     nullptr, // didLayoutForFrame
     nullptr, // didNewFirstVisuallyNonEmptyLayout_unavailable
     nullptr, // didDetectXSSForFrame
-    shouldGoToBackForwardListItem,
+    nullptr, // shouldGoToBackForwardListItem
     nullptr, // globalObjectIsAvailableForFrame
     nullptr, // willDisconnectDOMWindowExtensionFromGlobalObject
     nullptr, // didReconnectDOMWindowExtensionToGlobalObject
@@ -301,52 +375,7 @@ static WKBundlePageUIClientV4 s_pageUIClient = {
     nullptr, // unused4
     nullptr, // unused5
     nullptr, // didClickAutoFillButton
-    //willAddDetailedMessageToConsole
-    [](WKBundlePageRef page, WKConsoleMessageSource source, WKConsoleMessageLevel level, WKStringRef message, uint32_t lineNumber,
-        uint32_t columnNumber, WKStringRef url, const void* clientInfo) {
-        string messageString = WebKit::Utils::WKStringToString(message);
-
-        const uint16_t maxStringLength = Trace::TRACINGBUFFERSIZE - 1;
-        if (messageString.length() > maxStringLength) {
-            messageString = messageString.substr(0, maxStringLength);
-        }
-
-        // TODO: use "Trace" classes for different levels.
-        TRACE_GLOBAL(Trace::Information, (messageString));
-    }
-};
-
-static WKURLRequestRef willSendRequestForFrame(
-  WKBundlePageRef page, WKBundleFrameRef, uint64_t, WKURLRequestRef request, WKURLResponseRef, const void*) {
-    WebKit::ApplyRequestHeaders(page, request);
-    WKRetain(request);
-    return request;
-}
-
-static void didReceiveMessageToPage(
-  WKBundleRef, WKBundlePageRef page, WKStringRef messageName, WKTypeRef messageBody, const void*) {
-    if (WKStringIsEqualToUTF8CString(messageName, Tags::Headers)) {
-        WebKit::SetRequestHeaders(page, messageBody);
-        return;
-    }
-
-    if (JavaScript::BridgeObject::HandleMessageToPage(page, messageName, messageBody))
-        return;
-}
-
-static void willDestroyPage(WKBundleRef, WKBundlePageRef page, const void*)
-{
-    WebKit::RemoveRequestHeaders(page);
-}
-
-static WKBundlePageResourceLoadClientV0 s_resourceLoadClient = {
-    {0, nullptr},
-    nullptr, // didInitiateLoadForResource
-    willSendRequestForFrame,
-    nullptr, // didReceiveResponseForResource
-    nullptr, // didReceiveContentLengthForResource
-    nullptr, // didFinishLoadForResource
-    nullptr // didFailLoadForResource
+    nullptr, // willAddDetailedMessageToConsole
 };
 
 static WKBundleClientV1 s_bundleClient = {
@@ -359,14 +388,12 @@ static WKBundleClientV1 s_bundleClient = {
         // Register UI client, this one will listen to log messages.
         WKBundlePageSetUIClient(page, &s_pageUIClient.base);
 
-        WKBundlePageSetResourceLoadClient(page, &s_resourceLoadClient.base);
-
         _wpeFrameworkClient.WhiteList(bundle);
     },
-    willDestroyPage, // willDestroyPage
+    nullptr, // willDestroyPage
     nullptr, // didInitializePageGroup
     nullptr, // didReceiveMessage
-    didReceiveMessageToPage, // didReceiveMessageToPage
+    nullptr, // didReceiveMessageToPage
 };
 
 // Declare module name for tracer.
@@ -380,4 +407,7 @@ void WKBundleInitialize(WKBundleRef bundle, WKTypeRef)
 
     WKBundleSetClient(bundle, &s_bundleClient.base);
 }
+
+#endif
+
 }

@@ -49,7 +49,6 @@ namespace JavaScript {
 
                     std::string tokenAsString;
                     if (url.length() < sizeof(buffer)) {
-                        ::memset (buffer, 0, sizeof(buffer));
                         ::memcpy (buffer, url.c_str(), url.length());
 
                         int length = GetToken(static_cast<uint16_t>(sizeof(buffer)), url.length(), buffer);

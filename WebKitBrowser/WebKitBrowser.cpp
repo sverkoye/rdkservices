@@ -45,14 +45,15 @@ namespace Plugin {
         _skipURL = _service->WebPrefix().length();
 
         config.FromString(_service->ConfigLine());
+        _persistentStoragePath = _service->PersistentPath();
 
         // Register the Connection::Notification stuff. The Remote process might die before we get a
         // change to "register" the sink for these events !!! So do it ahead of instantiation.
         _service->Register(&_notification);
 
-        _browser = service->Root<Exchange::IWebKitBrowser>(_connectionId, 2000, _T("WebKitImplementation"));
+        _browser = service->Root<Exchange::IBrowser>(_connectionId, 2000, _T("WebKitImplementation"));
 
-        if (_browser != nullptr) {
+        if ((_browser != nullptr) && (_service != nullptr)) {
             PluginHost::IStateControl* stateControl(_browser->QueryInterface<PluginHost::IStateControl>());
 
             // We see that sometimes the WPE implementation crashes before it reaches this point, than there is
@@ -67,10 +68,15 @@ namespace Plugin {
                 _browser->Register(&_notification);
 
                 const RPC::IRemoteConnection *connection = _service->RemoteConnection(_connectionId);
-                _memory = WPEFramework::WebKitBrowser::MemoryObserver(connection);
-                ASSERT(_memory != nullptr);
-                if (connection != nullptr)
+                ASSERT(connection != nullptr);
+
+                if (connection != nullptr) {
+                    _memory = WPEFramework::WebKitBrowser::MemoryObserver(connection);
+
+                    ASSERT(_memory != nullptr);
+
                     connection->Release();
+                }
 
                 stateControl->Configure(_service);
                 stateControl->Register(&_notification);
@@ -82,8 +88,6 @@ namespace Plugin {
             message = _T("WebKitBrowser could not be instantiated.");
             _service->Unregister(&_notification);
             _service = nullptr;
-        } else {
-            RegisterAll();
         }
 
         return message;
@@ -94,9 +98,6 @@ namespace Plugin {
         ASSERT(_service == service);
         ASSERT(_browser != nullptr);
         ASSERT(_memory != nullptr);
-
-        if (_browser == nullptr)
-            return;
 
         // Make sure we get no longer get any notifications, we are deactivating..
         _service->Unregister(&_notification);
@@ -112,14 +113,15 @@ namespace Plugin {
         }
 
         // Stop processing of the browser:
-        if (_browser->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
-            ASSERT(_connectionId != 0);
-
-            TRACE_L1("Browser Plugin is not properly destructed. %d", _connectionId);
+        _browser->Release();
+        // FIXME: Destruction is not always properly reported, which leaves hanging processes (Bartjes Law)
+        if (_connectionId != 0) {
 
             RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
+
             // The process can disappear in the meantime...
             if (connection != nullptr) {
+
                 // But if it did not dissapear in the meantime, forcefully terminate it. Shoot to kill :-)
                 connection->Terminate();
                 connection->Release();
@@ -134,7 +136,7 @@ namespace Plugin {
     /* virtual */ string WebKitBrowser::Information() const
     {
         // No additional info to report.
-        return { };
+        return (nullptr);
     }
 
     /* virtual */ void WebKitBrowser::Inbound(Web::Request& request)
@@ -164,13 +166,12 @@ namespace Plugin {
             ASSERT(stateControl != nullptr);
 
             if (request.Verb == Web::Request::HTTP_GET) {
-                auto visibilityState = _browser->GetVisibility();
                 PluginHost::IStateControl::state currentState = stateControl->State();
                 Core::ProxyType<Web::JSONBodyType<WebKitBrowser::Data>> body(_jsonBodyDataFactory.Element());
                 body->URL = _browser->GetURL();
                 body->FPS = _browser->GetFPS();
                 body->Suspended = (currentState == PluginHost::IStateControl::SUSPENDED);
-                body->Hidden = (visibilityState != Exchange::IWebKitBrowser::Visibility::VISIBLE);
+                body->Hidden = _hidden;
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = "OK";
                 result->Body<Web::JSONBodyType<WebKitBrowser::Data>>(body);
@@ -184,11 +185,17 @@ namespace Plugin {
                 } else if (index.Remainder() == _T("Resume")) {
                     stateControl->Request(PluginHost::IStateControl::RESUME);
                 } else if (index.Remainder() == _T("Hide")) {
-                    _browser->SetVisibility(Exchange::IWebKitBrowser::Visibility::HIDDEN);
+                    _browser->Hide(true);
                 } else if (index.Remainder() == _T("Show")) {
-                    _browser->SetVisibility(Exchange::IWebKitBrowser::Visibility::VISIBLE);
+                    _browser->Hide(false);
                 } else if ((index.Remainder() == _T("URL")) && (request.HasBody() == true) && (request.Body<const Data>()->URL.Value().empty() == false)) {
                     _browser->SetURL(request.Body<const Data>()->URL.Value());
+
+                } else if ((index.Remainder() == _T("Delete")) && (request.HasBody() == true) && (request.Body<const Data>()->Path.Value().empty() == false)) {
+                    if (delete_dir(request.Body<const Data>()->Path.Value()) != Core::ERROR_NONE) {
+                        result->ErrorCode = Web::STATUS_BAD_REQUEST;
+                        result->Message = "Unknown error";
+                    }
                 } else {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
                     result->Message = "Unknown error";
@@ -199,50 +206,49 @@ namespace Plugin {
 
         return result;
     }
-
-    void WebKitBrowser::LoadFinished(const string& URL, int32_t code)
+    void WebKitBrowser::LoadFinished(const string& URL)
     {
-        TRACE(Trace::Information, (_T("LoadFinished: { \"url\": \"%s\", \"httpstatus\": %d}"), URL.c_str(), code));
-        event_loadfinished(URL, code);
-        URLChange(URL, true);
+        string message(string("{ \"url\": \"") + URL + string("\", \"loaded\":true }"));
+        TRACE(Trace::Information, (_T("LoadFinished: %s"), message.c_str()));
+        _service->Notify(message);
+
+        event_urlchange(URL, true);
     }
-
-    void WebKitBrowser::LoadFailed(const string& URL)
+    void WebKitBrowser::URLChanged(const string& URL)
     {
-        TRACE(Trace::Information, (_T("LoadFailed: { \"url\": \"%s\" }"), URL.c_str()));
-        event_loadfailed(URL);
+        string message(string("{ \"url\": \"") + URL + string("\" }"));
+        TRACE(Trace::Information, (_T("URLChanged: %s"), message.c_str()));
+        _service->Notify(message);
+
+        event_urlchange(URL, false);
     }
-
-    void WebKitBrowser::URLChange(const string& URL, bool loaded)
+    void WebKitBrowser::Hidden(const bool hidden)
     {
-        TRACE(Trace::Information, (_T("URLChange: { \"url\": \"%s\", \"loaded\": \"%s\" }"), URL.c_str(), (loaded ? "true" : "false")));
-        event_urlchange(URL, loaded);
-    }
+        TRACE(Trace::Information, (_T("Hidden: %s }"), (hidden ? "true" : "false")));
+        string message(string("{ \"hidden\": ") + (hidden ? _T("true") : _T("false")) + string("}"));
+        _hidden = hidden;
+        _service->Notify(message);
 
-    void WebKitBrowser::VisibilityChange(const bool hidden)
-    {
-        TRACE(Trace::Information, (_T("VisibilityChange: { \"hidden\": \"%s\"}"), (hidden ? "true" : "false")));
         event_visibilitychange(hidden);
     }
-
-    void WebKitBrowser::PageClosure()
+    void WebKitBrowser::Closure()
     {
-        TRACE(Trace::Information, (_T("PageClosure")));
+        TRACE(Trace::Information, (_T("Closure: \"true\"")));
+        _service->Notify(_T("{\"Closure\": true }"));
+
         event_pageclosure();
     }
-
-    void WebKitBrowser::BridgeQuery(const string& message)
-    {
-        TRACE(Trace::Information, (_T("BridgeQuery: %s"), message.c_str()));
-        event_bridgequery(message);
-    }
-
     void WebKitBrowser::StateChange(const PluginHost::IStateControl::state state)
     {
         TRACE(Trace::Information, (_T("StateChange: { \"State\": %d }"), state));
+
+        string message(
+            string("{ \"suspended\": ") + (state == PluginHost::IStateControl::SUSPENDED ? _T("true") : _T("false")) + string(" }"));
+
+        _service->Notify(message);
+
         event_statechange(state == PluginHost::IStateControl::SUSPENDED);
     }
-
     void WebKitBrowser::Deactivated(RPC::IRemoteConnection* connection)
     {
         if (connection->Id() == _connectionId) {
@@ -252,6 +258,5 @@ namespace Plugin {
             Core::IWorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
         }
     }
-}  // namespace Plugin
-
-}  // WPEFramework
+}
+} // namespace Plugin
