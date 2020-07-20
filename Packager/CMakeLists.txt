@@ -18,8 +18,9 @@
 set(PLUGIN_NAME Packager)
 set(MODULE_NAME WPEFramework${PLUGIN_NAME})
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 find_package(${NAMESPACE}Plugins REQUIRED)
-find_package(libprovision REQUIRED)
 find_package(LibOPKG REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 
@@ -32,7 +33,6 @@ target_link_libraries(${MODULE_NAME}
     PRIVATE
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-        libprovision::libprovision
         LibOPKG::LibOPKG
         )
 

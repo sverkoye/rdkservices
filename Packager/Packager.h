@@ -27,6 +27,15 @@ namespace Plugin {
 namespace {
     constexpr auto* kInstallMethodName = _T("install");
     constexpr auto* kSynchronizeMethodName = _T("synchronize");
+
+    constexpr auto* kDAC_InstallMethodName            = _T("install");
+    constexpr auto* kDAC_RemoveMethodName             = _T("remove");
+    constexpr auto* kDAC_CancelMethodName             = _T("cancel");
+    constexpr auto* kDAC_IsInstalledMethodName        = _T("isInstalled");
+    constexpr auto* kDAC_GetInstallProgressMethodName = _T("getInstallProgress");
+    constexpr auto* kDAC_GetInstalledMethodName       = _T("getInstalled");
+    constexpr auto* kDAC_GetPackageInfoMethodName     = _T("getPackageInfo");
+    constexpr auto* kDAC_GetAvailableSpaceMethodName  = _T("getPackageAvailableSpace");
 }
 
     class Packager : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
@@ -37,18 +46,38 @@ namespace {
                 Add(_T("package"), &Package);
                 Add(_T("architecture"), &Architecture);
                 Add(_T("version"), &Version);
+
+                Add(_T("id"), &Id);
+                Add(_T("appId"), &AppId);
+                Add(_T("task"), &Id);
+                Add(_T("listener"), &Id);
             }
             Params(const Params& other)
                 : Package(other.Package)
                 , Architecture(other.Architecture)
-                , Version(other.Version) {
+                , Version(other.Version)
+                , Id(other.Id)
+                , AppId(other.AppId)
+                , Task(other.Task)
+                , Listener(other.Listener)
+            {
                 Add(_T("package"), &Package);
                 Add(_T("architecture"), &Architecture);
                 Add(_T("version"), &Version);
+
+                Add(_T("id"), &Id);
+                Add(_T("appId"), &AppId);
+                Add(_T("task"), &Task);
+                Add(_T("listener"), &Listener);
             }
             Core::JSON::String Package;
             Core::JSON::String Architecture;
             Core::JSON::String Version;
+
+            Core::JSON::String Id;
+            Core::JSON::String AppId;
+            Core::JSON::String Task;
+            Core::JSON::String Listener;
         };
 
         Packager(const Packager&) = delete;
@@ -60,12 +89,27 @@ namespace {
             , _implementation(nullptr)
             , _notification(this)
         {
-            Register<Params, void>(kInstallMethodName, [this](const Params& params) -> uint32_t {
+            // Packager API
+            Register<Params, void>(kInstallMethodName, [this](const Params& params) -> uint32_t
+            {
                 return this->_implementation->Install(params.Package.Value(), params.Version.Value(),
                                                                  params.Architecture.Value());
             });
-            Register<void, void>(kSynchronizeMethodName, [this]() -> uint32_t {
+            Register<void, void>(kSynchronizeMethodName, [this]() -> uint32_t
+            {
                 return this->_implementation->SynchronizeRepository();
+            });
+
+            // DAC Installer API
+            Register<Params, void>(kDAC_CancelMethodName, [this](const Params& params) -> uint32_t
+            {
+                return this->_implementation->Cancel(params.Id.Value(), params.Task.Value(), 
+                                                                params.Listener.Value());
+            });
+            
+            Register<Params, void>(kDAC_IsInstalledMethodName, [this](const Params& params) -> uint32_t
+            {
+                return this->_implementation->IsInstalled(params.Id.Value(), params.AppId.Value());
             });
         }
 
@@ -73,6 +117,15 @@ namespace {
         {
             Unregister(kInstallMethodName);
             Unregister(kSynchronizeMethodName);
+
+            Unregister(kDAC_InstallMethodName);
+            Unregister(kDAC_RemoveMethodName);
+            Unregister(kDAC_CancelMethodName);
+            Unregister(kDAC_IsInstalledMethodName);
+            Unregister(kDAC_GetInstallProgressMethodName);
+            Unregister(kDAC_GetInstalledMethodName);
+            Unregister(kDAC_GetPackageInfoMethodName);
+            Unregister(kDAC_GetAvailableSpaceMethodName);
         }
 
         BEGIN_INTERFACE_MAP(Packager)

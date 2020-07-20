@@ -153,6 +153,11 @@ namespace Plugin {
     {
         return DoWork(nullptr, nullptr, nullptr);
     }
+//HUGH
+    uint32_t PackagerImplementation::Cancel(const string& id, const string& task, const string& listener) 
+    { 
+        PPP(); return 0; 
+    } 
 
     uint32_t PackagerImplementation::DoWork(const string* name, const string* version, const string* arch)
     {

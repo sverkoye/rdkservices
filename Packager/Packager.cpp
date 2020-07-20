@@ -99,10 +99,19 @@ namespace {
 
         if (index.Next() && (request.Verb == Web::Request::HTTP_POST || request.Verb == Web::Request::HTTP_PUT)) {
             uint32_t status = Core::ERROR_UNAVAILABLE;
-            if (index.Current().Text() == "Install") {
+
+            fprintf(stderr, " HUGH >>>  Packager::Process() - CMD:  %s", index.Current().Text().c_str());
+
+            ////////////////////////////////////////////////
+            //
+            // Packager >> INSTALL
+            //
+            if (index.Current().Text() == "Install")
+            {
                 std::array<char, kMaxValueLength> package {0};
                 std::array<char, kMaxValueLength> version {0};
                 std::array<char, kMaxValueLength> arch {0};
+
                 Core::URL::KeyValue options(request.Query.Value());
                 if (options.Exists(_T("Package"), true) == true) {
                     const string name (options[_T("Package")].Text());
@@ -118,9 +127,69 @@ namespace {
                 }
 
                 status = _implementation->Install(package.data(), version.data(), arch.data());
-            } else if (index.Current().Text() == "SynchronizeRepository") {
+            }
+            else
+            ////////////////////////////////////////////////
+            //
+            // Packager >> SYNCRONIZE REPOSITORY
+            //
+            if (index.Current().Text() == "SynchronizeRepository")
+            {
                 status = _implementation->SynchronizeRepository();
             }
+            else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> CANCEL
+            //
+            if (index.Current().Text() == "Cancel")
+            {
+                std::array<char, kMaxValueLength> id       {0};
+                std::array<char, kMaxValueLength> task     {0};
+                std::array<char, kMaxValueLength> listener {0};
+
+                Core::URL::KeyValue options(request.Query.Value());
+
+                if (options.Exists(_T("Id"), true) == true) {
+                    const string name (options[_T("Id")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), id.data(), id.size());
+                }
+                if (options.Exists(_T("Task"), true) == true) {
+                                    const string name (options[_T("Task")].Text());
+                                    Core::URL::Decode (name.c_str(), name.length(), task.data(), task.size());
+                }
+                if (options.Exists(_T("Listener"), true) == true) {
+                    const string name (options[_T("Listener")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), listener.data(), listener.size());
+                }
+
+                status = _implementation->Cancel(id.data(), task.data(), listener.data());
+            }
+                        else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> IsINSTALLED
+            //
+            if (index.Current().Text() == "IsInstalled")
+            {
+                std::array<char, kMaxValueLength> id    {0};
+                std::array<char, kMaxValueLength> appId {0};
+
+                Core::URL::KeyValue options(request.Query.Value());
+
+                if (options.Exists(_T("Id"), true) == true) {
+                    const string name (options[_T("Id")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), id.data(), id.size());
+                }
+
+                if (options.Exists(_T("AppId"), true) == true) {
+                    const string name (options[_T("AppId")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), appId.data(), appId.size());
+                }
+
+                status = _implementation->IsInstalled(id.data(), appId.data());
+            }
+            ////////////////////////////////////////////////
 
             if (status == Core::ERROR_NONE) {
                 result->ErrorCode = Web::STATUS_OK;

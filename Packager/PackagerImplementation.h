@@ -99,12 +99,28 @@ namespace Plugin {
             INTERFACE_ENTRY(Exchange::IPackager)
         END_INTERFACE_MAP
 
+#define PPP()   fprintf(stderr, "HUGH >>>>> Call ... %s()", __FUNCTION__); 
+
         //   IPackager methods
         void Register(Exchange::IPackager::INotification* observer) override;
         void Unregister(const Exchange::IPackager::INotification* observer) override;
+
         uint32_t Configure(PluginHost::IShell* service) override;
+
+        // Packager API
         uint32_t Install(const string& name, const string& version, const string& arch) override;
         uint32_t SynchronizeRepository() override;
+
+        // DAC Installer API
+        uint32_t Install(const string& id, const string& url, const string& token, const string& listener) { PPP(); return 0; }
+        uint32_t Remove(const string& id, const string& appId, const string& listener) { PPP(); return 0; }
+        uint32_t Cancel(const string& id, const string& task, const string& listener) override;
+
+        uint32_t IsInstalled(const string& id, const string& appId) { PPP(); return 0; }
+        uint32_t GetInstallProgress(const string& id, const string& task) { PPP(); return 0; }
+        uint32_t GetInstalled(const string& id) { PPP(); return 0; }
+        uint32_t GetPackageInfo(const string& id, const string& appId) { PPP(); return 0; }
+        uint32_t GetAvailableSpace(const string& id) { PPP(); return 0; }
 
     private:
         class PackageInfo : public Exchange::IPackager::IPackageInfo {
