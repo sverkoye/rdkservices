@@ -19,40 +19,26 @@
  
 #pragma once
 
-#include "Module.h"
-
-#include <interfaces/IPackager.h>
-
-// #define INCLUDE_DAC_INSTALLER
-
-#ifdef INCLUDE_DAC_INSTALLER    
-    #include "DACinstallerImplementation.h"
-#endif
+// #include "Module.h"
+// #include <interfaces/IPackager.h>
 
 #include <list>
 #include <string>
 
 
-#define PPP()   fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
+#define DDD()   fprintf(stderr, "\nHUGH >>>>> DAC Impl ... Call ... %s()", __FUNCTION__); 
 
-
-// Forward declarations so we do not need to include the OPKG headers here.
-struct opkg_conf;
-struct _opkg_progress_data_t;
 
 namespace WPEFramework {
 namespace Plugin {
 
-    class PackagerImplementation : public Exchange::IPackager
-#ifdef INCLUDE_DAC_INSTALLER    
-    , public DACinstallerImplementation 
-#endif
-
+    class DACinstallerImplementation
     {
     public:
-        PackagerImplementation(const PackagerImplementation&) = delete;
-        PackagerImplementation& operator=(const PackagerImplementation&) = delete;
+        DACinstallerImplementation(const DACinstallerImplementation&) = delete;
+        DACinstallerImplementation& operator=(const DACinstallerImplementation&) = delete;
 
+        /*
         class EXTERNAL Config : public Core::JSON::Container {
         public:
             Config()
@@ -73,8 +59,6 @@ namespace Plugin {
                 Add(_T("nodeps"), &NoDeps);
                 Add(_T("nosignaturecheck"), &NoSignatureCheck);
                 Add(_T("alwaysupdatefirst"), &AlwaysUpdateFirst);
-
-                PPP();
             }
 
             ~Config() override
@@ -93,76 +77,57 @@ namespace Plugin {
             Core::JSON::Boolean NoSignatureCheck;
             Core::JSON::Boolean AlwaysUpdateFirst;
         };
+        */
 
-        PackagerImplementation()
-            : _adminLock()
-            , _configFile()
-            , _tempPath()
-            , _cachePath()
-            , _verbosity(0)
-            , _noDeps(false)
-            , _skipSignatureChecking(false)
-            , _alwaysUpdateFirst(false)
-            , _volatileCache(false)
-            , _opkgInitialized(false)
-            , _worker(this)
-            , _isUpgrade(false)
-            , _isSyncing(false)
+        DACinstallerImplementation()
+            // : _adminLock()
+            // , _configFile()
+            // , _tempPath()
+            // , _cachePath()
+            // , _verbosity(0)
+            // , _noDeps(false)
+            // , _skipSignatureChecking(false)
+            // , _alwaysUpdateFirst(false)
+            // , _volatileCache(false)
+            // , _opkgInitialized(false)
+            // , _worker(this)
+            // , _isUpgrade(false)
+            // , _isSyncing(false)
         {
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-
-            PPP();
+            DDD();
         }
 
-        ~PackagerImplementation() override;
+        ~DACinstallerImplementation() { DDD(); };// override;
 
-        BEGIN_INTERFACE_MAP(PackagerImplementation)
-            INTERFACE_ENTRY(Exchange::IPackager)
-        END_INTERFACE_MAP
 
-        //   IPackager methods
-        void Register(Exchange::IPackager::INotification* observer) override;
-        void Unregister(const Exchange::IPackager::INotification* observer) override;
+//        uint32_t Cancel(const string& id, const string& task, const string& listener) { return 0; };
 
-        uint32_t Configure(PluginHost::IShell* service) override;
-
-        // Packager API
-        uint32_t Install(const string& name, const string& version, const string& arch) override;
-        uint32_t SynchronizeRepository() override;
-
-#ifdef INCLUDE_DAC_INSTALLER
 
         // DAC Installer API
-        virtual uint32_t InstallPkg(const string& pkgId, const string& type, const string& url, const string& token, const string& listener) { PPP(); return 0; }
-        virtual uint32_t Remove(const string& pkgId, const string& listener) { PPP(); return 0; }
-        virtual uint32_t Cancel(const string& pkgId, const string& task, const string& listener) { PPP(); return 0; };
+        uint32_t Install_imp(const string& pkgId, const string& type, const string& url,const string& token, const string& listener) { DDD(); return 0; }
+        uint32_t Remove_imp( const string& pkgId, const string& appId, const string& listener) { DDD(); return 0; }
+        uint32_t Cancel_imp( const string& pkgId, const string& task, const string& listener) { DDD(); return 0; };
 
-        virtual uint32_t IsInstalled(const string& pkgId) { PPP(); return IsInstalled_imp(pkgId); }
-        virtual uint32_t GetInstallProgress( const string& task) { PPP(); return 0; }
-        virtual uint32_t GetInstalled() { PPP(); return 0; }
-        virtual uint32_t GetPackageInfo(const string& pkgId) { PPP(); return 0; }
-        virtual uint32_t GetAvailableSpace() { PPP(); return 0; }
+        uint32_t IsInstalled_imp(const string& pkgId) { DDD(); return 0; }
+        uint32_t GetInstallProgress_imp(const string& pkgId, const string& task) { DDD(); return 0; }
+        uint32_t GetInstalled_imp() { DDD(); return 0; }
+        uint32_t GetPackageInfo_imp(const string& pkgId) { DDD(); return 0; }
+        uint32_t GetAvailableSpace_imp() { DDD(); return 0; }
 
-#else
+        // BEGIN_INTERFACE_MAP(DACinstallerImplementation)
+        //     INTERFACE_ENTRY(Exchange::IPackager)
+        // END_INTERFACE_MAP
 
-        // DUMMY >>> DAC Installer
+        //   IPackager methods
+        // void Register(Exchange::IPackager::INotification* observer) override;
+        // void Unregister(const Exchange::IPackager::INotification* observer) override;
 
-        virtual uint32_t InstallPkg(const string& pkgId, const string& type, const string& url, const string& token, const string& lsitener) { return 0; }
-        virtual uint32_t Remove(const string& pkgId, const string& listener) { return 0; }
-        virtual uint32_t Cancel(const string& pkgId, const string& task, const string& listener) { return 0; }
-        virtual uint32_t IsInstalled(const string& pkgId) { return 0; }
-        virtual uint32_t GetInstallProgress(const string& task) { return 0; }
-        virtual uint32_t GetInstalled() { return 0; }
-        virtual uint32_t GetPackageInfo(const string& pkgId) { return 0; }
-        virtual uint32_t GetAvailableSpace() { return 0; }
-
-#endif // INCLUDE_DAC_INSTALLER
+        // uint32_t Configure(PluginHost::IShell* service) override;
+        // uint32_t Install(const string& name, const string& version, const string& arch) override;
+        // uint32_t SynchronizeRepository() override;
 
     private:
+    /*
         class PackageInfo : public Exchange::IPackager::IPackageInfo {
         public:
             PackageInfo(const PackageInfo&) = delete;
@@ -206,8 +171,11 @@ namespace Plugin {
             std::string _version;
             std::string _arch;
         };
+        */
 
-        class InstallInfo : public Exchange::IPackager::IInstallationInfo {
+/*
+        class InstallInfo : public Exchange::IPackager::IInstallationInfo
+        {
         public:
             InstallInfo(const PackageInfo&) = delete;
             InstallInfo& operator=(const PackageInfo&) = delete;
@@ -266,33 +234,35 @@ namespace Plugin {
             uint32_t _error = 0u;
             uint8_t _progress = 0u;
         };
+        */
 
-        struct InstallationData {
-            InstallationData(const InstallationData& other) = delete;
-            InstallationData& operator=(const InstallationData& other) = delete;
-            InstallationData() = default;
+        // struct InstallationData {
+        //     InstallationData(const InstallationData& other) = delete;
+        //     InstallationData& operator=(const InstallationData& other) = delete;
+        //     InstallationData() = default;
 
-            ~InstallationData()
-            {
-                if (Package)
-                    Package->Release();
-                if (Install)
-                    Install->Release();
-            }
-            PackageInfo* Package = nullptr;
-            InstallInfo* Install = nullptr;
-        };
-
+        //     ~InstallationData()
+        //     {
+        //         if (Package)
+        //             Package->Release();
+        //         if (Install)
+        //             Install->Release();
+        //     }
+        //     PackageInfo* Package = nullptr;
+        //     InstallInfo* Install = nullptr;
+        // };
+/*
         class InstallThread : public Core::Thread {
         public:
-            InstallThread(PackagerImplementation* parent)
+            InstallThread(DACinstallerImplementation* parent)
                 : _parent(parent)
             {}
 
             InstallThread& operator=(const InstallThread&) = delete;
             InstallThread(const InstallThread&) = delete;
 
-            uint32_t Worker() override {
+            uint32_t Worker() override
+            {
                 while(IsRunning() == true) {
                     _parent->_adminLock.Lock(); // The parent may have lock when this starts so wait for it to release.
                     bool isInstall = _parent->_inProgress.Install != nullptr;
@@ -321,7 +291,7 @@ namespace Plugin {
             }
 
         private:
-            PackagerImplementation* _parent;
+            DACinstallerImplementation* _parent;
         };
 
         enum class RepoSyncMode {
@@ -329,34 +299,37 @@ namespace Plugin {
             SETUP
         };
 
-        uint32_t DoWork(const string* name, const string* version, const string* arch);
-        void UpdateConfig() const;
-#if !defined (DO_NOT_USE_DEPRECATED_API)
-        static void InstallationProgessNoLock(const _opkg_progress_data_t* progress, void* data);
-#endif
-        void NotifyStateChange();
-        void NotifyRepoSynced(uint32_t status);
-        void BlockingInstallUntilCompletionNoLock();
-        void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);
-        bool InitOPKG();
-        void FreeOPKG();
+        // uint32_t DoWork(const string* name, const string* version, const string* arch);
+        // void UpdateConfig() const;
+
+        // void NotifyStateChange();
+        // void NotifyRepoSynced(uint32_t status);
+        // void BlockingInstallUntilCompletionNoLock();
+        // void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);
+        // bool InitOPKG();
+        // void FreeOPKG();
 
         Core::CriticalSection _adminLock;
+
         string _configFile;
         string _tempPath;
         string _cachePath;
+
         int _verbosity;
         bool _noDeps;
         bool _skipSignatureChecking;
         bool _alwaysUpdateFirst;
         bool _volatileCache;
         bool _opkgInitialized;
+
         std::vector<Exchange::IPackager::INotification*> _notifications;
         InstallationData _inProgress;
         InstallThread _worker;
+
         bool _isUpgrade;
         bool _isSyncing;
+        */
     };
 
-}  // namespace Plugin
+  } // namespace Plugin
 }  // namespace WPEFramework

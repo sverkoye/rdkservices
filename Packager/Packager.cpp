@@ -40,10 +40,10 @@ namespace {
          string result;
         _implementation = _service->Root<Exchange::IPackager>(_connectionId, 2000, _T("PackagerImplementation"));
         if (_implementation == nullptr) {
-            result = _T("Couldn't create package instance");
+            result = _T("Couldn't create PACKAGER instance ");
         } else {
             if (_implementation->Configure(_service) != Core::ERROR_NONE) {
-                result = _T("Couldn't initialize package instance");
+                result = _T("Couldn't initialize PACKAGER instance");
             }
         }
 
@@ -102,57 +102,125 @@ namespace {
 
             fprintf(stderr, " HUGH >>>  Packager::Process() - CMD:  %s", index.Current().Text().c_str());
 
+            Core::URL::KeyValue options(request.Query.Value());
+
             ////////////////////////////////////////////////
             //
-            // Packager >> INSTALL
+            // Packager >> Install
             //
             if (index.Current().Text() == "Install")
             {
-                std::array<char, kMaxValueLength> package {0};
-                std::array<char, kMaxValueLength> version {0};
-                std::array<char, kMaxValueLength> arch {0};
+                if( ( options.Exists(_T("Package"),      true) == true ) &&
+                    ( options.Exists(_T("Architecture"), true) == true ) &&
+                    ( options.Exists(_T("Version"),      true) == true ) )
+                {
+                    std::array<char, kMaxValueLength> package {0};
+                    std::array<char, kMaxValueLength> version {0};
+                    std::array<char, kMaxValueLength> arch    {0};
 
-                Core::URL::KeyValue options(request.Query.Value());
-                if (options.Exists(_T("Package"), true) == true) {
-                    const string name (options[_T("Package")].Text());
-                    Core::URL::Decode (name.c_str(), name.length(), package.data(), package.size());
-                }
-                if (options.Exists(_T("Architecture"), true) == true) {
-                                    const string name (options[_T("Architecture")].Text());
-                                    Core::URL::Decode (name.c_str(), name.length(), arch.data(), arch.size());
-                }
-                if (options.Exists(_T("Version"), true) == true) {
-                    const string name (options[_T("Version")].Text());
-                    Core::URL::Decode (name.c_str(), name.length(), version.data(), version.size());
-                }
+                    if (options.Exists(_T("Package"), true) == true) {
+                        const string name (options[_T("Package")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), package.data(), package.size());
+                    }
+                    if (options.Exists(_T("Architecture"), true) == true) {
+                                        const string name (options[_T("Architecture")].Text());
+                                        Core::URL::Decode (name.c_str(), name.length(), arch.data(), arch.size());
+                    }
+                    if (options.Exists(_T("Version"), true) == true) {
+                        const string name (options[_T("Version")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), version.data(), version.size());
+                    }
 
-                status = _implementation->Install(package.data(), version.data(), arch.data());
+                    // Packager API
+                    status = _implementation->Install(package.data(), version.data(), arch.data()); 
+                }
+#ifdef INCLUDE_DAC_INSTALLER
+                else
+                if( ( options.Exists(_T("pkgId"), true) == true ) &&
+                    ( options.Exists(_T("type"),  true) == true ) &&
+                    ( options.Exists(_T("url"),   true) == true )  )
+                {
+                    std::array<char, kMaxValueLength> pkgId    {0};
+                    std::array<char, kMaxValueLength> type     {0};
+                    std::array<char, kMaxValueLength> url      {0};
+                    std::array<char, kMaxValueLength> token    {0};
+                    std::array<char, kMaxValueLength> listener {0};
+
+                    if (options.Exists(_T("pkgId"), true) == true) {
+                        const string name (options[_T("pkgId")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
+                    }
+                    if (options.Exists(_T("type"), true) == true) {
+                        const string name (options[_T("type")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), type.data(), type.size());
+                    }
+                    if (options.Exists(_T("url"), true) == true) {
+                        const string name (options[_T("url")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), url.data(), url.size());
+                    }
+                    if (options.Exists(_T("token"), true) == true) {
+                        const string name (options[_T("token")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), token.data(), token.size());
+                    }
+                    if (options.Exists(_T("listener"), true) == true) {
+                        const string name (options[_T("listener")].Text());
+                        Core::URL::Decode (name.c_str(), name.length(), listener.data(), listener.size());
+                    }
+                    // DAC Installer API
+                    status = _implementation->InstallPkg(pkgId.data(), type.data(), url.data(), token.data(), listener.data()); 
+                }
+#endif // INCLUDE_DAC_INSTALLER
             }
             else
             ////////////////////////////////////////////////
             //
-            // Packager >> SYNCRONIZE REPOSITORY
+            // Packager >> SynchronizeRepository
             //
             if (index.Current().Text() == "SynchronizeRepository")
             {
                 status = _implementation->SynchronizeRepository();
             }
+#ifdef INCLUDE_DAC_INSTALLER
             else
             ////////////////////////////////////////////////
             //
-            // DAC Installer >> CANCEL
+            // DAC Installer >> Remove
+            //
+            if (index.Current().Text() == "Remove")
+            {
+                std::array<char, kMaxValueLength> pkgId    {0};
+                std::array<char, kMaxValueLength> listener {0};
+
+                Core::URL::KeyValue options(request.Query.Value());
+
+                if (options.Exists(_T("PkgId"), true) == true) {
+                    const string name (options[_T("PkgId")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
+                }
+
+                if (options.Exists(_T("Listener"), true) == true) {
+                    const string name (options[_T("Listener")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), listener.data(), listener.size());
+                }
+
+                status = _implementation->Remove(pkgId.data(), listener.data());
+            }
+            else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> Cancel
             //
             if (index.Current().Text() == "Cancel")
             {
-                std::array<char, kMaxValueLength> id       {0};
+                std::array<char, kMaxValueLength> pkgId    {0};
                 std::array<char, kMaxValueLength> task     {0};
                 std::array<char, kMaxValueLength> listener {0};
 
                 Core::URL::KeyValue options(request.Query.Value());
 
-                if (options.Exists(_T("Id"), true) == true) {
-                    const string name (options[_T("Id")].Text());
-                    Core::URL::Decode (name.c_str(), name.length(), id.data(), id.size());
+                if (options.Exists(_T("PkgId"), true) == true) {
+                    const string name (options[_T("PkgId")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
                 }
                 if (options.Exists(_T("Task"), true) == true) {
                                     const string name (options[_T("Task")].Text());
@@ -163,33 +231,82 @@ namespace {
                     Core::URL::Decode (name.c_str(), name.length(), listener.data(), listener.size());
                 }
 
-                status = _implementation->Cancel(id.data(), task.data(), listener.data());
+                status = _implementation->Cancel(pkgId.data(), task.data(), listener.data());
             }
-                        else
+            else
             ////////////////////////////////////////////////
             //
-            // DAC Installer >> IsINSTALLED
+            // DAC Installer >> IsInstalled
             //
             if (index.Current().Text() == "IsInstalled")
             {
-                std::array<char, kMaxValueLength> id    {0};
-                std::array<char, kMaxValueLength> appId {0};
+                std::array<char, kMaxValueLength> pkgId {0};
 
                 Core::URL::KeyValue options(request.Query.Value());
 
-                if (options.Exists(_T("Id"), true) == true) {
-                    const string name (options[_T("Id")].Text());
-                    Core::URL::Decode (name.c_str(), name.length(), id.data(), id.size());
+                if (options.Exists(_T("PkgId"), true) == true) {
+                    const string name (options[_T("PkgId")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
                 }
 
-                if (options.Exists(_T("AppId"), true) == true) {
-                    const string name (options[_T("AppId")].Text());
-                    Core::URL::Decode (name.c_str(), name.length(), appId.data(), appId.size());
+                status = _implementation->IsInstalled(pkgId.data());
+            }
+            else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> GetInstallProgress
+            //
+            if (index.Current().Text() == "GetInstallProgress")
+            {
+                std::array<char, kMaxValueLength> task {0};
+
+                Core::URL::KeyValue options(request.Query.Value());
+
+                if (options.Exists(_T("Task"), true) == true) {
+                    const string name (options[_T("Task")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), task.data(), task.size());
                 }
 
-                status = _implementation->IsInstalled(id.data(), appId.data());
+                status = _implementation->GetInstallProgress(task.data());
+            }
+            else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> GetInstalled
+            //
+            if (index.Current().Text() == "GetInstalled")
+            {
+                status = _implementation->GetInstalled();
+            }
+            else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> GetPackageInfo
+            //
+            if (index.Current().Text() == "GetPackageInfo")
+            {
+                std::array<char, kMaxValueLength> pkgId {0};
+
+                Core::URL::KeyValue options(request.Query.Value());
+
+                if (options.Exists(_T("PkgId"), true) == true) {
+                    const string name (options[_T("PkgId")].Text());
+                    Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
+                }
+
+                status = _implementation->GetPackageInfo(pkgId.data());
+            }
+            else
+            ////////////////////////////////////////////////
+            //
+            // DAC Installer >> GetAvailableSpace
+            //
+            if (index.Current().Text() == "GetAvailableSpace")
+            {
+                status = _implementation->GetAvailableSpace();
             }
             ////////////////////////////////////////////////
+#endif // INCLUDE_DAC_INSTALLER
 
             if (status == Core::ERROR_NONE) {
                 result->ErrorCode = Web::STATUS_OK;
