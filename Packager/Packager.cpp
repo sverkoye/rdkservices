@@ -45,6 +45,10 @@ namespace {
             if (_implementation->Configure(_service) != Core::ERROR_NONE) {
                 result = _T("Couldn't initialize PACKAGER instance");
             }
+            else
+            {
+                fprintf(stderr, "\nHUGH >>>>> Created ... PackagerImplementation  at 0x%p ", _implementation); 
+            }
         }
 
         return (result);
@@ -96,6 +100,8 @@ namespace {
 
         result->ErrorCode = Web::STATUS_BAD_REQUEST;
         result->Message = _T("Invalid request to packager plugin.");
+
+fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.Current().Text().c_str()); 
 
         if (index.Next() && (request.Verb == Web::Request::HTTP_POST || request.Verb == Web::Request::HTTP_PUT)) {
             uint32_t status = Core::ERROR_UNAVAILABLE;
@@ -166,6 +172,7 @@ namespace {
                         const string name (options[_T("listener")].Text());
                         Core::URL::Decode (name.c_str(), name.length(), listener.data(), listener.size());
                     }
+
                     // DAC Installer API
                     status = _implementation->InstallPkg(pkgId.data(), type.data(), url.data(), token.data(), listener.data()); 
                 }
@@ -212,16 +219,11 @@ namespace {
             //
             if (index.Current().Text() == "Cancel")
             {
-                std::array<char, kMaxValueLength> pkgId    {0};
                 std::array<char, kMaxValueLength> task     {0};
                 std::array<char, kMaxValueLength> listener {0};
 
                 Core::URL::KeyValue options(request.Query.Value());
 
-                if (options.Exists(_T("PkgId"), true) == true) {
-                    const string name (options[_T("PkgId")].Text());
-                    Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
-                }
                 if (options.Exists(_T("Task"), true) == true) {
                                     const string name (options[_T("Task")].Text());
                                     Core::URL::Decode (name.c_str(), name.length(), task.data(), task.size());
@@ -231,7 +233,7 @@ namespace {
                     Core::URL::Decode (name.c_str(), name.length(), listener.data(), listener.size());
                 }
 
-                status = _implementation->Cancel(pkgId.data(), task.data(), listener.data());
+                status = _implementation->Cancel(task.data(), listener.data());
             }
             else
             ////////////////////////////////////////////////

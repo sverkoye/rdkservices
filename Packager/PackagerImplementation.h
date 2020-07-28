@@ -23,17 +23,17 @@
 
 #include <interfaces/IPackager.h>
 
-// #define INCLUDE_DAC_INSTALLER
+#define INCLUDE_DAC_INSTALLER
+
+#include <list>
+#include <string>
 
 #ifdef INCLUDE_DAC_INSTALLER    
     #include "DACinstallerImplementation.h"
 #endif
 
-#include <list>
-#include <string>
 
-
-#define PPP()   fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
+#define PPP()   fprintf(stderr, "\nHUGH 123 >>>>> Call ... %s()", __FUNCTION__); 
 
 
 // Forward declarations so we do not need to include the OPKG headers here.
@@ -109,13 +109,8 @@ namespace Plugin {
             , _isUpgrade(false)
             , _isSyncing(false)
         {
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-
-            PPP();
+            fprintf(stderr, "\nHUGH >>>>> Call ... PackagerImplementation::PackagerImplementation() - ENTER"); 
+            fprintf(stderr, "\nHUGH >>>>> Call ... PackagerImplementation::PackagerImplementation() - ENTER"); 
         }
 
         ~PackagerImplementation() override;
@@ -137,28 +132,30 @@ namespace Plugin {
 #ifdef INCLUDE_DAC_INSTALLER
 
         // DAC Installer API
-        virtual uint32_t InstallPkg(const string& pkgId, const string& type, const string& url, const string& token, const string& listener) { PPP(); return 0; }
-        virtual uint32_t Remove(const string& pkgId, const string& listener) { PPP(); return 0; }
-        virtual uint32_t Cancel(const string& pkgId, const string& task, const string& listener) { PPP(); return 0; };
+        virtual uint32_t InstallPkg(const string& pkgId, const string& type, const string& url,
+                                    const string& token, const string& listener)               { PPP(); return Install_imp(pkgId, type, url, token, listener); }
+        virtual uint32_t Remove(const string& pkgId, const string& listener)                   { PPP(); return Remove_imp(pkgId, listener); }
+        virtual uint32_t Cancel(const string& task, const string& listener)                    { PPP(); return Cancel_imp(task, listener);  };
 
-        virtual uint32_t IsInstalled(const string& pkgId) { PPP(); return IsInstalled_imp(pkgId); }
-        virtual uint32_t GetInstallProgress( const string& task) { PPP(); return 0; }
-        virtual uint32_t GetInstalled() { PPP(); return 0; }
-        virtual uint32_t GetPackageInfo(const string& pkgId) { PPP(); return 0; }
-        virtual uint32_t GetAvailableSpace() { PPP(); return 0; }
+        virtual uint32_t IsInstalled(const string& pkgId)                                      { PPP(); return IsInstalled_imp(pkgId);   }
+        virtual uint32_t GetInstallProgress( const string& task)                               { PPP(); return GetInstallProgress_imp(task); }
+        virtual uint32_t GetInstalled()                                                        { PPP(); return GetInstalled_imp();           }
+        virtual uint32_t GetPackageInfo(const string& pkgId)                                   { PPP(); return GetPackageInfo_imp(pkgId);    }
+        virtual uint32_t GetAvailableSpace()                                                   { PPP(); return GetAvailableSpace_imp();      }
 
 #else
 
         // DUMMY >>> DAC Installer
 
-        virtual uint32_t InstallPkg(const string& pkgId, const string& type, const string& url, const string& token, const string& lsitener) { return 0; }
-        virtual uint32_t Remove(const string& pkgId, const string& listener) { return 0; }
-        virtual uint32_t Cancel(const string& pkgId, const string& task, const string& listener) { return 0; }
-        virtual uint32_t IsInstalled(const string& pkgId) { return 0; }
-        virtual uint32_t GetInstallProgress(const string& task) { return 0; }
-        virtual uint32_t GetInstalled() { return 0; }
-        virtual uint32_t GetPackageInfo(const string& pkgId) { return 0; }
-        virtual uint32_t GetAvailableSpace() { return 0; }
+        virtual uint32_t InstallPkg(const string& , const string& , const string&,
+                                     const string&, const string&)                 { return -1; }
+        virtual uint32_t Remove(const string& , const string& )                    { return -1; }
+        virtual uint32_t Cancel(const string& , const string& , const string& )    { return -1; }
+        virtual uint32_t IsInstalled(const string& )                               { return -1; }
+        virtual uint32_t GetInstallProgress(const string& )                        { return -1; }
+        virtual uint32_t GetInstalled()                                            { return -1; }
+        virtual uint32_t GetPackageInfo(const string& )                            { return -1; }
+        virtual uint32_t GetAvailableSpace()                                       { return -1; }
 
 #endif // INCLUDE_DAC_INSTALLER
 

@@ -22,7 +22,7 @@
 #include "Module.h"
 #include <interfaces/IPackager.h>
 
-// #define INCLUDE_DAC_INSTALLER
+#define INCLUDE_DAC_INSTALLER
 
 namespace WPEFramework {
 namespace Plugin {
@@ -32,7 +32,7 @@ namespace {
 
 #ifdef INCLUDE_DAC_INSTALLER
 
-    constexpr auto* kDAC_InstallMethodName         = _T("installPkg");
+    constexpr auto* kDAC_InstallMethodName            = _T("installPkg");
     constexpr auto* kDAC_RemoveMethodName             = _T("remove");
     constexpr auto* kDAC_CancelMethodName             = _T("cancel");
     constexpr auto* kDAC_IsInstalledMethodName        = _T("isInstalled");
@@ -92,12 +92,6 @@ namespace {
             , _implementation(nullptr)
             , _notification(this)
         {
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-
             // Packager API
             Register<Params, void>(kInstallMethodName, [this](const Params& params) -> uint32_t
             {
@@ -124,15 +118,20 @@ namespace {
             //
             Register<Params, void>(kDAC_CancelMethodName, [this](const Params& params) -> uint32_t
             {
-                return this->_implementation->Cancel(params.PkgId.Value(), params.Task.Value(), 
-                                                                params.Listener.Value());
+                return this->_implementation->Cancel(params.Task.Value(), params.Listener.Value());
             });
             //
             // DAC::IsInstalled()
             //
             Register<Params, void>(kDAC_IsInstalledMethodName, [this](const Params& params) -> uint32_t
             {
+                fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled()"); 
                 return this->_implementation->IsInstalled(params.PkgId.Value());
+
+                // string foo = "bar";
+
+                //  fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled( %s )", foo.c_str()); 
+                // return this->_implementation->IsInstalled(foo);
             });
 
             // DAC::GetInstallProgress()

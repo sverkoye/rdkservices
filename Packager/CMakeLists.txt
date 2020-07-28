@@ -22,18 +22,40 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(LibOPKG REQUIRED)
+find_package(GLIB REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
+
+# enabling the secure extension requires a license: https://www.hwaci.com/cgi-bin/see-step1
+if (USE_SQLITE_SEE)
+    find_package(SqliteSee REQUIRED)
+else()
+    find_package(Sqlite REQUIRED)
+endif()
+
 
 add_library(${MODULE_NAME} SHARED
     Module.cpp
     Packager.cpp
-    PackagerImplementation.cpp)
+    PackagerImplementation.cpp
+    DACutils.cpp
+    DACinstallerImplementation.cpp)
+
+add_definitions(${SQLITE_CFLAGS_OTHER} ${PLABELS_FLAGS})
+link_directories(${SQLITE_LIBRARY_DIRS})
+
+
+target_include_directories(${MODULE_NAME} PRIVATE ../helpers
+        ${SQLITE_INCLUDE_DIRS}
+        ${PLABELS_INCLUDE_DIRS}
+        ${GLIB_INCLUDE_DIRS})
 
 target_link_libraries(${MODULE_NAME} 
     PRIVATE
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         LibOPKG::LibOPKG
+        ${SQLITE_LIBRARIES}
+        ${GLIB_LIBRARIES}
         )
 
 string(TOLOWER ${NAMESPACE} STORAGENAME)
