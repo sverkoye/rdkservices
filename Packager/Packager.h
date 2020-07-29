@@ -22,7 +22,6 @@
 #include "Module.h"
 #include <interfaces/IPackager.h>
 
-#define INCLUDE_DAC_INSTALLER
 
 namespace WPEFramework {
 namespace Plugin {
@@ -30,19 +29,15 @@ namespace {
     constexpr auto* kInstallMethodName = _T("install");
     constexpr auto* kSynchronizeMethodName = _T("synchronize");
 
-#ifdef INCLUDE_DAC_INSTALLER
 
-    constexpr auto* kDAC_InstallMethodName            = _T("installPkg");
+//    constexpr auto* kDAC_InstallMethodName            = _T("install");    NOT USED 
     constexpr auto* kDAC_RemoveMethodName             = _T("remove");
     constexpr auto* kDAC_CancelMethodName             = _T("cancel");
     constexpr auto* kDAC_IsInstalledMethodName        = _T("isInstalled");
     constexpr auto* kDAC_GetInstallProgressMethodName = _T("getInstallProgress");
     constexpr auto* kDAC_GetInstalledMethodName       = _T("getInstalled");
     constexpr auto* kDAC_GetPackageInfoMethodName     = _T("getPackageInfo");
-    constexpr auto* kDAC_GetAvailableSpaceMethodName  = _T("getPackageAvailableSpace");
-
-#endif // INCLUDE_DAC_INSTALLER
-
+    constexpr auto* kDAC_GetAvailableSpaceMethodName  = _T("getAvailableSpace");
 }
 
     class Packager : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
@@ -54,32 +49,48 @@ namespace {
                 Add(_T("architecture"), &Architecture);
                 Add(_T("version"), &Version);
 
-                Add(_T("pkgId"), &PkgId);
                 Add(_T("task"), &Task);
+                Add(_T("pkgId"), &PkgId);
+                Add(_T("type"), &Type);
+                Add(_T("url"), &Url);
+                Add(_T("token"), &Token);
                 Add(_T("listener"), &Listener);
             }
             Params(const Params& other)
                 : Package(other.Package)
                 , Architecture(other.Architecture)
                 , Version(other.Version)
-                , PkgId(other.PkgId)
+
                 , Task(other.Task)
+
+                , PkgId(other.PkgId)
+                , Type(other.Type)
+                , Url(other.Url)
+                , Token(other.Token)
                 , Listener(other.Listener)
             {
                 Add(_T("package"), &Package);
                 Add(_T("architecture"), &Architecture);
                 Add(_T("version"), &Version);
 
-                Add(_T("PkgId"), &PkgId);
                 Add(_T("task"), &Task);
+
+                Add(_T("pkgId"), &PkgId);
+                Add(_T("type"), &Type);
+                Add(_T("url"), &Url);
+                Add(_T("token"), &Token);
                 Add(_T("listener"), &Listener);
             }
             Core::JSON::String Package;
             Core::JSON::String Architecture;
             Core::JSON::String Version;
 
-            Core::JSON::String PkgId;
             Core::JSON::String Task;
+
+            Core::JSON::String PkgId;
+            Core::JSON::String Type;
+            Core::JSON::String Url;
+            Core::JSON::String Token;
             Core::JSON::String Listener;
         };
 
@@ -95,22 +106,37 @@ namespace {
             // Packager API
             Register<Params, void>(kInstallMethodName, [this](const Params& params) -> uint32_t
             {
-                return this->_implementation->Install(params.Package.Value(), params.Version.Value(),
-                                                                 params.Architecture.Value());
+                if( ( params.PkgId.IsSet() && params.PkgId.Value().empty() == false ) &&
+                    ( params.Type.IsSet()  && params.Type.Value().empty()  == false ) &&
+                    ( params.Url.IsSet()   && params.Url.Value().empty()   == false ) )
+                {
+                    // ---- DAC Installer API ----
+                    //
+                    // DAC::Install()
+                    //
+                    return this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
+                                                            params.Url.Value(), params.Token.Value(),
+                                                            params.Listener.Value()); 
+                }
+                else // default to Packager API
+                {
+                    // Packager
+                    return this->_implementation->Install(params.Package.Value(), params.Version.Value(),
+                                                           params.Architecture.Value());
+                }
             });
+
             Register<void, void>(kSynchronizeMethodName, [this]() -> uint32_t
             {
                 return this->_implementation->SynchronizeRepository();
             });
-
-#ifdef INCLUDE_DAC_INSTALLER
 
             // ---- DAC Installer API ----
             //
             // DAC::Remove()
             //
             Register<Params, void>(kDAC_RemoveMethodName, [this](const Params& params) -> uint32_t
-            {
+            {                 
                 return this->_implementation->Remove(params.PkgId.Value(), params.Listener.Value());
             });
             //
@@ -125,7 +151,7 @@ namespace {
             //
             Register<Params, void>(kDAC_IsInstalledMethodName, [this](const Params& params) -> uint32_t
             {
-                fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled()"); 
+                fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled()   PkgID: [%s]", params.PkgId.Value().c_str()); 
                 return this->_implementation->IsInstalled(params.PkgId.Value());
 
                 // string foo = "bar";
@@ -161,8 +187,6 @@ namespace {
             {
                 return this->_implementation->GetAvailableSpace();
             });
-#endif // INCLUDE_DAC_INSTALLER
-
         }
 
         ~Packager() override
@@ -170,8 +194,6 @@ namespace {
             Unregister(kInstallMethodName);
             Unregister(kSynchronizeMethodName);
 
-#ifdef INCLUDE_DAC_INSTALLER
-            Unregister(kDAC_InstallMethodName);
             Unregister(kDAC_RemoveMethodName);
             Unregister(kDAC_CancelMethodName);
             Unregister(kDAC_IsInstalledMethodName);
@@ -179,7 +201,6 @@ namespace {
             Unregister(kDAC_GetInstalledMethodName);
             Unregister(kDAC_GetPackageInfoMethodName);
             Unregister(kDAC_GetAvailableSpaceMethodName);
-#endif // INCLUDE_DAC_INSTALLER
         }
 
         BEGIN_INTERFACE_MAP(Packager)

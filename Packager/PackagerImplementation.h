@@ -23,17 +23,13 @@
 
 #include <interfaces/IPackager.h>
 
-#define INCLUDE_DAC_INSTALLER
-
 #include <list>
 #include <string>
 
-#ifdef INCLUDE_DAC_INSTALLER    
-    #include "DACinstallerImplementation.h"
-#endif
+#include "DACinstallerImplementation.h"
 
 
-#define PPP()   fprintf(stderr, "\nHUGH 123 >>>>> Call ... %s()", __FUNCTION__); 
+#define PPP()   fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
 
 
 // Forward declarations so we do not need to include the OPKG headers here.
@@ -44,9 +40,7 @@ namespace WPEFramework {
 namespace Plugin {
 
     class PackagerImplementation : public Exchange::IPackager
-#ifdef INCLUDE_DAC_INSTALLER    
     , public DACinstallerImplementation 
-#endif
 
     {
     public:
@@ -129,35 +123,18 @@ namespace Plugin {
         uint32_t Install(const string& name, const string& version, const string& arch) override;
         uint32_t SynchronizeRepository() override;
 
-#ifdef INCLUDE_DAC_INSTALLER
-
         // DAC Installer API
-        virtual uint32_t InstallPkg(const string& pkgId, const string& type, const string& url,
-                                    const string& token, const string& listener)               { PPP(); return Install_imp(pkgId, type, url, token, listener); }
-        virtual uint32_t Remove(const string& pkgId, const string& listener)                   { PPP(); return Remove_imp(pkgId, listener); }
-        virtual uint32_t Cancel(const string& task, const string& listener)                    { PPP(); return Cancel_imp(task, listener);  };
+        virtual uint32_t Install(const string& pkgId, const string& type,  const string& url, 
+                                    const string& token, const string& listener) override;
 
-        virtual uint32_t IsInstalled(const string& pkgId)                                      { PPP(); return IsInstalled_imp(pkgId);   }
-        virtual uint32_t GetInstallProgress( const string& task)                               { PPP(); return GetInstallProgress_imp(task); }
-        virtual uint32_t GetInstalled()                                                        { PPP(); return GetInstalled_imp();           }
-        virtual uint32_t GetPackageInfo(const string& pkgId)                                   { PPP(); return GetPackageInfo_imp(pkgId);    }
-        virtual uint32_t GetAvailableSpace()                                                   { PPP(); return GetAvailableSpace_imp();      }
+        virtual uint32_t Remove(const string& pkgId, const string& listener) override;
+        virtual uint32_t Cancel(const string& task, const string& listener) override;
 
-#else
-
-        // DUMMY >>> DAC Installer
-
-        virtual uint32_t InstallPkg(const string& , const string& , const string&,
-                                     const string&, const string&)                 { return -1; }
-        virtual uint32_t Remove(const string& , const string& )                    { return -1; }
-        virtual uint32_t Cancel(const string& , const string& , const string& )    { return -1; }
-        virtual uint32_t IsInstalled(const string& )                               { return -1; }
-        virtual uint32_t GetInstallProgress(const string& )                        { return -1; }
-        virtual uint32_t GetInstalled()                                            { return -1; }
-        virtual uint32_t GetPackageInfo(const string& )                            { return -1; }
-        virtual uint32_t GetAvailableSpace()                                       { return -1; }
-
-#endif // INCLUDE_DAC_INSTALLER
+        virtual uint32_t IsInstalled(const string& pkgId) override;
+        virtual uint32_t GetInstallProgress( const string& task) override;
+        virtual uint32_t GetInstalled() override;
+        virtual uint32_t GetPackageInfo(const string& pkgId) override;
+        virtual uint32_t GetAvailableSpace() override;
 
     private:
         class PackageInfo : public Exchange::IPackager::IPackageInfo {
@@ -202,6 +179,12 @@ namespace Plugin {
             std::string _name;
             std::string _version;
             std::string _arch;
+
+            std::string _pkgId;
+            std::string _type;
+            std::string _url;
+            std::string _token;
+            std::string _listener;
         };
 
         class InstallInfo : public Exchange::IPackager::IInstallationInfo {
@@ -289,8 +272,10 @@ namespace Plugin {
             InstallThread& operator=(const InstallThread&) = delete;
             InstallThread(const InstallThread&) = delete;
 
-            uint32_t Worker() override {
-                while(IsRunning() == true) {
+            uint32_t Worker() override
+            {
+                while(IsRunning() == true)
+                {
                     _parent->_adminLock.Lock(); // The parent may have lock when this starts so wait for it to release.
                     bool isInstall = _parent->_inProgress.Install != nullptr;
                     ASSERT(isInstall != true || _parent->_inProgress.Package != nullptr);
@@ -300,9 +285,12 @@ namespace Plugin {
                     // progress is filled in.
                     _parent->BlockingSetupLocalRepoNoLock(isInstall == true ? RepoSyncMode::SETUP : RepoSyncMode::FORCED);
                     if (isInstall)
+                    {
                         _parent->BlockingInstallUntilCompletionNoLock();
+                    }
 
-                    if (isInstall) {
+                    if (isInstall)
+                    {
                         _parent->_adminLock.Lock();
                         _parent->_inProgress.Install->Release();
                         _parent->_inProgress.Package->Release();
@@ -327,6 +315,7 @@ namespace Plugin {
         };
 
         uint32_t DoWork(const string* name, const string* version, const string* arch);
+
         void UpdateConfig() const;
 #if !defined (DO_NOT_USE_DEPRECATED_API)
         static void InstallationProgessNoLock(const _opkg_progress_data_t* progress, void* data);

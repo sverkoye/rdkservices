@@ -23,51 +23,12 @@
 #include "DACutils.h"
 #include "DACinstallerImplementation.h"
 
-// #ifndef SQLITE_FILE_HEADER
-// #define SQLITE_FILE_HEADER "SQLite format 3"
-// #endif
-
-// #define SQLITE *(sqlite3**) &mData
 
 const char* WPEFramework::Plugin::DACinstallerImplementation::STORE_NAME = "DACstorage";
 const char* WPEFramework::Plugin::DACinstallerImplementation::STORE_KEY  = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
 
 // using namespace Utils;
 using namespace std;
-
-// namespace {
-// #if defined(SQLITE_HAS_CODEC)
-//     bool fileEncrypted(const char* f)
-//     {
-//         FILE* fd = fopen(f, "rb");
-//         if (!fd)
-//         {
-//             return false;
-//         }
-
-//         int    magicSize = strlen(SQLITE_FILE_HEADER);
-//         char* fileHeader = (char*)malloc(magicSize + 1);
-//         int     readSize = (int)fread(fileHeader, 1, magicSize, fd);
-
-//         fclose(fd);
-
-//         bool eq = magicSize == readSize && ::memcmp(fileHeader, SQLITE_FILE_HEADER, magicSize) == 0;
-//         free(fileHeader);
-
-//         return !eq;
-//     }
-// #endif
-
-//     bool fileRemove(const char* f)
-//     {
-//         return (remove (f) == 0);
-//     }
-
-//     bool fileExists(const char* f)
-//     {
-//         return g_file_test(f, G_FILE_TEST_EXISTS);
-//     }
-// }
 
 namespace WPEFramework {
 namespace Plugin {
@@ -77,7 +38,7 @@ namespace Plugin {
   {
     DDD();
 
-    auto path = g_build_filename("opt", "persistent", nullptr);
+    auto path = g_build_filename("/opt", "persistent", nullptr);
 
     if (!DACutils::fileExists(path))
     {
@@ -86,9 +47,27 @@ namespace Plugin {
 
     auto file = g_build_filename(path, STORE_NAME, nullptr);
 
-    bool success = DACutils::init(file, STORE_KEY);
 
+    bool success = DACutils::init(file, STORE_KEY);
     fprintf(stderr, "\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
+
+
+    if(success)
+    {
+      DACutils::setValue("MyNamespace", "DACroot", "/opt/persistent/DACroot");
+      DACutils::setValue("MyNamespace", "MyKey", "123");
+
+      string value;
+
+      success = DACutils::getValue("MyNamespace", "MyKey", value);
+      fprintf(stderr, "\n %s() ... getValue()  %s    ... value: %s", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"), value.c_str() );
+
+      //DACutils::extract("/opt/persistent/test.tgz");
+
+     DACutils::setupThreadQ(); // start thread Q 
+
+      // DACutils::installURL("http://10.0.2.15/test.tgz");
+    }
 
     g_free(path);
     g_free(file);
@@ -97,6 +76,8 @@ namespace Plugin {
   DACinstallerImplementation::~DACinstallerImplementation()
   {
     DDD();
+
+    DACutils::term();
   }
 
 
@@ -106,6 +87,8 @@ namespace Plugin {
     DDD(); 
 
     fprintf(stderr, "\nHUGH >>>>> Call ... DAC::Install_imp()"); 
+
+    DACutils::installURL(url.c_str()); // "http://10.0.2.15/test.tgz");
 
     return 0;
   }

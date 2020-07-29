@@ -349,5 +349,49 @@ namespace Plugin {
         }
     }
 
+    //
+    // Adapter methods to call DAC Installer implementation
+    //
+    uint32_t PackagerImplementation::Install(const string& pkgId, const string& type, const string& url, 
+                     const string& token, const string& listener)
+    { 
+        return Install_imp(pkgId, type, url, token, listener); // Call IMPL
+    }
+
+    uint32_t PackagerImplementation::Remove(const string& pkgId, const string& listener)
+    {
+        return Remove_imp(pkgId, listener); // Call IMPL
+    }
+
+    uint32_t PackagerImplementation::Cancel(const string& task, const string& listener)
+    {
+        return Cancel_imp(task, listener); // Call IMPL
+    };
+
+    uint32_t PackagerImplementation::IsInstalled(const string& pkgId)
+    {
+        return IsInstalled_imp(pkgId); // Call IMPL
+    }
+
+    uint32_t PackagerImplementation::GetInstallProgress( const string& task)
+    {
+        return GetInstallProgress_imp(task); // Call IMPL
+    }
+
+    uint32_t PackagerImplementation::GetInstalled()
+    {
+        return GetInstalled_imp(); // Call IMPL
+    }
+
+    uint32_t PackagerImplementation::GetPackageInfo(const string& pkgId)
+    {
+        return GetPackageInfo_imp(pkgId); // Call IMPL
+    }
+
+    uint32_t PackagerImplementation::GetAvailableSpace()
+    {
+        return GetAvailableSpace_imp(); // Call IMPL
+    }
+
 }  // namespace Plugin
 }  // namespace WPEFramework

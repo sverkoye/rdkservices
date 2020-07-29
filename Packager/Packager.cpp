@@ -90,6 +90,8 @@ namespace {
 
     Core::ProxyType<Web::Response> Packager::Process(const Web::Request& request)
     {
+        fprintf(stderr, "\nHUGH abc >>>>> ... %s()   <<< ENTER ", __FUNCTION__); 
+
         ASSERT(_skipURL <= request.Path.length());
 
         Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
@@ -140,7 +142,6 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                     // Packager API
                     status = _implementation->Install(package.data(), version.data(), arch.data()); 
                 }
-#ifdef INCLUDE_DAC_INSTALLER
                 else
                 if( ( options.Exists(_T("pkgId"), true) == true ) &&
                     ( options.Exists(_T("type"),  true) == true ) &&
@@ -174,9 +175,8 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                     }
 
                     // DAC Installer API
-                    status = _implementation->InstallPkg(pkgId.data(), type.data(), url.data(), token.data(), listener.data()); 
+                    status = _implementation->Install(pkgId.data(), type.data(), url.data(), token.data(), listener.data()); 
                 }
-#endif // INCLUDE_DAC_INSTALLER
             }
             else
             ////////////////////////////////////////////////
@@ -187,7 +187,6 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
             {
                 status = _implementation->SynchronizeRepository();
             }
-#ifdef INCLUDE_DAC_INSTALLER
             else
             ////////////////////////////////////////////////
             //
@@ -305,10 +304,11 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
             //
             if (index.Current().Text() == "GetAvailableSpace")
             {
+                fprintf(stderr, "\nHUGH >>>>> Call ... Pacakger::GetAvailableSpace() ... " ); 
+
                 status = _implementation->GetAvailableSpace();
             }
             ////////////////////////////////////////////////
-#endif // INCLUDE_DAC_INSTALLER
 
             if (status == Core::ERROR_NONE) {
                 result->ErrorCode = Web::STATUS_OK;
