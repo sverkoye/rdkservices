@@ -58,6 +58,10 @@ namespace Plugin {
 
         static const char* STORE_NAME;
         static const char* STORE_KEY;
+
+    private:
+        uint32_t doInstall(const string& pkgId, const string& type, const string& url,const string& token, const string& listener);
+  
     };
 
   } // namespace Plugin

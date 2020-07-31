@@ -17,7 +17,6 @@
  * limitations under the License.
  */
  
-// #include <sqlite3.h>
 #include <glib.h>
 
 #include "DACutils.h"
@@ -27,7 +26,6 @@
 const char* WPEFramework::Plugin::DACinstallerImplementation::STORE_NAME = "DACstorage";
 const char* WPEFramework::Plugin::DACinstallerImplementation::STORE_KEY  = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
 
-// using namespace Utils;
 using namespace std;
 
 namespace WPEFramework {
@@ -62,7 +60,6 @@ namespace Plugin {
       success = DACutils::getValue("MyNamespace", "MyKey", value);
       fprintf(stderr, "\n %s() ... getValue()  %s    ... value: %s", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"), value.c_str() );
 
-      //DACutils::extract("/opt/persistent/test.tgz");
 
      DACutils::setupThreadQ(); // start thread Q 
 
@@ -82,22 +79,78 @@ namespace Plugin {
 
 
   // DAC Installer API
-  uint32_t DACinstallerImplementation::Install_imp(const string& pkgId, const string& type, const string& url,const string& token, const string& listener)
+  uint32_t DACinstallerImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
+                                                   const string& token, const string& listener)
   { 
-    DDD(); 
+    return doInstall(pkgId, type,  url, token, listener); // THREAD IT
+  }
 
-    fprintf(stderr, "\nHUGH >>>>> Call ... DAC::Install_imp()"); 
+  uint32_t DACinstallerImplementation::doInstall(const string& pkgId, const string& type, const string& url,
+                                                 const string& token, const string& listener)
+  {
+    std::string install_app( "(empty))" );
+    std::string install_url( url );
 
-    DACutils::installURL(url.c_str()); // "http://10.0.2.15/test.tgz");
+    // Parse the URL...
+    //
+    if(DACutils::fileEndsWith(url.c_str(), "json"))
+    {
+        LOGINFO(" %s() ... DOWNLOAD >>>  %s\n", __PRETTY_FUNCTION__, install_url.c_str());
+
+        // Download JSON manifest...
+        //
+        if(DACutils::downloadJSON(url.c_str()) != DACutils::DACrc_t::dac_OK)
+        {
+            LOGERR(" %s() ... ERROR:  Failed to download JSON >> %s \n", __PRETTY_FUNCTION__, url.c_str());
+            return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
+        }
+
+        install_url = DACutils::mPackageCfg["install"].String();
+        install_app = DACutils::mPackageCfg["name"].String();
+    }
+  
+    // Download TGZ package...
+    //
+    LOGINFO(" %s() ... DOWNLOAD >>>  %s\n", __PRETTY_FUNCTION__, install_url.c_str());
+
+    if(DACutils::downloadURL(install_url.c_str()) != DACutils::DACrc_t::dac_OK)
+    {
+        LOGERR(" %s() ... DOWNLOAD >>>  FAILED\n", __PRETTY_FUNCTION__);
+        return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
+    }
+    else
+    {
+        char uuid_path[PATH_MAX];
+
+        // Get UUID
+        std::string uuid_str = DACutils::getGUID();
+
+        // Create path ... APPS_ROOT / {UUID} / {app}
+        snprintf(uuid_path, PATH_MAX, "%s/%s/", APPS_ROOT, uuid_str.c_str());
+        
+        if(DACutils::extract(TMP_FILENAME, uuid_path) != DACutils::DACrc_t::dac_OK)
+        {
+            // Clean up failed extraction
+            //
+            LOGERR(" %s() ... EXTRACT >>>  FAILED\n", __PRETTY_FUNCTION__);
+
+            DACutils::removeFolder(uuid_path); // remove debris
+
+            return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
+        }
+
+        LOGERR(" %s() ... INSTALLED >>> [ %s ]\n", __PRETTY_FUNCTION__, install_app.c_str());
+
+        // Always cleanup
+        DACutils::fileRemove(TMP_FILENAME);
+    }
 
     return 0;
   }
 
   uint32_t DACinstallerImplementation::Remove_imp( const string& pkgId, const string& listener)
   {
-    DDD();
-
-    fprintf(stderr, "\nHUGH >>>>> Call ... DAC::Remove_imp() ... pkgId: '%s'  listener: '%s' ", pkgId.c_str(), listener.c_str() ); 
+    // fprintf(stderr, "\nHUGH >>>>> Call ... DAC::Remove_imp() ... pkgId: '%s'  listener: '%s' ", pkgId.c_str(), listener.c_str() ); 
 
     return 0;
   }

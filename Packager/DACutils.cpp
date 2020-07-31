@@ -24,8 +24,17 @@
 #include <archive_entry.h>
 
 #include <curl/curl.h>
-// #include <curl/types.h>
 #include <curl/easy.h>
+
+#include <uuid/uuid.h>
+
+#include <limits.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <string>
+#include <fstream>
+#include <streambuf>
 
 #include "DACutils.h"
 
@@ -35,18 +44,18 @@
 
 #define SQLITE *(sqlite3**) &mData
 
-
 const int64_t WPEFramework::Plugin::DACutils::MAX_SIZE_BYTES = 1000000;
 const int64_t WPEFramework::Plugin::DACutils::MAX_VALUE_SIZE_BYTES = 1000;
 
 std::vector<std::thread>       WPEFramework::Plugin::DACutils::threadPool; // thread pool
 WPEFramework::Plugin::JobPool  WPEFramework::Plugin::DACutils::jobPool;
 
+JsonObject   WPEFramework::Plugin::DACutils::mPackageCfg;
+
 namespace WPEFramework {
 namespace Plugin {
 
 void* WPEFramework::Plugin::DACutils::mData = nullptr;
-
 
 #if defined(SQLITE_HAS_CODEC)
 
@@ -81,10 +90,92 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return g_file_test(f, G_FILE_TEST_EXISTS);
     }
 
+    bool iequals(const string& a, const string& b)
+    {
+        unsigned int sz = a.size();
+        if (b.size() != sz)
+            return false;
+        for (unsigned int i = 0; i < sz; ++i)
+            if (tolower(a[i]) != tolower(b[i]))
+                return false;
+        return true;
+    }
+
+    bool DACutils::fileEndsWith(const std::string& f, const std::string& ext)
+    {
+        std::string::size_type idx = f.rfind('.');
+
+        if(idx != std::string::npos)
+        {
+            std::string extension = f.substr(idx+1);
+
+            if(iequals(extension, ext) ) //extension.compare(ext))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool DACutils::removeFolder(const char *dirname)
+    {
+        const char *topdir = dirname;
+
+        DIR *dir;
+        struct dirent *entry;
+        char path[PATH_MAX];
+
+        if (path == nullptr)
+        {
+            fprintf(stderr, "Out of memory error\n");
+            return 0;
+        }
+        dir = opendir(dirname);
+        if (dir == nullptr)
+        {
+            perror("Error opendir()");
+            return 0;
+        }
+
+        while ((entry = readdir(dir)) != NULL)
+        {
+            if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+            {
+                snprintf(path, (size_t) PATH_MAX, "%s/%s", dirname, entry->d_name);
+                if (entry->d_type == DT_DIR)
+                {
+                    removeFolder(path);
+                }
+
+                DACutils::fileRemove(path);
+            }
+        }//WHILE
+
+        closedir(dir);
+
+        // finally... remove the top folder
+        DACutils::fileRemove(topdir);
+
+        return 1;
+    }
+
+    std::string DACutils::getGUID()
+    {
+        uuid_t uuid;
+        char uuid_str[37];
+
+        // Generate GUID
+        uuid_generate_time_safe(uuid);
+        uuid_unparse_lower(uuid, uuid_str);
+
+        return std::string( uuid_str );
+    }
+
     bool DACutils::init(const char* filename, const char* key)
     {
         // LOGINFO();
-        fprintf(stderr, "\n %s() ... SQLite >>  filename: %s    key: %s", __PRETTY_FUNCTION__, filename, key);
+        fprintf(stderr, " %s() ... SQLite >>  filename: %s    key: %s", __PRETTY_FUNCTION__, filename, key);
 
         sqlite3* &db = SQLITE;
 
@@ -99,7 +190,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         int rc = sqlite3_open(filename, &db);
         if (rc)
         {
-            fprintf(stderr, "\n %s() ... SQLite >>  %d : %s", __PRETTY_FUNCTION__, rc, sqlite3_errmsg(db));
+            fprintf(stderr, " %s() ... SQLite >>  %d : %s", __PRETTY_FUNCTION__, rc, sqlite3_errmsg(db));
 
             // LOGERR("%d : %s", rc, sqlite3_errmsg(db));
             term();
@@ -150,7 +241,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
             if (rc != SQLITE_OK)
             {
-              fprintf(stderr, "\n %s() ... Failed to attach encryption key to SQLite", __PRETTY_FUNCTION__);
+              fprintf(stderr, " %s() ... Failed to attach encryption key to SQLite", __PRETTY_FUNCTION__);
                 // LOGERR("Failed to attach encryption key to SQLite database %s\nCause - %s", filename, sqlite3_errmsg(db));
                 DACutils::term();
                 return false;
@@ -158,7 +249,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
             if (shouldReKey && !fileEncrypted(filename))
             {
-                fprintf(stderr, "\n %s() ... SQLite database file is clear after re-key", __PRETTY_FUNCTION__);
+                fprintf(stderr, " %s() ... SQLite database file is clear after re-key", __PRETTY_FUNCTION__);
 
                 // LOGERR("SQLite database file is clear after re-key, path=%s", filename);
             }
@@ -174,14 +265,14 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         {
             if (errmsg)
             {
-                fprintf(stderr, "\n %s() ... %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+                fprintf(stderr, " %s() ... %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
 
                 // LOGERR("%d : %s", rc, errmsg);
                 sqlite3_free(errmsg);
             }
             else
             {
-                fprintf(stderr, "\n %s() ... %d : %s", __PRETTY_FUNCTION__, rc, "(none)");
+                fprintf(stderr, " %s() ... %d : %s", __PRETTY_FUNCTION__, rc, "(none)");
 
                 // LOGERR("%d", rc);
             }
@@ -194,7 +285,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     #endif
                 )
         {
-            fprintf(stderr, "\n %s() ... SQLite database is encrypted, but the key doesn't work", __PRETTY_FUNCTION__);
+            fprintf(stderr, " %s() ... SQLite database is encrypted, but the key doesn't work", __PRETTY_FUNCTION__);
 
             // LOGWARN("SQLite database is encrypted, but the key doesn't work");
             DACutils::term();
@@ -210,7 +301,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
             if (rc || !DACutils::fileExists(filename))
             {
-              fprintf(stderr, "\n %s() ... SQLite >> Can't create file", __PRETTY_FUNCTION__);
+              fprintf(stderr, " %s() ... SQLite >> Can't create file", __PRETTY_FUNCTION__);
                 // LOGERR("Can't create file");
                 return false;
             }
@@ -229,7 +320,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         {
             if (errmsg)
             {
-                fprintf(stderr, "\n %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+                fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
 
                 // LOGERR("%d : %s", rc, errmsg);
                 sqlite3_free(errmsg);
@@ -245,13 +336,13 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         {
             if (errmsg)
             {
-              fprintf(stderr, "\n %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+              fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
               // LOGERR("%d : %s", rc, errmsg);
               sqlite3_free(errmsg);
             }
             else
             {
-              fprintf(stderr, "\n %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none1)");
+              fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none1)");
               // LOGERR("%d", rc);
             }
         }
@@ -277,7 +368,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     void DACutils::vacuum()
     {
         // LOGINFO();
-        fprintf(stderr, "\n %s() ... ENTER", __PRETTY_FUNCTION__);
+        fprintf(stderr, " %s() ... ENTER", __PRETTY_FUNCTION__);
 
         sqlite3* &db = SQLITE;
 
@@ -289,14 +380,14 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
             {
                 if (errmsg)
                 {
-                    fprintf(stderr, "\n %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+                    fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
 
                     // LOGERR("%s", errmsg);
                     sqlite3_free(errmsg);
                 }
                 else
                 {
-                    fprintf(stderr, "\n %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none2)");
+                    fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none2)");
                     // LOGERR("%d", rc);
                 }
             }
@@ -569,13 +660,15 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     }
 
 
-    int DACutils::extract(const char *filename)
+    DACutils::DACrc_t DACutils::extract(const char *filename, const char *to_path /* = nullptr */)
     {
       struct archive *a;
       struct archive *ext;
       struct archive_entry *entry;
       int flags;
       int r;
+
+fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename);
 
       // Select which attributes we want to restore. 
       flags =  ARCHIVE_EXTRACT_TIME;
@@ -595,8 +688,8 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
       if ((r = archive_read_open_filename(a, filename, 10240)))
       {
-        fprintf(stderr, " EXTRACT>>>  FATAL 111");
-        return -1; // FAIL exit(1);
+        fprintf(stderr, " EXTRACT >>>  FATAL - '%s' NOT found.", filename);
+        return DACrc_t::dac_FAIL;
       }
 
       for (;;)
@@ -604,7 +697,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         r = archive_read_next_header(a, &entry);
         if (r == ARCHIVE_EOF)
         {
-          break;
+          break; // complete
         }
         if (r < ARCHIVE_OK)
         {
@@ -613,7 +706,18 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
         if (r < ARCHIVE_WARN)
         {
-         return -1; // FAIL exit(1);
+            fprintf(stderr, " %s() ... ERROR:   Next Header ... Unexpected > ARCHIVE_WARN\n", __PRETTY_FUNCTION__);
+            return DACrc_t::dac_FAIL;
+        }
+
+        if(to_path != nullptr)
+        {
+            std::string targetFilepath(to_path);// = "/opt/"; 
+            targetFilepath += archive_entry_pathname(entry); 
+
+            archive_entry_set_pathname(entry, targetFilepath.c_str()); 
+
+//            fprintf(stderr, " EXTRACT >>>  entry: %s", targetFilepath.c_str());
         }
 
         r = archive_write_header(ext, entry);
@@ -625,10 +729,14 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         {
           r = copy_data(a, ext);
           if (r < ARCHIVE_OK)
+          {
             fprintf(stderr, "%s\n", archive_error_string(ext));
+          }
+
           if (r < ARCHIVE_WARN)
           {
-            return -1; // FAIL exit(1);
+            fprintf(stderr, " %s() ... ERROR:   Entry Size ... Unexpected > ARCHIVE_WARN\n", __PRETTY_FUNCTION__);              
+            return DACrc_t::dac_FAIL;
           }
         }
 
@@ -639,7 +747,8 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         }
         if (r < ARCHIVE_WARN)
         {
-          return -1; // FAIL exit(1);
+           fprintf(stderr, " %s() ... ERROR:   Write Finish ... Unexpected > ARCHIVE_WARN\n", __PRETTY_FUNCTION__);              
+           return DACrc_t::dac_FAIL;
         }
       }
 
@@ -648,7 +757,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
       archive_write_close(ext);
       archive_write_free(ext);
 
-      return 0; // SUCCESS
+      return DACrc_t::dac_OK; // success
     }
 
     void example_function()
@@ -660,13 +769,11 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     {
         int num_threads = std::thread::hardware_concurrency() / 2; // be nice
 
-        std::cout << "number of threads = " << num_threads << std::endl;
-
-        fprintf(stderr, "\n %s() ... hardware_concurrency()  tt: %d", __PRETTY_FUNCTION__, num_threads);
+        fprintf(stderr, " %s() ... hardware_concurrency()  tt: %d \n", __PRETTY_FUNCTION__, num_threads);
 
         for (int i = 0; i < num_threads; i++)
         {
-            fprintf(stderr, "\n %s() ... Starting Worker()  i: %d", __PRETTY_FUNCTION__, i);
+            fprintf(stderr, " %s() ... Starting Worker()  i: %d \n", __PRETTY_FUNCTION__, i);
             threadPool.push_back(std::thread(&JobPool::worker_func, &jobPool));
         }
     }
@@ -678,7 +785,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         // Kill workers
         for (unsigned int i = 0; i < DACutils::threadPool.size(); i++)
         {
-            fprintf(stderr, "\n %s() ... Killing WORKER  i: %d\n", __PRETTY_FUNCTION__, i);
+            fprintf(stderr, " %s() ... Killing WORKER  i: %d\n", __PRETTY_FUNCTION__, i);
             DACutils::threadPool.at(i).join();
         }
     }
@@ -688,7 +795,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         // here we should send our jobs
         for (int i = 0; i < 10; i++)
         {
-            fprintf(stderr, "\n %s() ... Adding JOB  i: %d \n", __PRETTY_FUNCTION__, i);
+            fprintf(stderr, " %s() ... Adding JOB  i: %d \n", __PRETTY_FUNCTION__, i);
             jobPool.push(example_function);
         }
     }
@@ -700,22 +807,46 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return written;
     }
 
-    int DACutils::installURL(const char *url)
+    DACutils::DACrc_t DACutils::downloadJSON(const char *url)
+    {
+        // Always cleanup
+        DACutils::fileRemove(TMP_FILENAME);
+
+        // Download JSON manifest...
+        //
+        if(downloadURL(url) == DACrc_t::dac_OK)
+        {
+            // Read entire JSON text file...
+            std::ifstream t(TMP_FILENAME);
+            std::string txt((std::istreambuf_iterator<char>(t)),
+                             std::istreambuf_iterator<char>());
+
+            // Parse the text to JSON ... and get install URL.
+            mPackageCfg    = JsonObject(txt);
+
+            return DACrc_t::dac_OK;
+        }
+
+         return DACrc_t::dac_FAIL;
+    }
+
+    DACutils::DACrc_t DACutils::downloadURL(const char *url)
     {
       CURL *curl;
       FILE *fp;
       CURLcode res;
 
-      fprintf(stderr, "\n %s() ... download: %s \n", __PRETTY_FUNCTION__, url);
+      // Always cleanup
+      DACutils::fileRemove(TMP_FILENAME);
 
-  //   char *url = "http://localhost/aaa.txt";
+      DACutils::DACrc_t rc = DACrc_t::dac_FAIL;
 
-      char outfilename[FILENAME_MAX] = "bbb.tgz";
+      fprintf(stderr, " %s() ... download: %s \n", __PRETTY_FUNCTION__, url);
 
       curl = curl_easy_init();
       if (curl)
       {
-          fp = fopen(outfilename,"wb");
+          fp = fopen(TMP_FILENAME,"wb");
 
           curl_easy_setopt(curl, CURLOPT_URL, url);
           curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
@@ -724,14 +855,16 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
           res = curl_easy_perform(curl);
           if(res == CURLE_OK)
           {
+              rc = DACrc_t::dac_OK;
               /// queue download for install
           }
+
           curl_easy_cleanup(curl);
 
           fclose(fp);
       }
 
-      return 0;
+      return rc;
     }
     //================================================================================================
 

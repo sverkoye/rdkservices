@@ -28,14 +28,23 @@
 
 #include "utils.h"
 
+//TODO: make configurable and scoped
+//
+#define TMP_FILENAME  "/opt/tmpApp.tgz"
+#define APPS_ROOT     "/opt/dac_apps"
+
+
 namespace WPEFramework {
 namespace Plugin {
+
 
     class JobPool; //fwd
 
     class DACutils
     {
         public:
+            enum class DACrc_t { dac_OK, dac_WARN, dac_FAIL };
+
             DACutils(const DACutils&) = delete;
             DACutils& operator=(const DACutils&) = delete;
 
@@ -43,34 +52,48 @@ namespace Plugin {
             // ~DACutils();
 
             static bool init(const char* filename, const char* key);
+
+            // Clean up
             static void term();
             static void vacuum();
 
+            // File hepers
             static bool fileRemove(const char* f);
             static bool fileExists(const char* f);
             static bool fileEncrypted(const char* f);
+            static bool fileEndsWith(const string& f, const string& ext);
+            static bool removeFolder(const char *dirname);
 
+            static std::string getGUID();
+
+            // SQL helpers
             static bool setValue(const string& ns, const string& key, const string& value);
             static bool getValue(const string& ns, const string& key, string& value);
 
             static bool deleteKey(const string& ns, const string& key);
             static bool deleteNamespace(const string& ns);
 
-            // App installation helpers
-            static int extract(const char *filename);
-
+            // House-keeping
             static void setupThreadQ();
             static void killThreadQ();
 
+           // static DACrc_t installURL(const char *url);
+
+            // Install helpers
+            static DACrc_t downloadJSON(const char *url);
+            static DACrc_t downloadURL(const char *url);
+            
+            static DACrc_t extract(const char *filename, const char *to_path = nullptr);
+
             static void addJob();
 
-            static int installURL(const char *url);
+            // private data
+            static void*        mData;
+            static JsonObject   mPackageCfg;
 
         private:
-            static void*   mData;
 
-            static JobPool jobPool;
-
+            static JobPool                     jobPool;
             static std::vector<std::thread> threadPool; // thread pool
 
             static const int64_t  MAX_SIZE_BYTES;
