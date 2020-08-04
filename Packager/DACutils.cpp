@@ -37,6 +37,7 @@
 #include <streambuf>
 
 #include "DACutils.h"
+#include "DACinstallerImplementation.h"
 
 #ifndef SQLITE_FILE_HEADER
 #define SQLITE_FILE_HEADER "SQLite format 3"
@@ -866,6 +867,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
       return rc;
     }
+
     //================================================================================================
 
     JobPool::JobPool() : 

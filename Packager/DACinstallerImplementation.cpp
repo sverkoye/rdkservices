@@ -31,8 +31,11 @@ using namespace std;
 namespace WPEFramework {
 namespace Plugin {
 
+// Events
+#define DAC_EVT_INSTALL_ACK "DAC_InstallAck"
 
   DACinstallerImplementation::DACinstallerImplementation()
+                                : mTaskNumber(0)
   {
     DDD();
 
@@ -82,7 +85,26 @@ namespace Plugin {
   uint32_t DACinstallerImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
-    return doInstall(pkgId, type,  url, token, listener); // THREAD IT
+
+    // JsonObject params;
+    // JsonObject result;
+    // // params["jsonrpc"] = "2.0";
+    // params["id"]        = "5";
+    // params["task"]      = atoi(mTaskNumber++);
+    // params["result"]    = result;
+    // result["success"]   = true;
+
+    // sendNotify(DAC_EVT_INSTALL_ACK, params);
+
+    /*return*/ doInstall(pkgId, type,  url, token, listener); // THREAD IT
+
+    // response["error"] = "params missing";
+
+    // response["value"] = "test123";
+
+    // returnResponse(true);
+
+    return 0;
   }
 
   uint32_t DACinstallerImplementation::doInstall(const string& pkgId, const string& type, const string& url,
@@ -161,7 +183,7 @@ namespace Plugin {
     return 0;
   }
 
-  uint32_t DACinstallerImplementation::IsInstalled_imp(const string& pkgId)
+  uint32_t DACinstallerImplementation::IsInstalled_imp(const string& pkgId)//, JsonObject &response)
   {
     DDD();
 
@@ -173,19 +195,33 @@ namespace Plugin {
   uint32_t DACinstallerImplementation::GetInstallProgress_imp(const string& task)
   {
     DDD();
-    return 0;
+    return 31;
   }
 
-  uint32_t DACinstallerImplementation::GetInstalled_imp()
+  using PackageInfoEx = DACinstallerImplementation::PackageInfoEx;
+
+  PackageInfoEx::IIterator* DACinstallerImplementation::GetInstalled_imp()
   {
     DDD();
-    return 0;
+    return nullptr;
   }
 
-  uint32_t DACinstallerImplementation::GetPackageInfo_imp(const string& pkgId)
+  PackageInfoEx*  DACinstallerImplementation::GetPackageInfo_imp(const string& pkgId)
   {
     DDD();
-    return 0;
+
+    mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
+
+    fprintf(stderr, "########## info->name = %s", mInfo->Name().c_str());
+
+    mInfo->setName("Test Name");
+    mInfo->setBundlePath("/opt/foo/bar/myAppFolder");
+    mInfo->setVersion("1.2.3");
+    mInfo->setInstalled("Fri Jul 31 16:54:41 UTC 2020");
+    mInfo->setSizeInBytes(123456);
+    mInfo->setType("DAC");
+
+    return mInfo;
   }
 
   uint32_t DACinstallerImplementation::GetAvailableSpace_imp()

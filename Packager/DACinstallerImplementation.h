@@ -20,6 +20,9 @@
 #pragma once
 
 #include "Module.h"
+
+#include <interfaces/IPackager.h>
+
 #include "utils.h"
 
 #include <stdio.h>
@@ -37,8 +40,67 @@ namespace WPEFramework {
 namespace Plugin {
 
     class DACinstallerImplementation
-    {
-    public:
+    {      
+      public:
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        class PackageInfoEx : public Exchange::IPackager::IPackageInfoEx
+        {
+          public:
+            PackageInfoEx(const PackageInfoEx&) = delete;
+            PackageInfoEx& operator=(const PackageInfoEx&) = delete;
+
+            ~PackageInfoEx() override
+            {
+            }
+
+            PackageInfoEx(const std::string& name,
+                          const std::string& version,
+                          const std::string& pkgId)
+                            : _name(name)
+                            , _version(version)
+                            , _pkgId(pkgId)
+            {
+            }
+
+            PackageInfoEx() = default;
+
+            BEGIN_INTERFACE_MAP(PackageInfoEx)
+                INTERFACE_ENTRY(Exchange::IPackager::IPackageInfoEx)
+            END_INTERFACE_MAP
+
+            string  Name()                const override { return _name;       };
+            void setName( string v)             { _name = v;          };
+
+            string  BundlePath()          const override { return _bundlePath; };
+            void setBundlePath( string v)       { _bundlePath = v;    };
+
+            string  Version()             const override { return _version;    };
+            void setVersion( string v)          { _version = v;       };
+
+            string  PkgId()               const override { return _pkgId;      };
+            void setPkgId( string v)            { _pkgId = v;         };
+
+            string  Installed()           const override { return _installed;  };
+            void setInstalled( string v)        { _installed = v;     };
+
+            uint32_t  SizeInBytes()         const override { return _sizeInBytes; };
+            void setSizeInBytes( uint32_t v)      { _sizeInBytes = v;   };
+
+            string  Type()                const override { return _type;       };
+            void setType( string v)             { _type = v;          };
+            
+          private:
+            string   _name;
+            string   _bundlePath;
+            string   _version;
+            string   _pkgId;
+            string   _installed;    // timestamp
+            uint32_t _sizeInBytes;  // bytes
+            string   _type;
+        };// CLASS - PackageInfoEx
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
         DACinstallerImplementation(const DACinstallerImplementation&) = delete;
         DACinstallerImplementation& operator=(const DACinstallerImplementation&) = delete;
 
@@ -52,9 +114,20 @@ namespace Plugin {
 
         uint32_t IsInstalled_imp(const string& pkgId);
         uint32_t GetInstallProgress_imp(const string& task);
-        uint32_t GetInstalled_imp();
-        uint32_t GetPackageInfo_imp(const string& pkgId);
+ 
+        //using PackageInfoEx = DACinstallerImplementation::PackageInfoEx; 
+
+        using IPackageInfoEx = Exchange::IPackager::IPackageInfoEx;
+        
+        IPackageInfoEx::IIterator* GetInstalled_imp();
+        
+        PackageInfoEx* GetPackageInfo_imp(const string& pkgId);
+
+        // uint32_t GetInstalled_imp();
+        // uint32_t GetPackageInfo_imp(const string& pkgId);
         uint32_t GetAvailableSpace_imp();
+
+        virtual JsonObject getInfo() { LOGERR(" getInfo GOOD"); return JsonObject(); };
 
         static const char* STORE_NAME;
         static const char* STORE_KEY;
@@ -62,7 +135,11 @@ namespace Plugin {
     private:
         uint32_t doInstall(const string& pkgId, const string& type, const string& url,const string& token, const string& listener);
   
-    };
+        uint32_t mTaskNumber;
+
+        PackageInfoEx *mInfo;
+
+    };//CLASS - DACinstallerImplementation
 
   } // namespace Plugin
 }  // namespace WPEFramework

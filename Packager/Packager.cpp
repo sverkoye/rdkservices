@@ -268,7 +268,12 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                     Core::URL::Decode (name.c_str(), name.length(), task.data(), task.size());
                 }
 
-                status = _implementation->GetInstallProgress(task.data());
+                float pc = _implementation->GetInstallProgress(task.data());
+                
+                char str[255];
+                snprintf(str, 255, "%0.2f%%", pc);
+
+                result->Message = string(str);
             }
             else
             ////////////////////////////////////////////////
@@ -277,7 +282,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
             //
             if (index.Current().Text() == "GetInstalled")
             {
-                status = _implementation->GetInstalled();
+                /* status = */ _implementation->GetInstalled();
             }
             else
             ////////////////////////////////////////////////
@@ -295,7 +300,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                     Core::URL::Decode (name.c_str(), name.length(), pkgId.data(), pkgId.size());
                 }
 
-                status = _implementation->GetPackageInfo(pkgId.data());
+                /* status = */ _implementation->GetPackageInfo(pkgId.data());
             }
             else
             ////////////////////////////////////////////////
@@ -306,7 +311,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
             {
                 fprintf(stderr, "\nHUGH >>>>> Call ... Pacakger::GetAvailableSpace() ... " ); 
 
-                status = _implementation->GetAvailableSpace();
+                /* status = */ _implementation->GetAvailableSpace();
             }
             ////////////////////////////////////////////////
 

@@ -373,17 +373,20 @@ namespace Plugin {
         return IsInstalled_imp(pkgId); // Call IMPL
     }
 
+
     uint32_t PackagerImplementation::GetInstallProgress( const string& task)
     {
         return GetInstallProgress_imp(task); // Call IMPL
     }
 
-    uint32_t PackagerImplementation::GetInstalled()
+    using PackageInfoEx = DACinstallerImplementation::PackageInfoEx; 
+
+    PackageInfoEx::IIterator* PackagerImplementation::GetInstalled()
     {
         return GetInstalled_imp(); // Call IMPL
     }
 
-    uint32_t PackagerImplementation::GetPackageInfo(const string& pkgId)
+    PackageInfoEx* PackagerImplementation::GetPackageInfo(const string& pkgId)
     {
         return GetPackageInfo_imp(pkgId); // Call IMPL
     }

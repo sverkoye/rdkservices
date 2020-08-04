@@ -36,8 +36,10 @@
 struct opkg_conf;
 struct _opkg_progress_data_t;
 
+
 namespace WPEFramework {
 namespace Plugin {
+
 
     class PackagerImplementation : public Exchange::IPackager
     , public DACinstallerImplementation 
@@ -103,8 +105,6 @@ namespace Plugin {
             , _isUpgrade(false)
             , _isSyncing(false)
         {
-            fprintf(stderr, "\nHUGH >>>>> Call ... PackagerImplementation::PackagerImplementation() - ENTER"); 
-            fprintf(stderr, "\nHUGH >>>>> Call ... PackagerImplementation::PackagerImplementation() - ENTER"); 
         }
 
         ~PackagerImplementation() override;
@@ -124,17 +124,22 @@ namespace Plugin {
         uint32_t SynchronizeRepository() override;
 
         // DAC Installer API
+
+        using PackageInfoEx = DACinstallerImplementation::PackageInfoEx; 
+
         virtual uint32_t Install(const string& pkgId, const string& type,  const string& url, 
-                                    const string& token, const string& listener) override;
+                                 const string& token, const string& listener) override;
 
         virtual uint32_t Remove(const string& pkgId, const string& listener) override;
         virtual uint32_t Cancel(const string& task, const string& listener) override;
 
-        virtual uint32_t IsInstalled(const string& pkgId) override;
-        virtual uint32_t GetInstallProgress( const string& task) override;
-        virtual uint32_t GetInstalled() override;
-        virtual uint32_t GetPackageInfo(const string& pkgId) override;
-        virtual uint32_t GetAvailableSpace() override;
+        virtual uint32_t                   IsInstalled(const string& pkgId) override;
+        virtual uint32_t                   GetInstallProgress( const string& task) override;
+        virtual PackageInfoEx::IIterator*  GetInstalled() override;
+        virtual PackageInfoEx*             GetPackageInfo(const string& pkgId) override;
+        virtual uint32_t                   GetAvailableSpace() override;
+
+        virtual JsonObject getInfo() { LOGERR(" getInfo HERE"); return JsonObject(); };
 
     private:
         class PackageInfo : public Exchange::IPackager::IPackageInfo {
@@ -175,6 +180,18 @@ namespace Plugin {
                 return _arch;
             }
 
+            // void AddRef()
+            // {
+            //     _refcount++;
+            // }
+
+            // uint32_t Release()
+            // {
+            //     if (--_refcount == 0) {
+            //         delete this;
+            //     }
+            // }
+
         private:
             std::string _name;
             std::string _version;
@@ -185,6 +202,8 @@ namespace Plugin {
             std::string _url;
             std::string _token;
             std::string _listener;
+
+            uint32_t    _refcount;
         };
 
         class InstallInfo : public Exchange::IPackager::IInstallationInfo {

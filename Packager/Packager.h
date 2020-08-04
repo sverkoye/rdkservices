@@ -19,9 +19,11 @@
  
 #pragma once
 
+
 #include "Module.h"
 #include <interfaces/IPackager.h>
 
+#include "utils.h"
 
 namespace WPEFramework {
 namespace Plugin {
@@ -40,9 +42,13 @@ namespace {
     constexpr auto* kDAC_GetAvailableSpaceMethodName  = _T("getAvailableSpace");
 }
 
-    class Packager : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
+    class Packager : public PluginHost::IPlugin, 
+                     public PluginHost::IWeb, 
+                     public PluginHost::JSONRPC
+    {
     public:
-        struct Params : public Core::JSON::Container {
+        struct Params : public Core::JSON::Container
+        {
             Params& operator=(const Params& other) = delete;
             Params() {
                 Add(_T("package"), &Package);
@@ -92,7 +98,7 @@ namespace {
             Core::JSON::String Url;
             Core::JSON::String Token;
             Core::JSON::String Listener;
-        };
+        }; // STRUCT     
 
         Packager(const Packager&) = delete;
         Packager& operator=(const Packager&) = delete;
@@ -104,7 +110,7 @@ namespace {
             , _notification(this)
         {
             // Packager API
-            Register<Params, void>(kInstallMethodName, [this](const Params& params) -> uint32_t
+            Register<Params, JsonObject>(kInstallMethodName, [this](const Params& params, JsonObject response) -> uint32_t
             {
                 if( ( params.PkgId.IsSet() && params.PkgId.Value().empty() == false ) &&
                     ( params.Type.IsSet()  && params.Type.Value().empty()  == false ) &&
@@ -114,9 +120,20 @@ namespace {
                     //
                     // DAC::Install()
                     //
-                    return this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
-                                                            params.Url.Value(), params.Token.Value(),
-                                                            params.Listener.Value()); 
+                    this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
+                                                   params.Url.Value(),   params.Token.Value(),
+                                                   params.Listener.Value()); 
+
+                    // char taskId[255];
+
+                    // sprintf(taskId, 255, "%d", this->_implementation->getNextTaskID() );
+
+                    // string foo(this->_implementation->getNextTaskID());
+
+                    // response["task"]   = string( taskId );
+                    // response["result"] = true;
+
+                    return 0;
                 }
                 else // default to Packager API
                 {
@@ -148,44 +165,125 @@ namespace {
             });
             //
             // DAC::IsInstalled()
-            //
-            Register<Params, void>(kDAC_IsInstalledMethodName, [this](const Params& params) -> uint32_t
+            //            
+            Register<Params, JsonObject>(kDAC_IsInstalledMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {
+                uint32_t result = Core::ERROR_NONE;
+
                 fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled()   PkgID: [%s]", params.PkgId.Value().c_str()); 
-                return this->_implementation->IsInstalled(params.PkgId.Value());
+                
+                this->_implementation->IsInstalled(params.PkgId.Value());
 
-                // string foo = "bar";
+                response["error"] = "params missing";
+                response["value"] = "test123";
 
-                //  fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled( %s )", foo.c_str()); 
-                // return this->_implementation->IsInstalled(foo);
+                return result;
             });
-
+            //
             // DAC::GetInstallProgress()
             //
-            Register<Params, void>(kDAC_GetInstallProgressMethodName, [this](const Params& params) -> uint32_t
+            Register<Params, JsonObject>(kDAC_GetInstallProgressMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {
-                return this->_implementation->GetInstallProgress(params.Task.Value());
+                uint32_t result = Core::ERROR_NONE;
+
+                uint32_t pc = this->_implementation->GetInstallProgress(params.Task.Value());
+                
+                fprintf(stderr, "\nHUGH >>>>> Call ... DAC::GetInstallProgress()   pc: [%d]", pc); 
+
+                char str[255];
+                snprintf(str, 255, "%d%%", pc);
+
+                response["percentage"] =  string(str);
+
+                return result;
             });
 
+            auto PkgInfo2json = [](Exchange::IPackager::IPackageInfoEx *pkg, JsonObject& response)
+            {
+                if(pkg == nullptr)
+                {
+                    LOGERR("Packager::PkgInfo2json() - Bad args !!! ... pkg == NULL");
+                    return -1; // ERROR
+                }
+
+                char str[255];
+
+                snprintf(str, 255, "%s", pkg->Name().c_str());
+                response["Name"] = string(str);
+
+                snprintf(str, 255, "%s", pkg->BundlePath().c_str());
+                response["BundlePath"] = string(str);
+
+                snprintf(str, 255, "%s", pkg->Version().c_str());
+                response["Version"] = string(str);
+
+                snprintf(str, 255, "%s", pkg->PkgId().c_str());
+                response["PkgId"] = string(str);
+
+                snprintf(str, 255, "%s", pkg->Installed().c_str());
+                response["Installed"] = string(str);
+
+                snprintf(str, 255, "%d", pkg->SizeInBytes());
+                response["SizeInBytes"] = string(str);
+
+                snprintf(str, 255, "%s", pkg->Type().c_str());
+                response["Type"] = string(str);
+
+                return 0;
+            };
+
+            //
             // DAC::GetInstalled()
             //
-            Register<void, void>(kDAC_GetInstalledMethodName,  [this]() -> uint32_t
+            Register<void, JsonObject>(kDAC_GetInstalledMethodName,  [this, PkgInfo2json](JsonObject& response) -> uint32_t
             {
-                return this->_implementation->GetInstalled();
+                JsonArray list; // installed packages
+
+                // Exchange::IPackager::IPackageInfoEx::IIterator *iter = this->_implementation->GetInstalled();
+
+               // while (iter->Next() == true)
+               for(int i=0; i< 3; i++)
+                {
+                   // Exchange::IPackager::IPackageInfoEx *pkg = (Exchange::IPackager::IPackageInfoEx *) iter;
+
+                    Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo("foo");
+
+                    if(pkg != nullptr)
+                    {
+                        JsonObject pkgJson;
+                        PkgInfo2json(pkg, pkgJson);
+
+                        list.Add( pkgJson );
+                    }
+                }//WHILE
+               
+                response["applications"] = list;
+                
+                return 0;
             });
 
+            //
             // DAC::GetPackageInfo()
             //
-            Register<Params, void>(kDAC_GetPackageInfoMethodName, [this](const Params& params) -> uint32_t
+            Register<Params, JsonObject>(kDAC_GetPackageInfoMethodName, [this, PkgInfo2json](const Params& params, JsonObject& response) -> uint32_t
             {
-                return this->_implementation->GetPackageInfo(params.PkgId.Value());
-            });
+                Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo(params.PkgId.Value());
 
+                return PkgInfo2json(pkg, response);
+            });
+            //
             // DAC::GetAvailableSpace()
             //
-            Register<void, void>(kDAC_GetAvailableSpaceMethodName,  [this]() -> uint32_t
+            Register<void, JsonObject>(kDAC_GetAvailableSpaceMethodName,  [this](JsonObject& response) -> uint32_t
             {
-                return this->_implementation->GetAvailableSpace();
+                uint32_t kb = this->_implementation->GetAvailableSpace();
+
+                char str[255];
+                snprintf(str, 255, "%d", kb);
+
+                response["availableSpaceInKB"] = string(str);
+
+                return 0;
             });
         }
 
