@@ -19,6 +19,8 @@
  
 #include <glib.h>
 
+#include "utils.h"
+
 #include "DACutils.h"
 #include "DACinstallerImplementation.h"
 
@@ -52,19 +54,40 @@ namespace Plugin {
     bool success = DACutils::init(file, STORE_KEY);
     fprintf(stderr, "\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
 
-
     if(success)
     {
-      DACutils::setValue("MyNamespace", "DACroot", "/opt/persistent/DACroot");
-      DACutils::setValue("MyNamespace", "MyKey", "123");
+      mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
 
-      string value;
+      mInfo->setName("Test Name");
+      mInfo->setBundlePath("/opt/foo/bar/myAppFolder");
+      mInfo->setVersion("1.2.3");
+      mInfo->setPkgId("TestApp0123456");
+      mInfo->setInstalled("Fri Jul 31 16:54:41 UTC 2020");
+      mInfo->setSizeInBytes(123456);
+      mInfo->setType("DAC");
+      
 
-      success = DACutils::getValue("MyNamespace", "MyKey", value);
-      fprintf(stderr, "\n %s() ... getValue()  %s    ... value: %s", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"), value.c_str() );
+// fprintf(stderr, "########## hasPkgRow('foo') == %s\n\n", 
+//       (DACutils::hasPkgRow( "foo" ) ? "TRUE" : "FALSE") );
 
 
-     DACutils::setupThreadQ(); // start thread Q 
+// fprintf(stderr, "########## hasPkgRow('TestApp0123456') == %s\n\n", 
+//       (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
+
+
+// fprintf(stderr, "########## addPkgRow");
+//   DACutils::addPkgRow(mInfo);
+
+// fprintf(stderr, "########## showTable");
+// DACutils::showTable();
+
+
+// fprintf(stderr, "########## getPkgRow");
+// PackageInfoEx* pp = DACutils::getPkgRow("TestApp0123456");
+
+// PackageInfoEx::printPkg(pp);
+
+     // DACutils::setupThreadQ(); // start thread Q 
 
       // DACutils::installURL("http://10.0.2.15/test.tgz");
     }
@@ -174,12 +197,30 @@ namespace Plugin {
   {
     // fprintf(stderr, "\nHUGH >>>>> Call ... DAC::Remove_imp() ... pkgId: '%s'  listener: '%s' ", pkgId.c_str(), listener.c_str() ); 
 
+    // auto  i = std::begin(mPPPlist);
+    // while (i != std::end(mPPPlist))
+    // {
+    //     delete (*i);
+    //     i = mPPPlist.erase(i);
+    // }
+
+// fprintf(stderr, "\nHUGH >>>>> Clear LIST >>> mPPPlist.size()  = %ld ", mPPPlist.size() ); 
+
     return 0;
   }
 
   uint32_t DACinstallerImplementation::Cancel_imp( const string& task, const string& listener)
   {
     DDD();
+
+    // for(int i = 0; i < 50000; i++)
+    // {
+    //   PackageInfoEx *pp = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
+    //   mPPPlist.push_back(pp);
+    // }
+
+// fprintf(stderr, "\nHUGH >>>>> Fill LIST >>> mPPPlist.size()  = %ld ", mPPPlist.size() ); 
+
     return 0;
   }
 
@@ -189,7 +230,7 @@ namespace Plugin {
 
     fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled_imp() ... %s", pkgId.c_str() ); 
 
-    return 0;
+    return DACutils::hasPkgRow( pkgId );
   }
 
   uint32_t DACinstallerImplementation::GetInstallProgress_imp(const string& task)
@@ -197,8 +238,6 @@ namespace Plugin {
     DDD();
     return 31;
   }
-
-  using PackageInfoEx = DACinstallerImplementation::PackageInfoEx;
 
   PackageInfoEx::IIterator* DACinstallerImplementation::GetInstalled_imp()
   {
@@ -221,6 +260,8 @@ namespace Plugin {
     mInfo->setSizeInBytes(123456);
     mInfo->setType("DAC");
 
+    // sendNotify("MyDummy Event", JsonObject());
+
     return mInfo;
   }
 
@@ -229,6 +270,6 @@ namespace Plugin {
     DDD();
     return 0;
   }
-
+        
   }  // namespace Plugin
 }  // namespace WPEFramework

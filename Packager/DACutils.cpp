@@ -39,6 +39,7 @@
 #include "DACutils.h"
 #include "DACinstallerImplementation.h"
 
+
 #ifndef SQLITE_FILE_HEADER
 #define SQLITE_FILE_HEADER "SQLite format 3"
 #endif
@@ -48,13 +49,17 @@
 const int64_t WPEFramework::Plugin::DACutils::MAX_SIZE_BYTES = 1000000;
 const int64_t WPEFramework::Plugin::DACutils::MAX_VALUE_SIZE_BYTES = 1000;
 
-std::vector<std::thread>       WPEFramework::Plugin::DACutils::threadPool; // thread pool
-WPEFramework::Plugin::JobPool  WPEFramework::Plugin::DACutils::jobPool;
-
 JsonObject   WPEFramework::Plugin::DACutils::mPackageCfg;
 
 namespace WPEFramework {
 namespace Plugin {
+
+
+PackageInfoEx* DACutils::mThisPkg = nullptr;
+
+std::vector<std::thread>       DACutils::threadPool; // thread pool
+WPEFramework::Plugin::JobPool  DACutils::jobPool;
+
 
 void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
@@ -175,12 +180,15 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
     bool DACutils::init(const char* filename, const char* key)
     {
+        mThisPkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
+
         // LOGINFO();
         fprintf(stderr, " %s() ... SQLite >>  filename: %s    key: %s", __PRETTY_FUNCTION__, filename, key);
 
         sqlite3* &db = SQLITE;
 
         term(); // ensure closed 
+
 
         bool shouldEncrypt = key && *key;
     #if defined(SQLITE_HAS_CODEC)
@@ -198,8 +206,8 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
             return false;
         }
 
-        /* Based on pxCore, Copyright 2015-2018 John Robinson */
-        /* Licensed under the Apache License, Version 2.0 */
+        // Based on pxCore, Copyright 2015-2018 John Robinson
+        // Licensed under the Apache License, Version 2.0 
         if (shouldEncrypt)
         {
     #if defined(SQLITE_HAS_CODEC)
@@ -257,97 +265,124 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     #endif
         }
 
-        char *errmsg;
-        rc = sqlite3_exec(db, "CREATE TABLE if not exists namespace ("
-                              "id INTEGER PRIMARY KEY,"
-                              "name TEXT UNIQUE"
-                              ");", 0, 0, &errmsg);
-        if (rc != SQLITE_OK || errmsg)
+        char *errmsg = nullptr;
+
+        // rc = sqlite3_exec(db, "CREATE TABLE if not exists namespace ("
+        //                       "id INTEGER PRIMARY KEY,"
+        //                       "name TEXT UNIQUE"
+        //                       ");", 0, 0, &errmsg);
+
+        // if (rc != SQLITE_OK || errmsg)
+        // {
+        //     if (errmsg)
+        //     {
+        //         fprintf(stderr, " %s() ... %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+
+        //         // LOGERR("%d : %s", rc, errmsg);
+        //         sqlite3_free(errmsg);
+        //     }
+        //     else
+        //     {
+        //         fprintf(stderr, " %s() ... %d : %s", __PRETTY_FUNCTION__, rc, "(none)");
+
+        //         // LOGERR("%d", rc);
+        //     }
+        // }
+
+    //     if (rc == SQLITE_NOTADB
+    //         && shouldEncrypt
+    // #if defined(SQLITE_HAS_CODEC)
+    //         && !shouldReKey // re-key should never fail
+    // #endif
+    //             )
+    //     {
+    //         fprintf(stderr, " %s() ... SQLite database is encrypted, but the key doesn't work", __PRETTY_FUNCTION__);
+
+    //         // LOGWARN("SQLite database is encrypted, but the key doesn't work");
+    //         DACutils::term();
+
+    //         if (!fileRemove(filename) || fileExists(filename))
+    //         {
+    //             // LOGERR("Can't remove file");
+    //             return false;
+    //         }
+
+    //         rc = sqlite3_open(filename, &db);
+    //         DACutils::term();
+
+    //         if (rc || !DACutils::fileExists(filename))
+    //         {
+    //           fprintf(stderr, " %s() ... SQLite >> Can't create file", __PRETTY_FUNCTION__);
+    //             // LOGERR("Can't create file");
+    //             return false;
+    //         }
+    //         // LOGWARN("SQLite database has been reset, trying re-key");
+    //         return DACutils::init(filename, key);
+    //     }
+
+        if ( createTable() == false)
         {
-            if (errmsg)
-            {
-                fprintf(stderr, " %s() ... %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
-
-                // LOGERR("%d : %s", rc, errmsg);
-                sqlite3_free(errmsg);
-            }
-            else
-            {
-                fprintf(stderr, " %s() ... %d : %s", __PRETTY_FUNCTION__, rc, "(none)");
-
-                // LOGERR("%d", rc);
-            }
-        }
-
-        if (rc == SQLITE_NOTADB
-            && shouldEncrypt
-    #if defined(SQLITE_HAS_CODEC)
-            && !shouldReKey // re-key should never fail
-    #endif
-                )
-        {
-            fprintf(stderr, " %s() ... SQLite database is encrypted, but the key doesn't work", __PRETTY_FUNCTION__);
-
-            // LOGWARN("SQLite database is encrypted, but the key doesn't work");
-            DACutils::term();
-
-            if (!fileRemove(filename) || fileExists(filename))
-            {
-                // LOGERR("Can't remove file");
-                return false;
-            }
-
-            rc = sqlite3_open(filename, &db);
-            DACutils::term();
-
-            if (rc || !DACutils::fileExists(filename))
-            {
-              fprintf(stderr, " %s() ... SQLite >> Can't create file", __PRETTY_FUNCTION__);
-                // LOGERR("Can't create file");
-                return false;
-            }
-            // LOGWARN("SQLite database has been reset, trying re-key");
-            return DACutils::init(filename, key);
-        }
-
-        rc = sqlite3_exec(db, "CREATE TABLE if not exists item ("
-                              "ns INTEGER,"
-                              "key TEXT,"
-                              "value TEXT,"
-                              "FOREIGN KEY(ns) REFERENCES namespace(id) ON DELETE CASCADE ON UPDATE NO ACTION,"
-                              "UNIQUE(ns,key) ON CONFLICT REPLACE"
-                              ");", 0, 0, &errmsg);
-        if (rc != SQLITE_OK || errmsg)
-        {
-            if (errmsg)
-            {
-                fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
-
-                // LOGERR("%d : %s", rc, errmsg);
-                sqlite3_free(errmsg);
-            }
-            else
-            {
-                // LOGERR("%d", rc);
-            }
+            LOGERR(" %s() ... SQLite >> createTable() .... FAILED ! \n", __PRETTY_FUNCTION__);
+            return false;
         }
 
         rc = sqlite3_exec(db, "PRAGMA foreign_keys = ON;", 0, 0, &errmsg);
+
         if (rc != SQLITE_OK || errmsg)
         {
             if (errmsg)
             {
-              fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+              LOGERR(" %s() ... SQLite >> %d : %s \n", __PRETTY_FUNCTION__, rc, errmsg);
               // LOGERR("%d : %s", rc, errmsg);
               sqlite3_free(errmsg);
             }
             else
             {
-              fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none1)");
+              LOGERR(" %s() ... SQLite >> %d : %s \n", __PRETTY_FUNCTION__, rc, "(none1)");
               // LOGERR("%d", rc);
             }
         }
 
+        return true;
+    }
+
+    bool DACutils::createTable()
+    {
+        char   *errmsg;
+        sqlite3* &db = SQLITE;
+
+        int rc = sqlite3_exec(db, "CREATE TABLE if not exists dacTable ("
+                                    "name TEXT NOT NULL,"
+                                    "bundlePath TEXT NOT NULL,"
+                                    "version TEXT NOT NULL,"
+                                    "id TEXT PRIMARY KEY NOT NULL,"
+                                    "installed TEXT NOT NULL,"
+                                    "size INT NOT NULL,"
+                                    "type TEXT NOT NULL"
+                                    // "FOREIGN KEY(ns) REFERENCES namespace(id) ON DELETE CASCADE ON UPDATE NO ACTION,"
+                                    // "UNIQUE(ns,key) ON CONFLICT REPLACE"
+                                    ");", 0, 0, &errmsg);
+
+        if (rc != SQLITE_OK || errmsg)
+        {
+            if (errmsg)
+            {
+                LOGERR(" %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+
+                // LOGERR("%d : %s", rc, errmsg);
+                sqlite3_free(errmsg);
+                return false;
+            }
+        }
+        else
+        {
+             fprintf(stderr, "\n TABLE READY \n");
+
+            //  DACutils::showTable();
+        }
+
+       // DACutils::term(); // ensure closed 
+    
         return true;
     }
 
@@ -395,7 +430,373 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         }
     }
 
+    bool DACutils::hasPkgRow(const string& pkdId)
+    {
+        bool success = false;
 
+        sqlite3* &db = SQLITE;
+
+        if (db)
+        {
+            sqlite3_stmt *stmt;
+            sqlite3_prepare_v2(db, "SELECT id"
+                                    " FROM dacTable"
+                                    " where id = ?"
+                                    ";", -1, &stmt, nullptr);
+
+            // SELECT this 'pkdId'
+            //
+            int rc = sqlite3_bind_text(stmt, 1, pkdId.c_str(), -1, SQLITE_TRANSIENT);
+
+            // excute SQL
+            rc = sqlite3_step(stmt);
+            if (rc == SQLITE_ROW) // FOUND !!
+            {
+                success = true;
+            }
+            else
+            {
+                LOGWARN("ERROR:  hasPkgRow() ...  %s not found ", pkdId.c_str());
+            }
+
+            sqlite3_finalize(stmt);
+        }
+
+        return success;
+    }
+
+    bool DACutils::hasPkgRow(const char* pkdId)
+    {
+        return DACutils::hasPkgRow(string(pkdId));
+    }
+
+    bool DACutils::addPkgRow(const PackageInfoEx* pkg)
+    {
+        if(pkg == nullptr)
+        {
+            LOGERR(" %s() ...  Bad Args...  NULL", __PRETTY_FUNCTION__);
+            return false;
+        }
+    
+LOGINFO(" %s() ... Adding row for '%s'... ", __PRETTY_FUNCTION__, pkg->Name().c_str());
+
+        bool success = false;
+
+        sqlite3* &db = SQLITE;
+
+        // Check size of addition
+        //
+        // if (db)
+        // {
+        //     sqlite3_stmt *stmt;
+        //     sqlite3_prepare_v2(db, "SELECT sum(s) FROM ("
+        //                            " SELECT sum(length(key)+length(value)) s FROM item"
+        //                            " UNION ALL"
+        //                            " SELECT sum(length(name)) s FROM namespace"
+        //                            ");", -1, &stmt, nullptr);
+
+        //     if (sqlite3_step(stmt) == SQLITE_ROW)
+        //     {
+        //         int64_t size = sqlite3_column_int64(stmt, 0);
+        //         if (size > MAX_SIZE_BYTES)
+        //         {
+        //             // LOGWARN("max size exceeded: %lld", size);
+        //         }
+        //         else
+        //         {
+        //             success = true;
+        //         }
+        //     }
+        //     else
+        //     {
+        //     // LOGERR("ERROR getting size: %s", sqlite3_errmsg(db));
+        //     }
+
+        //     sqlite3_finalize(stmt);
+        // }
+
+        // if (success)
+        // {
+        //     success = false;
+
+        //     sqlite3_stmt *stmt;
+        //     sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO dacTable (id) VALUES (?);", -1, &stmt, nullptr);
+
+        //     sqlite3_bind_text(stmt, 1, ns.c_str(), -1, SQLITE_TRANSIENT);
+
+
+        //     int rc = sqlite3_step(stmt);
+        //     if (rc != SQLITE_DONE)
+        //     {
+        //      // LOGERR("ERROR inserting data: %s", sqlite3_errmsg(db));
+        //     }
+        //     else
+        //     {
+        //         success = true;
+        //     }
+
+        //     sqlite3_finalize(stmt);
+        // }
+
+success = true;
+
+        if (success)
+        {
+            LOGINFO("INFO inserting data ...");
+
+            success = false;
+
+            sqlite3_stmt *stmt;
+            int result = sqlite3_prepare_v2(db, "INSERT INTO dacTable (name, bundlePath, version, id, installed, size, type)  VALUES (?,?,?,?,?,?,?)", -1, &stmt, nullptr);
+
+            if (result != SQLITE_OK)
+            {
+                LOGERR("ERROR  >>> sqlite3_prepare_v2() ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+
+            if ((result = sqlite3_bind_text(stmt, 0, pkg->Name().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... Name: '%s' ... #1 ... %s", pkg->Name().c_str(), sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+            if ((result = sqlite3_bind_text(stmt, 1, pkg->BundlePath().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... BundlePath ... #2 ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+            if ((result = sqlite3_bind_text(stmt, 2, pkg->Version().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... Version ... #3 ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+            if ((result = sqlite3_bind_text(stmt, 3, pkg->PkgId().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... PkgId ... #4 ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+                        
+            if ((result = sqlite3_bind_text(stmt, 4, pkg->Installed().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... Installed ... #5 ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+            if ((result = sqlite3_bind_int( stmt, 5, pkg->SizeInBytes()) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... SizeInBytes ... #6 ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+            if ((result = sqlite3_bind_text(stmt, 6, pkg->Type().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
+            {
+                LOGERR("ERROR inserting data ... Type ... #7 ... %s", sqlite3_errmsg(db));
+                sqlite3_finalize(stmt);
+                return result;
+            }
+
+            int rc = sqlite3_step(stmt);
+            if (rc != SQLITE_DONE)
+            {
+                LOGERR("ERROR inserting data: %s", sqlite3_errmsg(db));
+            }
+            else
+            {
+                success = true;
+            }
+
+            sqlite3_finalize(stmt);
+        }
+
+//         if (success)
+//         {
+//             success = false;
+
+//             sqlite3_stmt *stmt;
+//             sqlite3_prepare_v2(db, "SELECT sum(s) FROM ("
+//                                     " SELECT sum(length(key)+length(value)) s FROM item"
+//                                     " UNION ALL"
+//                                     " SELECT sum(length(name)) s FROM namespace"
+//                                     ");", -1, &stmt, nullptr);
+
+//             if (sqlite3_step(stmt) == SQLITE_ROW)
+//             {
+//                 int64_t size = sqlite3_column_int64(stmt, 0);
+//                 if (size > MAX_SIZE_BYTES)
+//                 {
+//                     // LOGWARN("max size exceeded: %lld", size);
+
+// // TODO: Fixme
+// // TODO: Fixme
+
+//                     // JsonObject params;
+//                     // sendNotify(C_STR(EVT_ON_STORAGE_EXCEEDED), params);
+//                 }
+//                 else
+//                 {
+//                     success = true;
+//                 }
+//             }
+//             else
+//             {
+//                 // LOGERR("ERROR getting size: %s", sqlite3_errmsg(db));
+//             }
+
+//             sqlite3_finalize(stmt);
+//         }
+
+        return success;
+    }
+
+    PackageInfoEx* DACutils::getPkgRow(const string& pkdId)
+    {
+        sqlite3* &db = SQLITE;
+
+        if (db)
+        {
+            sqlite3_stmt *stmt;
+            sqlite3_prepare_v2(db, "SELECT id, name, bundlePath, id, installed, size, type"
+                                    " FROM dacTable"
+                                    " where id = ?"
+                                    ";", -1, &stmt, nullptr);
+
+            // SELECT this 'pkdId'
+            //
+            int rc = sqlite3_bind_text(stmt, 1, pkdId.c_str(), -1, SQLITE_TRANSIENT);
+
+            // excute SQL
+            rc = sqlite3_step(stmt);
+            if (rc == SQLITE_ROW) // FOUND !!
+            {
+
+                // PackageInfoEx::printPkg(pkg);
+                // fprintf(stderr, " name: '%s', path: '%s', ver: '%s', id: '%s', installed: '%s', size: %d, type: '%s'\n",
+                //     sqlite3_column_text(stmt, 0),  // name
+                //     sqlite3_column_text(stmt, 1),  // path
+                //     sqlite3_column_text(stmt, 2),  // version
+                //     sqlite3_column_text(stmt, 3),  // id
+                //     sqlite3_column_text(stmt, 4),  // installed
+                //     sqlite3_column_int( stmt, 5),  // size
+                //     sqlite3_column_text(stmt, 6)); // type
+
+                mThisPkg->setName(        sqlite3_column_text(stmt, 0) ); // name
+                mThisPkg->setBundlePath(  sqlite3_column_text(stmt, 1) ); // path
+                mThisPkg->setVersion(     sqlite3_column_text(stmt, 2) ); // version
+                mThisPkg->setPkgId(       sqlite3_column_text(stmt, 3) ); // id
+                mThisPkg->setInstalled(   sqlite3_column_text(stmt, 4) ); // installed
+                mThisPkg->setSizeInBytes( sqlite3_column_int( stmt, 5) );
+                mThisPkg->setType(        sqlite3_column_text(stmt, 6) ); // type
+
+                PackageInfoEx::printPkg(mThisPkg);
+#if 0
+
+        LOGWARN(">>>>>>>  Name()       ... %s", mThisPkg->Name()       .c_str() );
+        LOGWARN(">>>>>>>  BundlePath() ... %s", mThisPkg->BundlePath() .c_str() );
+        LOGWARN(">>>>>>>  Version()    ... %s", mThisPkg->Version()    .c_str() );
+        LOGWARN(">>>>>>>  PkgId()      ... %s", mThisPkg->PkgId()      .c_str() );
+        LOGWARN(">>>>>>>  Installed()  ... %s", mThisPkg->Installed()  .c_str() );
+        LOGWARN(">>>>>>>  Size()       ... %d", mThisPkg->SizeInBytes()         );
+        LOGWARN(">>>>>>>  Type()       ... %s", mThisPkg->Type()       .c_str() );
+
+#endif //0
+            }
+            else
+            {
+                LOGWARN("ERROR:  getPkgRow() ...  %s not found: %d", pkdId.c_str(), rc);
+            }
+
+            sqlite3_finalize(stmt);
+        }
+
+        return mThisPkg;
+    }
+
+
+    bool DACutils::delPkgRow(const string& pkdId)
+    {
+        // LOGINFO("%s %s", ns.c_str(), key.c_str());
+
+        bool success = false;
+
+        sqlite3* &db = SQLITE;
+
+        if (db)
+        {
+            sqlite3_stmt *stmt;
+            sqlite3_prepare_v2(db, "DELETE FROM dacTable"
+                                    " where id = (?)"
+                                    ";", -1, &stmt, NULL);
+
+            sqlite3_bind_text(stmt, 1, pkdId.c_str(), -1, SQLITE_TRANSIENT);
+
+            int rc = sqlite3_step(stmt);
+            if (rc != SQLITE_DONE)
+            {
+                LOGERR("ERROR removing data: %s", sqlite3_errmsg(db));
+            }
+            else
+            {
+                LOGINFO("INFO removed data: %s", pkdId.c_str());
+                success = true;
+            }
+
+            sqlite3_finalize(stmt);
+        }
+
+        return success;
+    }
+
+    static int showCallback(void *NotUsed, int argc, char **argv, char **azColName)
+    {
+        fprintf(stderr, "\n showTable() - showCallback \n");
+
+        // int argc: holds the number of results
+        // (array) azColName: holds each column returned
+        // (array) argv: holds each value
+        for(int i = 0; i < argc; i++)
+        {
+            // Show column name, value, and newline
+            cout << azColName[i] << ": " << argv[i] << endl;
+        }
+
+        // Insert a newline
+        cout << endl;
+
+        // Return successful
+        return 0;
+    }
+
+    void DACutils::showTable()
+    {
+        fprintf(stderr, "\n showTable() - ENTER \n");
+
+        char *zErrMsg;
+        sqlite3* &db = SQLITE;
+
+        // Save SQL insert data
+        char sql[] = "SELECT * FROM 'dacTable';";
+
+        // Run the SQL
+        int rc = sqlite3_exec(db, &sql[0], showCallback, 0, &zErrMsg);
+
+        if (rc != SQLITE_OK)
+        {
+            LOGERR("ERROR showing table ... %s", sqlite3_errmsg(db));
+        }
+    }
+
+#if 0 // JUNK
     bool DACutils::setValue(const string& ns, const string& key, const string& value)
     {
         // LOGINFO("%s %s %s", ns.c_str(), key.c_str(), value.c_str());
@@ -501,9 +902,6 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
                 {
                     // LOGWARN("max size exceeded: %lld", size);
 
-// TODO: Fixme
-// TODO: Fixme
-
                     // JsonObject params;
                     // sendNotify(C_STR(EVT_ON_STORAGE_EXCEEDED), params);
                 }
@@ -540,7 +938,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
                                     " where name = ? and key = ?"
                                     ";", -1, &stmt, nullptr);
 
-            sqlite3_bind_text(stmt, 1, ns.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 1, ns.c_str(),  -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 2, key.c_str(), -1, SQLITE_TRANSIENT);
 
             int rc = sqlite3_step(stmt);
@@ -624,9 +1022,9 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
         return success;
     }
+#endif // 0 JUNK
 
-
-
+    // ARCHIVE CODE
     static int
     copy_data(struct archive *ar, struct archive *aw)
     {

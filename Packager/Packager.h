@@ -161,6 +161,8 @@ namespace {
             //
             Register<Params, void>(kDAC_CancelMethodName, [this](const Params& params) -> uint32_t
             {
+                //sendNotify("MyDummy Event", JsonObject());
+
                 return this->_implementation->Cancel(params.Task.Value(), params.Listener.Value());
             });
             //
@@ -170,12 +172,9 @@ namespace {
             {
                 uint32_t result = Core::ERROR_NONE;
 
-                fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled()   PkgID: [%s]", params.PkgId.Value().c_str()); 
-                
-                this->_implementation->IsInstalled(params.PkgId.Value());
+                bool isInstalled = this->_implementation->IsInstalled(params.PkgId.Value());
 
-                response["error"] = "params missing";
-                response["value"] = "test123";
+                response["available"] = (isInstalled ? true : false);
 
                 return result;
             });
@@ -259,6 +258,8 @@ namespace {
                
                 response["applications"] = list;
                 
+                // sendNotify("MyDummy Event", JsonObject());
+
                 return 0;
             });
 

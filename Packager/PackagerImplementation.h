@@ -125,7 +125,7 @@ namespace Plugin {
 
         // DAC Installer API
 
-        using PackageInfoEx = DACinstallerImplementation::PackageInfoEx; 
+        // using PackageInfoEx = DACinstallerImplementation::PackageInfoEx; 
 
         virtual uint32_t Install(const string& pkgId, const string& type,  const string& url, 
                                  const string& token, const string& listener) override;

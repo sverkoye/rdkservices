@@ -37,6 +37,8 @@
 namespace WPEFramework {
 namespace Plugin {
 
+//class DACinstallerImplementation; //fwd
+class PackageInfoEx; //fwd
 
     class JobPool; //fwd
 
@@ -52,6 +54,7 @@ namespace Plugin {
             // ~DACutils();
 
             static bool init(const char* filename, const char* key);
+            static bool createTable();
 
             // Clean up
             static void term();
@@ -66,12 +69,22 @@ namespace Plugin {
 
             static std::string getGUID();
 
-            // SQL helpers
-            static bool setValue(const string& ns, const string& key, const string& value);
-            static bool getValue(const string& ns, const string& key, string& value);
+            static bool           hasPkgRow(const string& pkdId);
+            static bool           hasPkgRow(const char* pkdId);
+            static bool           addPkgRow(const PackageInfoEx* pkg);
+            static PackageInfoEx* getPkgRow(const string& pkdId);
+            bool                  delPkgRow(const string& pkdId);
 
-            static bool deleteKey(const string& ns, const string& key);
-            static bool deleteNamespace(const string& ns);
+            static PackageInfoEx* mThisPkg;
+
+            static void showTable();
+
+            // SQL helpers
+            // static bool setValue(const string& ns, const string& key, const string& value);
+            // static bool getValue(const string& ns, const string& key, string& value);
+
+            // static bool deleteKey(const string& ns, const string& key);
+            // static bool deleteNamespace(const string& ns);
 
             // House-keeping
             static void setupThreadQ();
