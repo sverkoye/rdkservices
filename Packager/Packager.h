@@ -172,6 +172,8 @@ namespace {
             {
                 uint32_t result = Core::ERROR_NONE;
 
+fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", params.PkgId.Value().c_str() ); 
+
                 bool isInstalled = this->_implementation->IsInstalled(params.PkgId.Value());
 
                 response["available"] = (isInstalled ? true : false);
@@ -205,28 +207,32 @@ namespace {
                     return -1; // ERROR
                 }
 
+                // TODO:  Use instead ??
+                //
+                // JsonObject json = PackageInfoEx::pkg2json( (PackageInfoEx*) pkg);
+
                 char str[255];
 
                 snprintf(str, 255, "%s", pkg->Name().c_str());
-                response["Name"] = string(str);
+                response["name"] = string(str);
 
                 snprintf(str, 255, "%s", pkg->BundlePath().c_str());
-                response["BundlePath"] = string(str);
+                response["bundlePath"] = string(str);
 
                 snprintf(str, 255, "%s", pkg->Version().c_str());
-                response["Version"] = string(str);
+                response["version"] = string(str);
 
                 snprintf(str, 255, "%s", pkg->PkgId().c_str());
-                response["PkgId"] = string(str);
+                response["id"] = string(str);
 
                 snprintf(str, 255, "%s", pkg->Installed().c_str());
-                response["Installed"] = string(str);
+                response["installed"] = string(str);
 
-                snprintf(str, 255, "%d", pkg->SizeInBytes());
-                response["SizeInBytes"] = string(str);
+                snprintf(str, 255, "%jd", pkg->SizeInBytes());
+                response["size"] = string(str);
 
                 snprintf(str, 255, "%s", pkg->Type().c_str());
-                response["Type"] = string(str);
+                response["type"] = string(str);
 
                 return 0;
             };
@@ -277,10 +283,10 @@ namespace {
             //
             Register<void, JsonObject>(kDAC_GetAvailableSpaceMethodName,  [this](JsonObject& response) -> uint32_t
             {
-                uint32_t kb = this->_implementation->GetAvailableSpace();
+                int64_t bytes = this->_implementation->GetAvailableSpace();
 
                 char str[255];
-                snprintf(str, 255, "%d", kb);
+                snprintf(str, 255, "%jd", bytes);
 
                 response["availableSpaceInKB"] = string(str);
 

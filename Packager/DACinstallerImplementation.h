@@ -101,19 +101,43 @@ typedef const unsigned char uchar_t;
         void setInstalled( string v)        { _installed = v;                 };
         void setInstalled( uchar_t *v )     { _installed = uchar2string(v);   };
 
-        uint32_t  SizeInBytes()         const override { return _sizeInBytes; };
-        void setSizeInBytes( uint32_t v)    { _sizeInBytes = v;               };
+        int64_t  SizeInBytes()        const override { return _sizeInBytes; };
+        void setSizeInBytes( int64_t v)     { _sizeInBytes = v;               };
 
         string  Type()                const override { return _type;          };
         void setType( string v)             { _type = v;                      };
         void setType( uchar_t *v )          { _type = uchar2string(v);        };
+
+        static JsonObject pkg2json(PackageInfoEx *pkg)
+        {
+            JsonObject json;
+
+            if(pkg == nullptr)
+            {
+              LOGERR("ERROR:  pkg2json() - Bad args.  NULL");
+              return json; // empty
+            }
+
+            char sizeInBytes[255];
+            snprintf(sizeInBytes, 255, "%jd", pkg->SizeInBytes());
+
+            json["name"]       = pkg->Name();
+            json["bundlePath"] = pkg->BundlePath();
+            json["version"]    = pkg->Version();
+            json["id"]         = pkg->PkgId();
+            json["installed"]  = pkg->Installed();
+            json["size"]       = std::string(sizeInBytes);//pgk.SizeInBytes();
+            json["type"]       = pkg->Type();
+
+            return json;
+        };
 
         static JsonObject pkg2json(PackageInfoEx &pkg)
         {
             JsonObject json;
 
             char sizeInBytes[255];
-            snprintf(sizeInBytes, 255, "%d", pkg.SizeInBytes());
+            snprintf(sizeInBytes, 255, "%jd", pkg.SizeInBytes());
 
             json["name"]       = pkg.Name();
             json["bundlePath"] = pkg.BundlePath();
@@ -148,7 +172,7 @@ typedef const unsigned char uchar_t;
             return;
           }
 
-          LOGINFO("\n name: '%s', path: '%s', ver: '%s', id: '%s', installed: '%s', size: %d, type: '%s'\n",
+          LOGINFO("\n name: '%s', path: '%s', ver: '%s', id: '%s', installed: '%s', size: %jd, type: '%s'\n",
                    pkg->Name().c_str(),       // name
                    pkg->BundlePath().c_str(), // path
                    pkg->Version().c_str(),    // version
@@ -171,7 +195,7 @@ typedef const unsigned char uchar_t;
         string   _version;
         string   _pkgId;
         string   _installed;    // timestamp
-        uint32_t _sizeInBytes;  // bytes
+        int64_t  _sizeInBytes;  // bytes
         string   _type;
 
         int _refCount;
@@ -203,16 +227,15 @@ typedef const unsigned char uchar_t;
 
         PackageInfoEx* GetPackageInfo_imp(const string& pkgId);
 
-        // uint32_t GetInstalled_imp();
-        // uint32_t GetPackageInfo_imp(const string& pkgId);
-        uint32_t GetAvailableSpace_imp();
+        int64_t GetAvailableSpace_imp();
 
         virtual JsonObject getInfo(JsonObject) { LOGERR(" getInfo GOOD"); return JsonObject(); };
 
         std::vector<PackageInfoEx *> mPPPlist;
 
-        static const char* STORE_NAME;
-        static const char* STORE_KEY;
+        static const int64_t STORE_BYTES_QUOTA;
+        static const char*   STORE_NAME;
+        static const char*   STORE_KEY;
 
     private:
         uint32_t doInstall(const string& pkgId, const string& type, const string& url,const string& token, const string& listener);

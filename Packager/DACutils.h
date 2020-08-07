@@ -61,19 +61,25 @@ class PackageInfoEx; //fwd
             static void vacuum();
 
             // File hepers
-            static bool fileRemove(const char* f);
-            static bool fileExists(const char* f);
-            static bool fileEncrypted(const char* f);
-            static bool fileEndsWith(const string& f, const string& ext);
-            static bool removeFolder(const char *dirname);
+            static bool    fileRemove(const char* f);
+            static bool    fileExists(const char* f);
+            static bool    fileEncrypted(const char* f);
+            static bool    fileEndsWith(const string& f, const string& ext);
+
+            static bool    removeFolder(const string& dirname);
+            static bool    removeFolder(const char *dirname);
+
+            static int64_t folderSize(const char *d);
 
             static std::string getGUID();
 
-            static bool           hasPkgRow(const string& pkdId);
-            static bool           hasPkgRow(const char* pkdId);
+            static bool           hasPkgRow(const string& pkgId);
+            static bool           hasPkgRow(const char* pkgId);
             static bool           addPkgRow(const PackageInfoEx* pkg);
-            static PackageInfoEx* getPkgRow(const string& pkdId);
-            bool                  delPkgRow(const string& pkdId);
+            static PackageInfoEx* getPkgRow(const string& pkgId);
+            static bool           delPkgRow(const string& pkgId);
+
+            static int64_t        sumSizeInBytes();
 
             static PackageInfoEx* mThisPkg;
 

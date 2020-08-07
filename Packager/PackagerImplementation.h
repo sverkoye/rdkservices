@@ -29,9 +29,6 @@
 #include "DACinstallerImplementation.h"
 
 
-#define PPP()   fprintf(stderr, "\nHUGH >>>>> Call ... %s()", __FUNCTION__); 
-
-
 // Forward declarations so we do not need to include the OPKG headers here.
 struct opkg_conf;
 struct _opkg_progress_data_t;
@@ -69,8 +66,6 @@ namespace Plugin {
                 Add(_T("nodeps"), &NoDeps);
                 Add(_T("nosignaturecheck"), &NoSignatureCheck);
                 Add(_T("alwaysupdatefirst"), &AlwaysUpdateFirst);
-
-                PPP();
             }
 
             ~Config() override
@@ -137,7 +132,7 @@ namespace Plugin {
         virtual uint32_t                   GetInstallProgress( const string& task) override;
         virtual PackageInfoEx::IIterator*  GetInstalled() override;
         virtual PackageInfoEx*             GetPackageInfo(const string& pkgId) override;
-        virtual uint32_t                   GetAvailableSpace() override;
+        virtual int64_t                    GetAvailableSpace() override;
 
         virtual JsonObject getInfo() { LOGERR(" getInfo HERE"); return JsonObject(); };
 

@@ -388,7 +388,7 @@ namespace Plugin {
         return GetPackageInfo_imp(pkgId); // Call IMPL
     }
 
-    uint32_t PackagerImplementation::GetAvailableSpace()
+    int64_t PackagerImplementation::GetAvailableSpace()
     {
         return GetAvailableSpace_imp(); // Call IMPL
     }

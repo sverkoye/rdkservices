@@ -19,14 +19,20 @@
  
 #include <glib.h>
 
+#include "time.h"
+#include <locale>
+
 #include "utils.h"
 
 #include "DACutils.h"
 #include "DACinstallerImplementation.h"
 
 
-const char* WPEFramework::Plugin::DACinstallerImplementation::STORE_NAME = "DACstorage";
-const char* WPEFramework::Plugin::DACinstallerImplementation::STORE_KEY  = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
+#define MB_in_BYTES  1000000
+
+const int64_t WPEFramework::Plugin::DACinstallerImplementation::STORE_BYTES_QUOTA = 10 * MB_in_BYTES;
+const char*   WPEFramework::Plugin::DACinstallerImplementation::STORE_NAME        = "DACstorage";
+const char*   WPEFramework::Plugin::DACinstallerImplementation::STORE_KEY         = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
 
 using namespace std;
 
@@ -40,6 +46,7 @@ namespace Plugin {
                                 : mTaskNumber(0)
   {
     DDD();
+
 
     auto path = g_build_filename("/opt", "persistent", nullptr);
 
@@ -56,6 +63,8 @@ namespace Plugin {
 
     if(success)
     {
+
+#if 0  
       mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
 
       mInfo->setName("Test Name");
@@ -65,24 +74,37 @@ namespace Plugin {
       mInfo->setInstalled("Fri Jul 31 16:54:41 UTC 2020");
       mInfo->setSizeInBytes(123456);
       mInfo->setType("DAC");
-      
-
-// fprintf(stderr, "########## hasPkgRow('foo') == %s\n\n", 
-//       (DACutils::hasPkgRow( "foo" ) ? "TRUE" : "FALSE") );
 
 
-// fprintf(stderr, "########## hasPkgRow('TestApp0123456') == %s\n\n", 
-//       (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
+
+fprintf(stderr, "########## addPkgRow \n");
+  DACutils::addPkgRow(mInfo);  
 
 
-// fprintf(stderr, "########## addPkgRow");
-//   DACutils::addPkgRow(mInfo);
-
-// fprintf(stderr, "########## showTable");
-// DACutils::showTable();
+fprintf(stderr, "########## hasPkgRow('TestApp0123456') == %s\n", 
+      (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
 
 
-// fprintf(stderr, "########## getPkgRow");
+
+fprintf(stderr, "########## hasPkgRow('foo') == %s\n\n", 
+      (DACutils::hasPkgRow( "foo" ) ? "TRUE" : "FALSE") );
+
+
+fprintf(stderr, "########## showTable \n\n");
+DACutils::showTable();
+
+
+fprintf(stderr, "\n########## delPkgRow\n");
+  DACutils::delPkgRow("TestApp0123456");
+
+
+fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n", 
+      (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
+
+#endif //00
+
+
+// fprintf(stderr, "\n########## getPkgRow\n");
 // PackageInfoEx* pp = DACutils::getPkgRow("TestApp0123456");
 
 // PackageInfoEx::printPkg(pp);
@@ -108,7 +130,6 @@ namespace Plugin {
   uint32_t DACinstallerImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
-
     // JsonObject params;
     // JsonObject result;
     // // params["jsonrpc"] = "2.0";
@@ -133,7 +154,7 @@ namespace Plugin {
   uint32_t DACinstallerImplementation::doInstall(const string& pkgId, const string& type, const string& url,
                                                  const string& token, const string& listener)
   {
-    std::string install_app( "(empty))" );
+    std::string install_name( "(empty))" );
     std::string install_url( url );
 
     // Parse the URL...
@@ -150,8 +171,8 @@ namespace Plugin {
             return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
         }
 
-        install_url = DACutils::mPackageCfg["install"].String();
-        install_app = DACutils::mPackageCfg["name"].String();
+        install_url  = DACutils::mPackageCfg["install"].String();
+        install_name = DACutils::mPackageCfg["name"].String();
     }
   
     // Download TGZ package...
@@ -160,8 +181,8 @@ namespace Plugin {
 
     if(DACutils::downloadURL(install_url.c_str()) != DACutils::DACrc_t::dac_OK)
     {
-        LOGERR(" %s() ... DOWNLOAD >>>  FAILED\n", __PRETTY_FUNCTION__);
-        return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
+        LOGERR(" %s() ... DOWNLOAD (%s)>>>  FAILED\n", __PRETTY_FUNCTION__, install_url.c_str());
+        return -1; // FAIL
     }
     else
     {
@@ -181,13 +202,30 @@ namespace Plugin {
 
             DACutils::removeFolder(uuid_path); // remove debris
 
-            return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
+            return -1; // FAIL
         }
 
-        LOGERR(" %s() ... INSTALLED >>> [ %s ]\n", __PRETTY_FUNCTION__, install_app.c_str());
+        LOGERR(" %s() ... INSTALLED >>> [ %s ]\n", __PRETTY_FUNCTION__, install_name.c_str());
 
         // Always cleanup
         DACutils::fileRemove(TMP_FILENAME);
+
+        mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
+
+        time_t rawtime;
+        time (&rawtime);
+
+        int32_t bytes = DACutils::folderSize(uuid_path);
+
+        mInfo->setPkgId(pkgId);
+        mInfo->setName(install_name);
+        mInfo->setBundlePath(uuid_path);
+        mInfo->setVersion("1.2.3");
+        mInfo->setInstalled(ctime (&rawtime));
+        mInfo->setSizeInBytes(bytes);
+        mInfo->setType(type);
+        
+        DACutils::addPkgRow(mInfo);
     }
 
     return 0;
@@ -195,18 +233,31 @@ namespace Plugin {
 
   uint32_t DACinstallerImplementation::Remove_imp( const string& pkgId, const string& listener)
   {
-    // fprintf(stderr, "\nHUGH >>>>> Call ... DAC::Remove_imp() ... pkgId: '%s'  listener: '%s' ", pkgId.c_str(), listener.c_str() ); 
+    LOGINFO("... Remove_imp(%s, %s) - ENTER ", pkgId.c_str(), listener.c_str());
 
-    // auto  i = std::begin(mPPPlist);
-    // while (i != std::end(mPPPlist))
-    // {
-    //     delete (*i);
-    //     i = mPPPlist.erase(i);
-    // }
+    PackageInfoEx* pkg = DACutils::getPkgRow(pkgId);
 
-// fprintf(stderr, "\nHUGH >>>>> Clear LIST >>> mPPPlist.size()  = %ld ", mPPPlist.size() ); 
+    if(pkg)
+    {
+      LOGERR(" removeFolder( %s ) ... NOT found", pkg->BundlePath().c_str());
 
-    return 0;
+      DACutils::removeFolder(pkg->BundlePath());
+
+      bool rc = DACutils::delPkgRow(pkgId);
+
+      if(rc == false)
+      {
+        LOGINFO("... Remove_imp(%s, %s) - FAILED... not found ? ", pkgId.c_str(), listener.c_str());
+        return -1; // FAILED
+      }
+    }
+    else
+    {
+      LOGERR(" .Remove_imp( %s ) ... NOT found", pkgId.c_str());
+      return -1; // FAILED
+    }
+
+    return 0; // SUCCESS
   }
 
   uint32_t DACinstallerImplementation::Cancel_imp( const string& task, const string& listener)
@@ -226,9 +277,8 @@ namespace Plugin {
 
   uint32_t DACinstallerImplementation::IsInstalled_imp(const string& pkgId)//, JsonObject &response)
   {
-    DDD();
-
-    fprintf(stderr, "\nHUGH >>>>> Call ... DAC::IsInstalled_imp() ... %s", pkgId.c_str() ); 
+    fprintf(stderr, "\n\nDACinstallerImplementation::IsInstalled_imp() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
+    LOGERR("DAC::IsInstalled_imp(%s) ... ENTER", pkgId.c_str() ); 
 
     return DACutils::hasPkgRow( pkgId );
   }
@@ -245,30 +295,26 @@ namespace Plugin {
     return nullptr;
   }
 
-  PackageInfoEx*  DACinstallerImplementation::GetPackageInfo_imp(const string& pkgId)
+  PackageInfoEx* DACinstallerImplementation::GetPackageInfo_imp(const string& pkgId)
   {
-    DDD();
+    PackageInfoEx* pkg = DACutils::getPkgRow(pkgId);
 
-    mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
+    int64_t foo = DACutils::sumSizeInBytes();
+    LOGERR(" #########   foo = %ld bytes", foo);
 
-    fprintf(stderr, "########## info->name = %s", mInfo->Name().c_str());
-
-    mInfo->setName("Test Name");
-    mInfo->setBundlePath("/opt/foo/bar/myAppFolder");
-    mInfo->setVersion("1.2.3");
-    mInfo->setInstalled("Fri Jul 31 16:54:41 UTC 2020");
-    mInfo->setSizeInBytes(123456);
-    mInfo->setType("DAC");
-
+    DACutils::showTable();
     // sendNotify("MyDummy Event", JsonObject());
 
-    return mInfo;
+    return pkg;
   }
 
-  uint32_t DACinstallerImplementation::GetAvailableSpace_imp()
-  {
-    DDD();
-    return 0;
+  int64_t DACinstallerImplementation::GetAvailableSpace_imp()
+  {    
+    int64_t used_bytes = DACutils::sumSizeInBytes();
+
+    //LOGERR("PackagerImplementation::GetAvailableSpace()  ... %jd   BBB", used_bytes);
+
+    return ((STORE_BYTES_QUOTA - used_bytes)/1000); // in KB
   }
         
   }  // namespace Plugin
