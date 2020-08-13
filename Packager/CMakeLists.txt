@@ -42,8 +42,8 @@ add_library(${MODULE_NAME} SHARED
     Module.cpp
     Packager.cpp
     PackagerImplementation.cpp
-    DACutils.cpp
-    DACinstallerImplementation.cpp)
+    PackagerExUtils.cpp
+    PackagerExImplementation.cpp)
 
 add_definitions(${SQLITE_CFLAGS_OTHER} ${PLABELS_FLAGS})
 link_directories(${SQLITE_LIBRARY_DIRS})

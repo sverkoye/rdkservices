@@ -24,15 +24,15 @@
 
 #include "utils.h"
 
-#include "DACutils.h"
-#include "DACinstallerImplementation.h"
+#include "PackagerExUtils.h"
+#include "PackagerExImplementation.h"
 
 
 #define MB_in_BYTES  1000000
 
-const int64_t WPEFramework::Plugin::DACinstallerImplementation::STORE_BYTES_QUOTA = 10 * MB_in_BYTES;
-const char*   WPEFramework::Plugin::DACinstallerImplementation::STORE_NAME        = "DACstorage";
-const char*   WPEFramework::Plugin::DACinstallerImplementation::STORE_KEY         = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
+const int64_t WPEFramework::Plugin::PackagerExImplementation::STORE_BYTES_QUOTA = 10 * MB_in_BYTES;
+const char*   WPEFramework::Plugin::PackagerExImplementation::STORE_NAME        = "DACstorage";
+const char*   WPEFramework::Plugin::PackagerExImplementation::STORE_KEY         = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
 
 using namespace std;
 
@@ -42,7 +42,7 @@ namespace Plugin {
 // Events
 #define DAC_EVT_INSTALL_ACK "DAC_InstallAck"
 
-  DACinstallerImplementation::DACinstallerImplementation()
+  PackagerExImplementation::PackagerExImplementation()
                                 : mTaskNumber(0)
   {
     DDD();
@@ -127,7 +127,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     g_free(file);
   }
 
-  DACinstallerImplementation::~DACinstallerImplementation()
+  PackagerExImplementation::~PackagerExImplementation()
   {
     DDD();
 
@@ -138,7 +138,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
 
   // DAC Installer API
-  uint32_t DACinstallerImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
+  uint32_t PackagerExImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
     // JsonObject params;
@@ -162,7 +162,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return 0;
   }
 
-  uint32_t DACinstallerImplementation::doInstall(const string& pkgId, const string& type, const string& url,
+  uint32_t PackagerExImplementation::doInstall(const string& pkgId, const string& type, const string& url,
                                                  const string& token, const string& listener)
   {
     std::string install_name( "(empty))" );
@@ -249,7 +249,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return 0;
   }
 
-  uint32_t DACinstallerImplementation::Remove_imp( const string& pkgId, const string& listener)
+  uint32_t PackagerExImplementation::Remove_imp( const string& pkgId, const string& listener)
   {
     LOGINFO("... Remove_imp(%s, %s) - ENTER ", pkgId.c_str(), listener.c_str());
 
@@ -278,7 +278,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return 0; // SUCCESS
   }
 
-  uint32_t DACinstallerImplementation::Cancel_imp( const string& task, const string& listener)
+  uint32_t PackagerExImplementation::Cancel_imp( const string& task, const string& listener)
   {
     DDD();
 
@@ -287,27 +287,27 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return 0;
   }
 
-  uint32_t DACinstallerImplementation::IsInstalled_imp(const string& pkgId)//, JsonObject &response)
+  uint32_t PackagerExImplementation::IsInstalled_imp(const string& pkgId)//, JsonObject &response)
   {
-    fprintf(stderr, "\n\nDACinstallerImplementation::IsInstalled_imp() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
+    fprintf(stderr, "\n\nPackagerExImplementation::IsInstalled_imp() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
     LOGERR("DAC::IsInstalled_imp(%s) ... ENTER", pkgId.c_str() ); 
 
     return DACutils::hasPkgRow( pkgId );
   }
 
-  uint32_t DACinstallerImplementation::GetInstallProgress_imp(const string& task)
+  uint32_t PackagerExImplementation::GetInstallProgress_imp(const string& task)
   {
     DDD();
     return 31;
   }
 
-  PackageInfoEx::IIterator* DACinstallerImplementation::GetInstalled_imp()
+  PackageInfoEx::IIterator* PackagerExImplementation::GetInstalled_imp()
   {
     DDD();
     return nullptr;
   }
 
-  PackageInfoEx* DACinstallerImplementation::GetPackageInfo_imp(const string& pkgId)
+  PackageInfoEx* PackagerExImplementation::GetPackageInfo_imp(const string& pkgId)
   {
     PackageInfoEx* pkg = DACutils::getPkgRow(pkgId);
 
@@ -317,7 +317,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return pkg;
   }
 
-    void DACinstallerImplementation::SendN()
+    void PackagerExImplementation::SendN()
     {
         // Core::Time now(Core::Time::Now());
         // Core::JSON::String currentTime;
@@ -339,7 +339,7 @@ LOGERR("PackagerImplementation::SendN()  .... sent ..." );
    //    GetHandler(1)->Notify(_T("clock"), "Groundhog Day");// Data::Time(now.Hours(), now.Minutes(), now.Seconds()));
     }
 
-  int64_t DACinstallerImplementation::GetAvailableSpace_imp()
+  int64_t PackagerExImplementation::GetAvailableSpace_imp()
   {    
 // JUNK
 // JUNK

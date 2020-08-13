@@ -26,7 +26,7 @@
 #include <list>
 #include <string>
 
-#include "DACinstallerImplementation.h"
+#include "PackagerExImplementation.h"
 
 
 // Forward declarations so we do not need to include the OPKG headers here.
@@ -39,7 +39,7 @@ namespace Plugin {
 
 
     class PackagerImplementation : public Exchange::IPackager
-    , public DACinstallerImplementation 
+    , public PackagerExImplementation 
 
     {
     public:
@@ -120,7 +120,7 @@ namespace Plugin {
 
         // DAC Installer API
 
-        // using PackageInfoEx = DACinstallerImplementation::PackageInfoEx; 
+        // using PackageInfoEx = PackagerExImplementation::PackageInfoEx; 
 
         virtual uint32_t Install(const string& pkgId, const string& type,  const string& url, 
                                  const string& token, const string& listener) override;

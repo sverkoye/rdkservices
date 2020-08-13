@@ -214,15 +214,15 @@ namespace Plugin {
     };// CLASS - PackageInfoEx
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    class DACinstallerImplementation: /* public PluginHost::IPlugin,*/ public PluginHost::JSONRPC
+    class PackagerExImplementation: /* public PluginHost::IPlugin,*/ public PluginHost::JSONRPC
     {
       public:
 
-        DACinstallerImplementation(const DACinstallerImplementation&) = delete;
-        DACinstallerImplementation& operator=(const DACinstallerImplementation&) = delete;
+        PackagerExImplementation(const PackagerExImplementation&) = delete;
+        PackagerExImplementation& operator=(const PackagerExImplementation&) = delete;
 
-        DACinstallerImplementation();
-        ~DACinstallerImplementation();
+        PackagerExImplementation();
+        ~PackagerExImplementation();
 
         // DAC Installer API
         uint32_t Install_imp(const string& pkgId, const string& type, const string& url, const string& token, const string& listener);
@@ -252,7 +252,7 @@ namespace Plugin {
         uint32_t doInstall(const string& pkgId, const string& type, const string& url,const string& token, const string& listener);
 
         uint32_t mTaskNumber;
-    };//CLASS - DACinstallerImplementation
+    };//CLASS - PackagerExImplementation
 
   } // namespace Plugin
 }  // namespace WPEFramework
