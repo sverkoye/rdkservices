@@ -41,13 +41,13 @@ class PackageInfoEx; //fwd
 
     class JobPool; //fwd
 
-    class DACutils
+    class PackagerExUtils
     {
         public:
             enum class DACrc_t { dac_OK, dac_WARN, dac_FAIL };
 
-            DACutils(const DACutils&) = delete;
-            DACutils& operator=(const DACutils&) = delete;
+            PackagerExUtils(const PackagerExUtils&) = delete;
+            PackagerExUtils& operator=(const PackagerExUtils&) = delete;
 
             static bool init(const char* filename, const char* key);
             static bool createTable();

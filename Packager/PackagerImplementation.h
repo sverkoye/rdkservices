@@ -334,6 +334,9 @@ namespace Plugin {
 #endif
         void NotifyStateChange();
         void NotifyRepoSynced(uint32_t status);
+
+        void NotifyIntallStep(uint32_t status); // PackagerEx NOTIFY
+
         void BlockingInstallUntilCompletionNoLock();
         void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);
         bool InitOPKG();

@@ -51,14 +51,14 @@ namespace Plugin {
 
     auto path = g_build_filename("/opt", "persistent", nullptr);
 
-    if (!DACutils::fileExists(path))
+    if (!PackagerExUtils::fileExists(path))
     {
         g_mkdir_with_parents(path, 0745);
     }
 
     auto file = g_build_filename(path, STORE_NAME, nullptr);
 
-    bool success = DACutils::init(file, STORE_KEY);
+    bool success = PackagerExUtils::init(file, STORE_KEY);
     LOGERR("\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
 
     if(success)
@@ -84,29 +84,29 @@ namespace Plugin {
 
 
 LOGERR("########## addPkgRow \n");
-  DACutils::addPkgRow(pkg);  
+  PackagerExUtils::addPkgRow(pkg);  
 
     pkg->Release();
 
 LOGERR("########## hasPkgRow('TestApp0123456') == %s\n", 
-      (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
+      (PackagerExUtils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
 
 
 
 LOGERR("########## hasPkgRow('foo') == %s\n\n", 
-      (DACutils::hasPkgRow( "foo" ) ? "TRUE" : "FALSE") );
+      (PackagerExUtils::hasPkgRow( "foo" ) ? "TRUE" : "FALSE") );
 
 
 LOGERR("########## showTable \n\n");
-DACutils::showTable();
+PackagerExUtils::showTable();
 
 
 LOGERR("\n########## delPkgRow\n");
-  DACutils::delPkgRow("TestApp0123456");
+  PackagerExUtils::delPkgRow("TestApp0123456");
 
 
 LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n", 
-      (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
+      (PackagerExUtils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
 
 #endif //00
 //JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
@@ -114,13 +114,13 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
 
 // fprintf(stderr, "\n########## getPkgRow\n");
-// PackageInfoEx* pp = DACutils::getPkgRow("TestApp0123456");
+// PackageInfoEx* pp = PackagerExUtils::getPkgRow("TestApp0123456");
 
 // PackageInfoEx::printPkg(pp);
 
-     // DACutils::setupThreadQ(); // start thread Q 
+     // PackagerExUtils::setupThreadQ(); // start thread Q 
 
-      // DACutils::installURL("http://10.0.2.15/test.tgz");
+      // PackagerExUtils::installURL("http://10.0.2.15/test.tgz");
     }
 
     g_free(path);
@@ -133,7 +133,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
    // UnregisterAll();
 
-    DACutils::term();
+    PackagerExUtils::term();
   }
 
 
@@ -171,29 +171,29 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
     // Parse the URL...
     //
-    if(DACutils::fileEndsWith(url.c_str(), "json"))
+    if(PackagerExUtils::fileEndsWith(url.c_str(), "json"))
     {
         LOGINFO(" %s() ... DOWNLOAD >>>  %s\n", __PRETTY_FUNCTION__, install_url.c_str());
 
         // Download JSON manifest...
         //
-        if(DACutils::downloadJSON(url.c_str()) != DACutils::DACrc_t::dac_OK)
+        if(PackagerExUtils::downloadJSON(url.c_str()) != PackagerExUtils::DACrc_t::dac_OK)
         {
             LOGERR(" %s() ... ERROR:  Failed to download JSON >> %s \n", __PRETTY_FUNCTION__, url.c_str());
-            return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
+            return -1; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;
         }
 
         // Parse JSON for meta...
-        install_url  = DACutils::mPackageCfg["install"].String(); // update install from URL
-        install_name = DACutils::mPackageCfg["name"].String();
-        install_ver  = DACutils::mPackageCfg["version"].String();
+        install_url  = PackagerExUtils::mPackageCfg["install"].String(); // update install from URL
+        install_name = PackagerExUtils::mPackageCfg["name"].String();
+        install_ver  = PackagerExUtils::mPackageCfg["version"].String();
     }
   
     // Download TGZ package...
     //
     LOGINFO(" %s() ... DOWNLOAD >>>  %s\n", __PRETTY_FUNCTION__, install_url.c_str());
 
-    if(DACutils::downloadURL(install_url.c_str()) != DACutils::DACrc_t::dac_OK)
+    if(PackagerExUtils::downloadURL(install_url.c_str()) != PackagerExUtils::DACrc_t::dac_OK)
     {
         LOGERR(" %s() ... DOWNLOAD (%s)>>>  FAILED\n", __PRETTY_FUNCTION__, install_url.c_str());
         return -1; // FAIL
@@ -203,18 +203,18 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         char uuid_path[PATH_MAX];
 
         // Get UUID ...
-        std::string uuid_str = DACutils::getGUID();
+        std::string uuid_str = PackagerExUtils::getGUID();
 
         // Create path ... APPS_ROOT / {UUID} / {app}
         snprintf(uuid_path, PATH_MAX, "%s/%s/", APPS_ROOT, uuid_str.c_str());
         
-        if(DACutils::extract(TMP_FILENAME, uuid_path) != DACutils::DACrc_t::dac_OK)
+        if(PackagerExUtils::extract(TMP_FILENAME, uuid_path) != PackagerExUtils::DACrc_t::dac_OK)
         {
             // Clean up failed extraction
             //
             LOGERR(" %s() ... EXTRACT >>>  FAILED\n", __PRETTY_FUNCTION__);
 
-            DACutils::removeFolder(uuid_path); // remove debris
+            PackagerExUtils::removeFolder(uuid_path); // remove debris
 
             return -1; // FAIL
         }
@@ -224,14 +224,14 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         LOGINFO(" %s() ... INSTALLED >>> [ %s ]\n", __PRETTY_FUNCTION__, install_name.c_str());
 
         // Always cleanup
-        DACutils::fileRemove(TMP_FILENAME);
+        PackagerExUtils::fileRemove(TMP_FILENAME);
 
         PackageInfoEx* pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
 
         time_t rawtime;
         time (&rawtime);
 
-        int32_t bytes = DACutils::folderSize(uuid_path);
+        int32_t bytes = PackagerExUtils::folderSize(uuid_path);
 
         pkg->setPkgId(pkgId);
         pkg->setName(install_name);
@@ -241,7 +241,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         pkg->setSizeInBytes(bytes);
         pkg->setType(type);
         
-        DACutils::addPkgRow(pkg); // add to SQL 
+        PackagerExUtils::addPkgRow(pkg); // add to SQL 
 
         pkg->Release();
     }
@@ -253,15 +253,15 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   {
     LOGINFO("... Remove_imp(%s, %s) - ENTER ", pkgId.c_str(), listener.c_str());
 
-    PackageInfoEx* pkg = DACutils::getPkgRow(pkgId);
+    PackageInfoEx* pkg = PackagerExUtils::getPkgRow(pkgId);
 
     if(pkg)
     {
       LOGERR(" removeFolder( %s ) ... NOT found", pkg->BundlePath().c_str());
 
-      DACutils::removeFolder(pkg->BundlePath());
+      PackagerExUtils::removeFolder(pkg->BundlePath());
 
-      bool rc = DACutils::delPkgRow(pkgId);
+      bool rc = PackagerExUtils::delPkgRow(pkgId);
 
       if(rc == false)
       {
@@ -292,7 +292,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     fprintf(stderr, "\n\nPackagerExImplementation::IsInstalled_imp() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
     LOGERR("DAC::IsInstalled_imp(%s) ... ENTER", pkgId.c_str() ); 
 
-    return DACutils::hasPkgRow( pkgId );
+    return PackagerExUtils::hasPkgRow( pkgId );
   }
 
   uint32_t PackagerExImplementation::GetInstallProgress_imp(const string& task)
@@ -309,9 +309,9 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
   PackageInfoEx* PackagerExImplementation::GetPackageInfo_imp(const string& pkgId)
   {
-    PackageInfoEx* pkg = DACutils::getPkgRow(pkgId);
+    PackageInfoEx* pkg = PackagerExUtils::getPkgRow(pkgId);
 
-    DACutils::showTable();
+    PackagerExUtils::showTable();
     // sendNotify("MyDummy Event", JsonObject());
 
     return pkg;
@@ -324,15 +324,15 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
         // currentTime = now.ToRFC1123();
 
-JsonObject params;
-params["Time"] = "dummy";
-params["name"] = "Testing";
+// JsonObject params;
+// params["Time"] = "dummy";
+// params["name"] = "Testing";
 
 
         // PluginHost::JSONRPC method to send out a JSONRPC message to all subscribers to the event "clock".
-        Notify(_T("onInstallComplete"), params);
+//        Notify(_T("onInstallComplete"), params);
 
-LOGERR("PackagerImplementation::SendN()  .... sent ..." );
+// LOGERR("PackagerExImplementation::SendN()  .... sent ..." );
 
 
 		// We are currently supporting more release, the old interface is expecting a bit a different response:
@@ -347,27 +347,29 @@ LOGERR("PackagerImplementation::SendN()  .... sent ..." );
 LOGERR("PackagerImplementation::GetAvailableSpace()  .... Sending ..." );
 
 
-JsonObject params;
-params["descriptor"] = "dummy";
-params["name"] = "Testing";
-sendNotify("onInstallComplete", params);
+// JsonObject params;
+// params["descriptor"] = "dummy";
+// params["name"] = "Testing";
+// sendNotify("onInstallComplete", params);
 
-Notify(_T("onInstallComplete"), params);
+// Notify(_T("onInstallComplete"), params);
 
-SendN();
+// SendN();
 
-SendN();
+// SendN();
 
-SendN();
+// SendN();
 
-SendN();
+// SendN();
+
+// 
 
 LOGERR("PackagerImplementation::GetAvailableSpace()  .... SENT ..." );
 // JUNK
 // JUNK
 // JUNK
 
-    int64_t used_bytes = DACutils::sumSizeInBytes();
+    int64_t used_bytes = PackagerExUtils::sumSizeInBytes();
 
     LOGERR("PackagerImplementation::GetAvailableSpace()  .... %jd ", used_bytes);
 

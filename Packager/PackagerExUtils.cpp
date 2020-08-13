@@ -50,24 +50,24 @@
 
 #define SQLITE *(sqlite3**) &mData
 
-const int64_t WPEFramework::Plugin::DACutils::MAX_SIZE_BYTES = 1000000;
-const int64_t WPEFramework::Plugin::DACutils::MAX_VALUE_SIZE_BYTES = 1000;
+const int64_t WPEFramework::Plugin::PackagerExUtils::MAX_SIZE_BYTES = 1000000;
+const int64_t WPEFramework::Plugin::PackagerExUtils::MAX_VALUE_SIZE_BYTES = 1000;
 
-JsonObject   WPEFramework::Plugin::DACutils::mPackageCfg;
+JsonObject   WPEFramework::Plugin::PackagerExUtils::mPackageCfg;
 
 namespace WPEFramework {
 namespace Plugin {
 
 
-std::vector<std::thread>       DACutils::mThreadPool; // thread pool
-WPEFramework::Plugin::JobPool  DACutils::mJobPool;
+std::vector<std::thread>       PackagerExUtils::mThreadPool; // thread pool
+WPEFramework::Plugin::JobPool  PackagerExUtils::mJobPool;
 
 
-void* WPEFramework::Plugin::DACutils::mData = nullptr;
+void* WPEFramework::Plugin::PackagerExUtils::mData = nullptr;
 
 #if defined(SQLITE_HAS_CODEC)
 
-    bool DACutils::fileEncrypted(const char* f)
+    bool PackagerExUtils::fileEncrypted(const char* f)
     {
         FILE* fd = fopen(f, "rb");
         if (!fd)
@@ -88,17 +88,17 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     }
 #endif
 
-    bool DACutils::fileRemove(const char* f)
+    bool PackagerExUtils::fileRemove(const char* f)
     {
         return ( remove (f) == 0);
     }
 
-    bool DACutils::fileExists(const char* f)
+    bool PackagerExUtils::fileExists(const char* f)
     {
         return g_file_test(f, G_FILE_TEST_EXISTS);
     }
 
-    int64_t DACutils::folderSize(const char *d)
+    int64_t PackagerExUtils::folderSize(const char *d)
     {
         DIR *dd;
         struct dirent *de;
@@ -110,7 +110,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         dd = opendir(".");
         if (dd == NULL)
         {
-            LOGERR("DACutils::folderSize( %s ) - FAILED", d);
+            LOGERR("PackagerExUtils::folderSize( %s ) - FAILED", d);
             return -1;
         }
 
@@ -132,7 +132,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
         closedir(dd);
 
-        // LOGERR("DACutils::folderSize( %s )  = %jd", d, total_size);
+        // LOGERR("PackagerExUtils::folderSize( %s )  = %jd", d, total_size);
 
         return total_size;
     }
@@ -149,7 +149,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return true;
     }
 
-    bool DACutils::fileEndsWith(const std::string& f, const std::string& ext)
+    bool PackagerExUtils::fileEndsWith(const std::string& f, const std::string& ext)
     {
         std::string::size_type idx = f.rfind('.');
 
@@ -166,12 +166,12 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return false;
     }
 
-    bool DACutils::removeFolder(const string& dirname)
+    bool PackagerExUtils::removeFolder(const string& dirname)
     {
-        return DACutils::removeFolder( (const char *) dirname.c_str() );
+        return PackagerExUtils::removeFolder( (const char *) dirname.c_str() );
     }
 
-    bool DACutils::removeFolder(const char *dirname)
+    bool PackagerExUtils::removeFolder(const char *dirname)
     {
         const char *topdir = dirname;
 
@@ -202,19 +202,19 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
                     removeFolder(path);
                 }
 
-                DACutils::fileRemove(path);
+                PackagerExUtils::fileRemove(path);
             }
         }//WHILE
 
         closedir(dir);
 
         // finally... remove the top folder
-        DACutils::fileRemove(topdir);
+        PackagerExUtils::fileRemove(topdir);
 
         return 1;
     }
 
-    std::string DACutils::getGUID()
+    std::string PackagerExUtils::getGUID()
     {
         uuid_t uuid;
         char uuid_str[37];
@@ -226,7 +226,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return std::string( uuid_str );
     }
 
-    bool DACutils::init(const char* filename, const char* key)
+    bool PackagerExUtils::init(const char* filename, const char* key)
     {
         LOGINFO(" %s() ... SQLite >>  filename: %s    key: %s", __PRETTY_FUNCTION__, filename, key);
 
@@ -237,8 +237,8 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         bool shouldEncrypt = key && *key;
     #if defined(SQLITE_HAS_CODEC)
         bool shouldReKey = shouldEncrypt && 
-                           DACutils::fileExists(filename) && 
-                          !DACutils::fileEncrypted(filename);
+                           PackagerExUtils::fileExists(filename) && 
+                          !PackagerExUtils::fileEncrypted(filename);
     #endif
         int rc = sqlite3_open(filename, &db);
         if (rc)
@@ -262,7 +262,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
             // If the dir doesn't exist it will fail
             auto path = g_build_filename(g_get_user_data_dir(), "data", nullptr);
 
-            if (!DACutils::fileExists(path))
+            if (!PackagerExUtils::fileExists(path))
             {
                 g_mkdir_with_parents(path, 0755);
             }
@@ -276,7 +276,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
             if (!result)
             {
                 // LOGERR("pbnj_utils fail");
-                DACutils::term();
+                PackagerExUtils::term();
                 return false;
             }
     #else
@@ -296,7 +296,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
             {
               fprintf(stderr, " %s() ... Failed to attach encryption key to SQLite", __PRETTY_FUNCTION__);
                 // LOGERR("Failed to attach encryption key to SQLite database %s\nCause - %s", filename, sqlite3_errmsg(db));
-                DACutils::term();
+                PackagerExUtils::term();
                 return false;
             }
 
@@ -343,7 +343,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     //         fprintf(stderr, " %s() ... SQLite database is encrypted, but the key doesn't work", __PRETTY_FUNCTION__);
 
     //         // LOGWARN("SQLite database is encrypted, but the key doesn't work");
-    //         DACutils::term();
+    //         PackagerExUtils::term();
 
     //         if (!fileRemove(filename) || fileExists(filename))
     //         {
@@ -352,16 +352,16 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
     //         }
 
     //         rc = sqlite3_open(filename, &db);
-    //         DACutils::term();
+    //         PackagerExUtils::term();
 
-    //         if (rc || !DACutils::fileExists(filename))
+    //         if (rc || !PackagerExUtils::fileExists(filename))
     //         {
     //           fprintf(stderr, " %s() ... SQLite >> Can't create file", __PRETTY_FUNCTION__);
     //             // LOGERR("Can't create file");
     //             return false;
     //         }
     //         // LOGWARN("SQLite database has been reset, trying re-key");
-    //         return DACutils::init(filename, key);
+    //         return PackagerExUtils::init(filename, key);
     //     }
 
         if ( createTable() == false)
@@ -390,7 +390,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return true;
     }
 
-    bool DACutils::createTable()
+    bool PackagerExUtils::createTable()
     {
         char   *errmsg;
         sqlite3* &db = SQLITE;
@@ -422,16 +422,16 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         {
              fprintf(stderr, "\n TABLE READY \n");
 
-            //  DACutils::showTable();
+            //  PackagerExUtils::showTable();
         }
 
-       // DACutils::term(); // ensure closed 
+       // PackagerExUtils::term(); // ensure closed 
     
         return true;
     }
 
 
-    void DACutils::term()
+    void PackagerExUtils::term()
     {
         // LOGINFO();
 
@@ -445,7 +445,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         db = NULL;
     }
 
-    void DACutils::vacuum()
+    void PackagerExUtils::vacuum()
     {
         // LOGINFO();
         fprintf(stderr, " %s() ... ENTER", __PRETTY_FUNCTION__);
@@ -474,7 +474,7 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         }
     }
 
-    bool DACutils::hasPkgRow(const string& pkgId)
+    bool PackagerExUtils::hasPkgRow(const string& pkgId)
     {
         bool success = false;
 
@@ -509,12 +509,12 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
         return success;
     }
 
-    bool DACutils::hasPkgRow(const char* pkgId)
+    bool PackagerExUtils::hasPkgRow(const char* pkgId)
     {
-        return DACutils::hasPkgRow(string(pkgId));
+        return PackagerExUtils::hasPkgRow(string(pkgId));
     }
 
-    bool DACutils::addPkgRow(const PackageInfoEx* pkg)
+    bool PackagerExUtils::addPkgRow(const PackageInfoEx* pkg)
     {
         if(pkg == nullptr)
         {
@@ -702,7 +702,7 @@ success = true;
         return success;
     }
 
-    PackageInfoEx* DACutils::getPkgRow(const string& pkgId)
+    PackageInfoEx* PackagerExUtils::getPkgRow(const string& pkgId)
     {
         PackageInfoEx* pkg = nullptr;
 
@@ -748,7 +748,7 @@ success = true;
     }
 
 
-    bool DACutils::delPkgRow(const string& pkgId)
+    bool PackagerExUtils::delPkgRow(const string& pkgId)
     {
         if(pkgId.empty()) // passed empty string ?
         {
@@ -805,7 +805,7 @@ success = true;
         return 0;
     }
 
-    void DACutils::showTable()
+    void PackagerExUtils::showTable()
     {
         fprintf(stderr, "\n showTable() - ENTER \n");
 
@@ -824,7 +824,7 @@ success = true;
         }
     }
 
-    int64_t DACutils::sumSizeInBytes()
+    int64_t PackagerExUtils::sumSizeInBytes()
     {
         sqlite3* &db = SQLITE;
         int64_t total = 0;
@@ -889,7 +889,7 @@ success = true;
     }
 
 
-    DACutils::DACrc_t DACutils::extract(const char *filename, const char *to_path /* = nullptr */)
+    PackagerExUtils::DACrc_t PackagerExUtils::extract(const char *filename, const char *to_path /* = nullptr */)
     {
       struct archive *a;
       struct archive *ext;
@@ -994,7 +994,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         std::cout << "bla" << std::endl;
     }
 
-    void DACutils::setupThreadQ()
+    void PackagerExUtils::setupThreadQ()
     {
         int num_threads = std::thread::hardware_concurrency() / 2; // be nice
 
@@ -1007,19 +1007,19 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         }
     }
 
-    void DACutils::killThreadQ()
+    void PackagerExUtils::killThreadQ()
     {
-        DACutils::mJobPool.done();
+        PackagerExUtils::mJobPool.done();
 
         // Kill workers
-        for (unsigned int i = 0; i < DACutils::mThreadPool.size(); i++)
+        for (unsigned int i = 0; i < PackagerExUtils::mThreadPool.size(); i++)
         {
             fprintf(stderr, " %s() ... Killing WORKER  i: %d\n", __PRETTY_FUNCTION__, i);
-            DACutils::mThreadPool.at(i).join();
+            PackagerExUtils::mThreadPool.at(i).join();
         }
     }
 
-    void DACutils::addJob( )
+    void PackagerExUtils::addJob( )
     {
         // here we should send our jobs
         for (int i = 0; i < 10; i++)
@@ -1036,10 +1036,10 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         return written;
     }
 
-    DACutils::DACrc_t DACutils::downloadJSON(const char *url)
+    PackagerExUtils::DACrc_t PackagerExUtils::downloadJSON(const char *url)
     {
         // Always cleanup
-        DACutils::fileRemove(TMP_FILENAME);
+        PackagerExUtils::fileRemove(TMP_FILENAME);
 
         // Download JSON manifest...
         //
@@ -1059,16 +1059,16 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
          return DACrc_t::dac_FAIL;
     }
 
-    DACutils::DACrc_t DACutils::downloadURL(const char *url)
+    PackagerExUtils::DACrc_t PackagerExUtils::downloadURL(const char *url)
     {
       CURL *curl;
       FILE *fp;
       CURLcode res;
 
       // Always cleanup
-      DACutils::fileRemove(TMP_FILENAME);
+      PackagerExUtils::fileRemove(TMP_FILENAME);
 
-      DACutils::DACrc_t rc = DACrc_t::dac_FAIL;
+      PackagerExUtils::DACrc_t rc = DACrc_t::dac_FAIL;
 
       fprintf(stderr, " %s() ... download: %s \n", __PRETTY_FUNCTION__, url);
 
