@@ -134,8 +134,6 @@ namespace Plugin {
         virtual PackageInfoEx*             GetPackageInfo(const string& pkgId) override;
         virtual int64_t                    GetAvailableSpace() override;
 
-        virtual JsonObject getInfo() { LOGERR(" getInfo HERE"); return JsonObject(); };
-
     private:
         class PackageInfo : public Exchange::IPackager::IPackageInfo {
         public:

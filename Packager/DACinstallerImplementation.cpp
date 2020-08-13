@@ -47,6 +47,7 @@ namespace Plugin {
   {
     DDD();
 
+   // RegisterAll();  
 
     auto path = g_build_filename("/opt", "persistent", nullptr);
 
@@ -57,51 +58,59 @@ namespace Plugin {
 
     auto file = g_build_filename(path, STORE_NAME, nullptr);
 
-
     bool success = DACutils::init(file, STORE_KEY);
-    fprintf(stderr, "\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
+    LOGERR("\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
 
     if(success)
     {
 
+
+//JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
+//JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
+//
+//  TEST CODE...
+//
 #if 0  
-      mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
+      PackageInfoEx *pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
 
-      mInfo->setName("Test Name");
-      mInfo->setBundlePath("/opt/foo/bar/myAppFolder");
-      mInfo->setVersion("1.2.3");
-      mInfo->setPkgId("TestApp0123456");
-      mInfo->setInstalled("Fri Jul 31 16:54:41 UTC 2020");
-      mInfo->setSizeInBytes(123456);
-      mInfo->setType("DAC");
-
-
-
-fprintf(stderr, "########## addPkgRow \n");
-  DACutils::addPkgRow(mInfo);  
+      pkg->setName("Test Name");
+      pkg->setBundlePath("/opt/foo/bar/myAppFolder");
+      pkg->setVersion("1.2.3");
+      pkg->setPkgId("TestApp0123456");
+      pkg->setInstalled("Fri Jul 31 16:54:41 UTC 2020");
+      pkg->setSizeInBytes(123456);
+      pkg->setType("DAC");
 
 
-fprintf(stderr, "########## hasPkgRow('TestApp0123456') == %s\n", 
+
+LOGERR("########## addPkgRow \n");
+  DACutils::addPkgRow(pkg);  
+
+    pkg->Release();
+
+LOGERR("########## hasPkgRow('TestApp0123456') == %s\n", 
       (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
 
 
 
-fprintf(stderr, "########## hasPkgRow('foo') == %s\n\n", 
+LOGERR("########## hasPkgRow('foo') == %s\n\n", 
       (DACutils::hasPkgRow( "foo" ) ? "TRUE" : "FALSE") );
 
 
-fprintf(stderr, "########## showTable \n\n");
+LOGERR("########## showTable \n\n");
 DACutils::showTable();
 
 
-fprintf(stderr, "\n########## delPkgRow\n");
+LOGERR("\n########## delPkgRow\n");
   DACutils::delPkgRow("TestApp0123456");
 
 
-fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n", 
+LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n", 
       (DACutils::hasPkgRow( "TestApp0123456" ) ? "TRUE" : "FALSE") );
 
 #endif //00
+//JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
+//JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
 
 
 // fprintf(stderr, "\n########## getPkgRow\n");
@@ -121,6 +130,8 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   DACinstallerImplementation::~DACinstallerImplementation()
   {
     DDD();
+
+   // UnregisterAll();
 
     DACutils::term();
   }
@@ -156,6 +167,7 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   {
     std::string install_name( "(empty))" );
     std::string install_url( url );
+    std::string install_ver( "1.2.3" );
 
     // Parse the URL...
     //
@@ -171,8 +183,10 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
             return -1; // FAIL  //DACutils::DACrc_t::dac_FAIL;
         }
 
-        install_url  = DACutils::mPackageCfg["install"].String();
+        // Parse JSON for meta...
+        install_url  = DACutils::mPackageCfg["install"].String(); // update install from URL
         install_name = DACutils::mPackageCfg["name"].String();
+        install_ver  = DACutils::mPackageCfg["version"].String();
     }
   
     // Download TGZ package...
@@ -188,7 +202,7 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     {
         char uuid_path[PATH_MAX];
 
-        // Get UUID
+        // Get UUID ...
         std::string uuid_str = DACutils::getGUID();
 
         // Create path ... APPS_ROOT / {UUID} / {app}
@@ -205,27 +219,31 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
             return -1; // FAIL
         }
 
-        LOGERR(" %s() ... INSTALLED >>> [ %s ]\n", __PRETTY_FUNCTION__, install_name.c_str());
+        // TODO: look for JSON meta in app bundle...
+        //
+        LOGINFO(" %s() ... INSTALLED >>> [ %s ]\n", __PRETTY_FUNCTION__, install_name.c_str());
 
         // Always cleanup
         DACutils::fileRemove(TMP_FILENAME);
 
-        mInfo = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
+        PackageInfoEx* pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
 
         time_t rawtime;
         time (&rawtime);
 
         int32_t bytes = DACutils::folderSize(uuid_path);
 
-        mInfo->setPkgId(pkgId);
-        mInfo->setName(install_name);
-        mInfo->setBundlePath(uuid_path);
-        mInfo->setVersion("1.2.3");
-        mInfo->setInstalled(ctime (&rawtime));
-        mInfo->setSizeInBytes(bytes);
-        mInfo->setType(type);
+        pkg->setPkgId(pkgId);
+        pkg->setName(install_name);
+        pkg->setBundlePath(uuid_path);
+        pkg->setVersion(install_ver);
+        pkg->setInstalled(ctime (&rawtime));
+        pkg->setSizeInBytes(bytes);
+        pkg->setType(type);
         
-        DACutils::addPkgRow(mInfo);
+        DACutils::addPkgRow(pkg); // add to SQL 
+
+        pkg->Release();
     }
 
     return 0;
@@ -264,12 +282,6 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   {
     DDD();
 
-    // for(int i = 0; i < 50000; i++)
-    // {
-    //   PackageInfoEx *pp = Core::Service<PackageInfoEx>::Create<PackageInfoEx>("myName", "myVersion", "myID");
-    //   mPPPlist.push_back(pp);
-    // }
-
 // fprintf(stderr, "\nHUGH >>>>> Fill LIST >>> mPPPlist.size()  = %ld ", mPPPlist.size() ); 
 
     return 0;
@@ -299,20 +311,65 @@ fprintf(stderr, "########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   {
     PackageInfoEx* pkg = DACutils::getPkgRow(pkgId);
 
-    int64_t foo = DACutils::sumSizeInBytes();
-    LOGERR(" #########   foo = %ld bytes", foo);
-
     DACutils::showTable();
     // sendNotify("MyDummy Event", JsonObject());
 
     return pkg;
   }
 
+    void DACinstallerImplementation::SendN()
+    {
+        // Core::Time now(Core::Time::Now());
+        // Core::JSON::String currentTime;
+
+        // currentTime = now.ToRFC1123();
+
+JsonObject params;
+params["Time"] = "dummy";
+params["name"] = "Testing";
+
+
+        // PluginHost::JSONRPC method to send out a JSONRPC message to all subscribers to the event "clock".
+        Notify(_T("onInstallComplete"), params);
+
+LOGERR("PackagerImplementation::SendN()  .... sent ..." );
+
+
+		// We are currently supporting more release, the old interface is expecting a bit a different response:
+   //    GetHandler(1)->Notify(_T("clock"), "Groundhog Day");// Data::Time(now.Hours(), now.Minutes(), now.Seconds()));
+    }
+
   int64_t DACinstallerImplementation::GetAvailableSpace_imp()
   {    
+// JUNK
+// JUNK
+// JUNK
+LOGERR("PackagerImplementation::GetAvailableSpace()  .... Sending ..." );
+
+
+JsonObject params;
+params["descriptor"] = "dummy";
+params["name"] = "Testing";
+sendNotify("onInstallComplete", params);
+
+Notify(_T("onInstallComplete"), params);
+
+SendN();
+
+SendN();
+
+SendN();
+
+SendN();
+
+LOGERR("PackagerImplementation::GetAvailableSpace()  .... SENT ..." );
+// JUNK
+// JUNK
+// JUNK
+
     int64_t used_bytes = DACutils::sumSizeInBytes();
 
-    //LOGERR("PackagerImplementation::GetAvailableSpace()  ... %jd   BBB", used_bytes);
+    LOGERR("PackagerImplementation::GetAvailableSpace()  .... %jd ", used_bytes);
 
     return ((STORE_BYTES_QUOTA - used_bytes)/1000); // in KB
   }

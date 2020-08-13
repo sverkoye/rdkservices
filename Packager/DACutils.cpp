@@ -59,10 +59,8 @@ namespace WPEFramework {
 namespace Plugin {
 
 
-PackageInfoEx* DACutils::mThisPkg = nullptr;
-
-std::vector<std::thread>       DACutils::threadPool; // thread pool
-WPEFramework::Plugin::JobPool  DACutils::jobPool;
+std::vector<std::thread>       DACutils::mThreadPool; // thread pool
+WPEFramework::Plugin::JobPool  DACutils::mJobPool;
 
 
 void* WPEFramework::Plugin::DACutils::mData = nullptr;
@@ -230,8 +228,6 @@ void* WPEFramework::Plugin::DACutils::mData = nullptr;
 
     bool DACutils::init(const char* filename, const char* key)
     {
-        mThisPkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
-
         LOGINFO(" %s() ... SQLite >>  filename: %s    key: %s", __PRETTY_FUNCTION__, filename, key);
 
         sqlite3* &db = SQLITE;
@@ -532,7 +528,7 @@ LOGINFO(" %s() ... Adding row for '%s'... ", __PRETTY_FUNCTION__, pkg->Name().c_
 
         sqlite3* &db = SQLITE;
 
-        // Check size of addition
+        // Check size of addition to SQL
         //
         // if (db)
         // {
@@ -708,6 +704,8 @@ success = true;
 
     PackageInfoEx* DACutils::getPkgRow(const string& pkgId)
     {
+        PackageInfoEx* pkg = nullptr;
+
         sqlite3* &db = SQLITE;
 
         if (db)
@@ -726,26 +724,17 @@ success = true;
             rc = sqlite3_step(stmt);
             if (rc == SQLITE_ROW) // FOUND !!
             {
-                mThisPkg->setName(        sqlite3_column_text(stmt, 0) ); // name
-                mThisPkg->setBundlePath(  sqlite3_column_text(stmt, 1) ); // path
-                mThisPkg->setVersion(     sqlite3_column_text(stmt, 2) ); // version
-                mThisPkg->setPkgId(       sqlite3_column_text(stmt, 3) ); // id
-                mThisPkg->setInstalled(   sqlite3_column_text(stmt, 4) ); // installed
-                mThisPkg->setSizeInBytes( sqlite3_column_int( stmt, 5) ); // size (bytes)
-                mThisPkg->setType(        sqlite3_column_text(stmt, 6) ); // type
+                pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
 
-                PackageInfoEx::printPkg(mThisPkg);
-#if 0
+                pkg->setName(        sqlite3_column_text(stmt, 0) ); // name
+                pkg->setBundlePath(  sqlite3_column_text(stmt, 1) ); // path
+                pkg->setVersion(     sqlite3_column_text(stmt, 2) ); // version
+                pkg->setPkgId(       sqlite3_column_text(stmt, 3) ); // id
+                pkg->setInstalled(   sqlite3_column_text(stmt, 4) ); // installed
+                pkg->setSizeInBytes( sqlite3_column_int( stmt, 5) ); // size (bytes)
+                pkg->setType(        sqlite3_column_text(stmt, 6) ); // type
 
-        LOGWARN(">>>>>>>  Name()       ... %s", mThisPkg->Name()       .c_str() );
-        LOGWARN(">>>>>>>  BundlePath() ... %s", mThisPkg->BundlePath() .c_str() );
-        LOGWARN(">>>>>>>  Version()    ... %s", mThisPkg->Version()    .c_str() );
-        LOGWARN(">>>>>>>  PkgId()      ... %s", mThisPkg->PkgId()      .c_str() );
-        LOGWARN(">>>>>>>  Installed()  ... %s", mThisPkg->Installed()  .c_str() );
-        LOGWARN(">>>>>>>  Size()       ... %d", mThisPkg->SizeInBytes()         );
-        LOGWARN(">>>>>>>  Type()       ... %s", mThisPkg->Type()       .c_str() );
-
-#endif //0
+               // PackageInfoEx::printPkg(pkg);
             }
             else
             {
@@ -755,7 +744,7 @@ success = true;
             sqlite3_finalize(stmt);
         }
 
-        return mThisPkg;
+        return pkg;
     }
 
 
@@ -864,234 +853,7 @@ success = true;
     }
 
 
-#if 0 // JUNK
-    bool DACutils::setValue(const string& ns, const string& key, const string& value)
-    {
-        // LOGINFO("%s %s %s", ns.c_str(), key.c_str(), value.c_str());
-
-        bool success = false;
-
-        sqlite3* &db = SQLITE;
-
-        if (db)
-        {
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "SELECT sum(s) FROM ("
-                                   " SELECT sum(length(key)+length(value)) s FROM item"
-                                   " UNION ALL"
-                                   " SELECT sum(length(name)) s FROM namespace"
-                                   ");", -1, &stmt, nullptr);
-
-            if (sqlite3_step(stmt) == SQLITE_ROW)
-            {
-                int64_t size = sqlite3_column_int64(stmt, 0);
-                if (size > MAX_SIZE_BYTES)
-                {
-                    // LOGWARN("max size exceeded: %lld", size);
-                }
-                else
-                {
-                    success = true;
-                }
-            }
-            else
-            {
-            // LOGERR("ERROR getting size: %s", sqlite3_errmsg(db));
-            }
-
-            sqlite3_finalize(stmt);
-        }
-
-        if (success)
-        {
-            success = false;
-
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "INSERT OR IGNORE INTO namespace (name) values (?);", -1, &stmt, nullptr);
-
-            sqlite3_bind_text(stmt, 1, ns.c_str(), -1, SQLITE_TRANSIENT);
-
-            int rc = sqlite3_step(stmt);
-            if (rc != SQLITE_DONE)
-            {
-             // LOGERR("ERROR inserting data: %s", sqlite3_errmsg(db));
-            }
-            else
-            {
-                success = true;
-            }
-
-            sqlite3_finalize(stmt);
-        }
-
-        if (success)
-        {
-            success = false;
-
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "INSERT INTO item (ns,key,value)"
-                                   " SELECT id, ?, ?"
-                                   " FROM namespace"
-                                   " WHERE name = ?"
-                                   ";", -1, &stmt, nullptr);
-
-            sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, value.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 3, ns.c_str(), -1, SQLITE_TRANSIENT);
-
-            int rc = sqlite3_step(stmt);
-            if (rc != SQLITE_DONE)
-            {
-                // LOGERR("ERROR inserting data: %s", sqlite3_errmsg(db));
-            }
-            else
-            {
-                success = true;
-            }
-
-            sqlite3_finalize(stmt);
-        }
-
-        if (success)
-        {
-            success = false;
-
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "SELECT sum(s) FROM ("
-                                    " SELECT sum(length(key)+length(value)) s FROM item"
-                                    " UNION ALL"
-                                    " SELECT sum(length(name)) s FROM namespace"
-                                    ");", -1, &stmt, nullptr);
-
-            if (sqlite3_step(stmt) == SQLITE_ROW)
-            {
-                int64_t size = sqlite3_column_int64(stmt, 0);
-                if (size > MAX_SIZE_BYTES)
-                {
-                    // LOGWARN("max size exceeded: %lld", size);
-
-                    // JsonObject params;
-                    // sendNotify(C_STR(EVT_ON_STORAGE_EXCEEDED), params);
-                }
-                else
-                {
-                    success = true;
-                }
-            }
-            else
-            {
-                // LOGERR("ERROR getting size: %s", sqlite3_errmsg(db));
-            }
-
-            sqlite3_finalize(stmt);
-        }
-
-        return success;
-    }
-
-    bool DACutils::getValue(const string& ns, const string& key, string& value)
-    {
-        // LOGINFO("%s %s", ns.c_str(), key.c_str());
-
-        bool success = false;
-
-        sqlite3* &db = SQLITE;
-
-        if (db)
-        {
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "SELECT value"
-                                    " FROM item"
-                                    " INNER JOIN namespace ON namespace.id = item.ns"
-                                    " where name = ? and key = ?"
-                                    ";", -1, &stmt, nullptr);
-
-            sqlite3_bind_text(stmt, 1, ns.c_str(),  -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, key.c_str(), -1, SQLITE_TRANSIENT);
-
-            int rc = sqlite3_step(stmt);
-            if (rc == SQLITE_ROW)
-            {
-                value = (const char*)sqlite3_column_text(stmt, 0);
-                success = true;
-            }
-            else
-            {
-              //  LOGWARN("not found: %d", rc);
-            }
-            sqlite3_finalize(stmt);
-        }
-
-        return success;
-    }
-
-    bool DACutils::deleteKey(const string& ns, const string& key)
-    {
-        // LOGINFO("%s %s", ns.c_str(), key.c_str());
-
-        bool success = false;
-
-        sqlite3* &db = SQLITE;
-
-        if (db)
-        {
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "DELETE FROM item"
-                                    " where ns in (select id from namespace where name = ?)"
-                                    " and key = ?"
-                                    ";", -1, &stmt, NULL);
-
-            sqlite3_bind_text(stmt, 1, ns.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 2, key.c_str(), -1, SQLITE_TRANSIENT);
-
-            int rc = sqlite3_step(stmt);
-            if (rc != SQLITE_DONE)
-            {
-                // LOGERR("ERROR removing data: %s", sqlite3_errmsg(db));
-            }
-            else
-            {
-                success = true;
-            }
-
-            sqlite3_finalize(stmt);
-        }
-
-        return success;
-    }
-
-    bool DACutils::deleteNamespace(const string& ns)
-    {
-        // LOGINFO("%s", ns.c_str());
-
-        bool success = false;
-
-        sqlite3* &db = SQLITE;
-
-        if (db)
-        {
-            sqlite3_stmt *stmt;
-            sqlite3_prepare_v2(db, "DELETE FROM namespace where name = ?;", -1, &stmt, NULL);
-
-            sqlite3_bind_text(stmt, 1, ns.c_str(), -1, SQLITE_TRANSIENT);
-
-            int rc = sqlite3_step(stmt);
-            if (rc != SQLITE_DONE)
-            {
-                // LOGERR("ERROR removing data: %s", sqlite3_errmsg(db));
-            }
-            else
-            {
-                success = true;
-            }
-
-            sqlite3_finalize(stmt);
-        }
-
-        return success;
-    }
-#endif // 0 JUNK
-
+    
     // ARCHIVE CODE
     static int
     copy_data(struct archive *ar, struct archive *aw)
@@ -1241,19 +1003,19 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         for (int i = 0; i < num_threads; i++)
         {
             fprintf(stderr, " %s() ... Starting Worker()  i: %d \n", __PRETTY_FUNCTION__, i);
-            threadPool.push_back(std::thread(&JobPool::worker_func, &jobPool));
+            mThreadPool.push_back(std::thread(&JobPool::worker_func, &mJobPool));
         }
     }
 
     void DACutils::killThreadQ()
     {
-        DACutils::jobPool.done();
+        DACutils::mJobPool.done();
 
         // Kill workers
-        for (unsigned int i = 0; i < DACutils::threadPool.size(); i++)
+        for (unsigned int i = 0; i < DACutils::mThreadPool.size(); i++)
         {
             fprintf(stderr, " %s() ... Killing WORKER  i: %d\n", __PRETTY_FUNCTION__, i);
-            DACutils::threadPool.at(i).join();
+            DACutils::mThreadPool.at(i).join();
         }
     }
 
@@ -1263,7 +1025,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         for (int i = 0; i < 10; i++)
         {
             fprintf(stderr, " %s() ... Adding JOB  i: %d \n", __PRETTY_FUNCTION__, i);
-            jobPool.push(example_function);
+            mJobPool.push(example_function);
         }
     }
 
@@ -1337,7 +1099,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
     //================================================================================================
 
     JobPool::JobPool() : 
-        m_JobQ(), m_lock(), m_data_condition(), m_accept_functions(true)
+        mJobQ(), mLock(), mDataCondition(), mAcceptJobs(true)
     {
     }
 
@@ -1347,25 +1109,25 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
     void JobPool::push(std::function<void()> func)
     {
-        std::unique_lock<std::mutex> lock(m_lock);
-        m_JobQ.push(func);
+        std::unique_lock<std::mutex> lock(mLock);
+        mJobQ.push(func);
 
         // when we send the notification immediately, 
         // the consumer will try to get the lock , so unlock asap
 
         lock.unlock();
-        m_data_condition.notify_one();
+        mDataCondition.notify_one();
     }
 
     void JobPool::done()
     {
-        std::unique_lock<std::mutex> lock(m_lock);
-        m_accept_functions = false;
+        std::unique_lock<std::mutex> lock(mLock);
+        mAcceptJobs = false;
         lock.unlock();
 
         // when we send the notification immediately, 
         // the consumer will try to get the lock , so unlock asap
-        m_data_condition.notify_all();
+        mDataCondition.notify_all();
       
         //notify all waiting threads.
     }
@@ -1376,21 +1138,21 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         while (true)
         {
             {
-                std::unique_lock<std::mutex> lock(m_lock);
-                m_data_condition.wait(lock, [this]()
+                std::unique_lock<std::mutex> lock(mLock);
+                mDataCondition.wait(lock, [this]()
                 {
-                  return !m_JobQ.empty() || !m_accept_functions;
+                  return !mJobQ.empty() || !mAcceptJobs;
                 });
 
-                if (!m_accept_functions && m_JobQ.empty())
+                if (!mAcceptJobs && mJobQ.empty())
                 {
                     //lock will be release automatically.
                     //finish the thread loop and let it join in the main thread.
                     return;
                 }
 
-                func = m_JobQ.front();
-                m_JobQ.pop();
+                func = mJobQ.front();
+                mJobQ.pop();
                 //release the lock
             }
             func();

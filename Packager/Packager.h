@@ -100,8 +100,10 @@ namespace {
             Core::JSON::String Listener;
         }; // STRUCT     
 
+        // We do not allow this plugin to be copied !!
         Packager(const Packager&) = delete;
         Packager& operator=(const Packager&) = delete;
+
         Packager()
             : _skipURL(0)
             , _connectionId(0)
@@ -244,14 +246,15 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             {
                 JsonArray list; // installed packages
 
-                // Exchange::IPackager::IPackageInfoEx::IIterator *iter = this->_implementation->GetInstalled();
+                Exchange::IPackager::IPackageInfoEx::IIterator *iter = this->_implementation->GetInstalled();
 
-               // while (iter->Next() == true)
-               for(int i=0; i< 3; i++)
+                while (iter->Next() == true)
                 {
-                   // Exchange::IPackager::IPackageInfoEx *pkg = (Exchange::IPackager::IPackageInfoEx *) iter;
+                    Exchange::IPackager::IPackageInfoEx *pkg = (Exchange::IPackager::IPackageInfoEx *) iter;
 
-                    Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo("foo");
+                    //Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo("foo");
+
+                    LOGERR("Packager::GetInstalled() - App: %s", pkg->Name().c_str());
 
                     if(pkg != nullptr)
                     {
@@ -259,6 +262,11 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                         PkgInfo2json(pkg, pkgJson);
 
                         list.Add( pkgJson );
+                    }
+
+                    if(pkg)
+                    {
+                        pkg->Release();
                     }
                 }//WHILE
                
@@ -276,7 +284,17 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             {
                 Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo(params.PkgId.Value());
 
-                return PkgInfo2json(pkg, response);
+                LOGERR("Packager::GetPackageInfo() - App: %s", pkg->Name().c_str());
+
+                JsonObject pkgJson;
+                PkgInfo2json(pkg, response);
+
+                if(pkg)
+                {
+                    pkg->Release();
+                }
+
+                return 0; 
             });
             //
             // DAC::GetAvailableSpace()
@@ -325,7 +343,8 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
         Core::ProxyType<Web::Response> Process(const Web::Request& request) override;
 
     private:
-        class Notification : public RPC::IRemoteConnection::INotification {
+        class Notification : public RPC::IRemoteConnection::INotification
+        {
         public:
             explicit Notification(Packager* parent)
                 : _parent(*parent)
@@ -356,7 +375,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
 
         private:
             Packager& _parent;
-        };
+        }; // CLASS - Notification
 
         void Deactivated(RPC::IRemoteConnection* connection);
 

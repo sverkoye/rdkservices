@@ -20,10 +20,9 @@
 #pragma once
 
 #include "Module.h"
+#include "utils.h"
 
 #include <interfaces/IPackager.h>
-
-#include "utils.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -37,14 +36,19 @@ namespace WPEFramework {
 namespace Plugin {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    //
+    // Encapsulate Package Info
+    //
     class PackageInfoEx : public Exchange::IPackager::IPackageInfoEx
     {
       public:
+        // PackageInfoEx() = delete;
         PackageInfoEx(const PackageInfoEx&) = delete;
         PackageInfoEx& operator=(const PackageInfoEx&) = delete;
 
         ~PackageInfoEx() override
         {
+          Release();
         }
 
         PackageInfoEx(const std::string& name,
@@ -54,33 +58,38 @@ namespace Plugin {
                         , _version(version)
                         , _pkgId(pkgId)
         {
+          //AddRef();
         }
 
         PackageInfoEx() = default;
 
-
+        // Ref Counting
         virtual void AddRef() //const
         {
             Core::InterlockedIncrement(_refCount);
+
+            // LOGERR("\n PackageInfoEx <<< AddRef()  - %d", _refCount);
         }
 
         virtual uint32_t Release() //const
         {
             if (--_refCount == 0)
             {
+              LOGERR("\n PackageInfoEx <<< Release()  - DELETE");
               delete const_cast<PackageInfoEx*>(this);
             }
             return (0);
         }
-        
+
         BEGIN_INTERFACE_MAP(PackageInfoEx)
             INTERFACE_ENTRY(Exchange::IPackager::IPackageInfoEx)
         END_INTERFACE_MAP
 
-typedef const unsigned char uchar_t;
+        typedef const unsigned char uchar_t; // helper
 
         #define uchar2string(v)  string( reinterpret_cast<const char*>(v))
 
+        // Getter / Setter 
         string  Name()                const override { return _name;          };
         void setName( string v )            { _name = v;                      };
         void setName( uchar_t *v )          { _name = uchar2string(v);        };
@@ -89,7 +98,7 @@ typedef const unsigned char uchar_t;
         void setBundlePath( string v )      { _bundlePath = v;                };
         void setBundlePath( uchar_t *v )    { _bundlePath = uchar2string(v);  };
 
-        string  Version()               const override { return _version;     };
+        string  Version()             const override { return _version;       };
         void setVersion( string v)          { _version = v;                   };
         void setVersion( uchar_t *v )       { _version = uchar2string(v);     };
 
@@ -108,6 +117,8 @@ typedef const unsigned char uchar_t;
         void setType( string v)             { _type = v;                      };
         void setType( uchar_t *v )          { _type = uchar2string(v);        };
 
+        // Helpers
+#if 0
         static JsonObject pkg2json(PackageInfoEx *pkg)
         {
             JsonObject json;
@@ -119,7 +130,7 @@ typedef const unsigned char uchar_t;
             }
 
             char sizeInBytes[255];
-            snprintf(sizeInBytes, 255, "%jd", pkg->SizeInBytes());
+            snprintf(sizeInBytes, sizeof(sizeInBytes), "%jd", pkg->SizeInBytes());
 
             json["name"]       = pkg->Name();
             json["bundlePath"] = pkg->BundlePath();
@@ -137,7 +148,7 @@ typedef const unsigned char uchar_t;
             JsonObject json;
 
             char sizeInBytes[255];
-            snprintf(sizeInBytes, 255, "%jd", pkg.SizeInBytes());
+            snprintf(sizeInBytes, sizeof(sizeInBytes), "%jd", pkg.SizeInBytes());
 
             json["name"]       = pkg.Name();
             json["bundlePath"] = pkg.BundlePath();
@@ -164,6 +175,7 @@ typedef const unsigned char uchar_t;
 
             return pkg;
         };
+#endif //0
 
         static void printPkg(PackageInfoEx *pkg)
         {
@@ -172,14 +184,13 @@ typedef const unsigned char uchar_t;
             return;
           }
 
-          LOGINFO("\n name: '%s', path: '%s', ver: '%s', id: '%s', installed: '%s', size: %jd, type: '%s'\n",
-                   pkg->Name().c_str(),       // name
-                   pkg->BundlePath().c_str(), // path
-                   pkg->Version().c_str(),    // version
-                   pkg->PkgId().c_str(),      // id
-                   pkg->Installed().c_str(),  // installed
-                   pkg->SizeInBytes() ,       // size
-                   pkg->Type().c_str() );     // type
+          LOGWARN("pkgInfo >>>>>>>       name: %s",  pkg->Name()       .c_str() ); // name
+          LOGWARN("pkgInfo >>>>>>>       path: %s",  pkg->BundlePath() .c_str() ); // path
+          LOGWARN("pkgInfo >>>>>>>    version: %s",  pkg->Version()    .c_str() ); // version
+          LOGWARN("pkgInfo >>>>>>>         id: %s",  pkg->PkgId()      .c_str() ); // id
+          LOGWARN("pkgInfo >>>>>>>  installed: %s",  pkg->Installed()  .c_str() ); // installed
+          LOGWARN("pkgInfo >>>>>>>       size: %jd", pkg->SizeInBytes()         ); // size
+          LOGWARN("pkgInfo >>>>>>>       type: %s",  pkg->Type()       .c_str() ); // type
         }
 
         static void printPkg(PackageInfoEx &pkg)
@@ -203,7 +214,7 @@ typedef const unsigned char uchar_t;
     };// CLASS - PackageInfoEx
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    class DACinstallerImplementation
+    class DACinstallerImplementation: /* public PluginHost::IPlugin,*/ public PluginHost::JSONRPC
     {
       public:
 
@@ -220,6 +231,8 @@ typedef const unsigned char uchar_t;
 
         uint32_t IsInstalled_imp(const string& pkgId);
         uint32_t GetInstallProgress_imp(const string& task);
+ 
+ void SendN();
 
         using IPackageInfoEx = Exchange::IPackager::IPackageInfoEx;
 
@@ -228,8 +241,6 @@ typedef const unsigned char uchar_t;
         PackageInfoEx* GetPackageInfo_imp(const string& pkgId);
 
         int64_t GetAvailableSpace_imp();
-
-        virtual JsonObject getInfo(JsonObject) { LOGERR(" getInfo GOOD"); return JsonObject(); };
 
         std::vector<PackageInfoEx *> mPPPlist;
 
@@ -241,9 +252,6 @@ typedef const unsigned char uchar_t;
         uint32_t doInstall(const string& pkgId, const string& type, const string& url,const string& token, const string& listener);
 
         uint32_t mTaskNumber;
-
-        PackageInfoEx *mInfo;
-
     };//CLASS - DACinstallerImplementation
 
   } // namespace Plugin

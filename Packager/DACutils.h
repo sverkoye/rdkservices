@@ -37,7 +37,6 @@
 namespace WPEFramework {
 namespace Plugin {
 
-//class DACinstallerImplementation; //fwd
 class PackageInfoEx; //fwd
 
     class JobPool; //fwd
@@ -50,16 +49,15 @@ class PackageInfoEx; //fwd
             DACutils(const DACutils&) = delete;
             DACutils& operator=(const DACutils&) = delete;
 
-            // DACutils();
-            // ~DACutils();
-
             static bool init(const char* filename, const char* key);
             static bool createTable();
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // Clean up
             static void term();
             static void vacuum();
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // File hepers
             static bool    fileRemove(const char* f);
             static bool    fileExists(const char* f);
@@ -73,6 +71,8 @@ class PackageInfoEx; //fwd
 
             static std::string getGUID();
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            // SQL helpers
             static bool           hasPkgRow(const string& pkgId);
             static bool           hasPkgRow(const char* pkgId);
             static bool           addPkgRow(const PackageInfoEx* pkg);
@@ -81,30 +81,23 @@ class PackageInfoEx; //fwd
 
             static int64_t        sumSizeInBytes();
 
-            static PackageInfoEx* mThisPkg;
-
             static void showTable();
 
-            // SQL helpers
-            // static bool setValue(const string& ns, const string& key, const string& value);
-            // static bool getValue(const string& ns, const string& key, string& value);
-
-            // static bool deleteKey(const string& ns, const string& key);
-            // static bool deleteNamespace(const string& ns);
-
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // House-keeping
             static void setupThreadQ();
             static void killThreadQ();
 
-           // static DACrc_t installURL(const char *url);
+            static void addJob();
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // Install helpers
             static DACrc_t downloadJSON(const char *url);
             static DACrc_t downloadURL(const char *url);
             
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            // Adrhive helpers
             static DACrc_t extract(const char *filename, const char *to_path = nullptr);
-
-            static void addJob();
 
             // private data
             static void*        mData;
@@ -112,34 +105,35 @@ class PackageInfoEx; //fwd
 
         private:
 
-            static JobPool                     jobPool;
-            static std::vector<std::thread> threadPool; // thread pool
+            static JobPool                     mJobPool;
+            static std::vector<std::thread> mThreadPool; // thread pool
 
             static const int64_t  MAX_SIZE_BYTES;
             static const int64_t  MAX_VALUE_SIZE_BYTES;
     };
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Threaded Job
     class JobPool
     {
        public:
             JobPool(const JobPool&) = delete;
             JobPool& operator=(const JobPool&) = delete;
 
-            // DACpool();
-            // ~DACpool();
+            JobPool();
+            ~JobPool();
 
-        JobPool();
-        ~JobPool();
-
-        void push(std::function<void()> func);
-        void done();
-        void worker_func();
+            void push(std::function<void()> func);
+            void done();
+            void worker_func();
 
       private:
-          std::queue<std::function<void()>> m_JobQ;
-          std::mutex                        m_lock;
-          std::condition_variable           m_data_condition;
-          std::atomic<bool>                 m_accept_functions;
-    };
+            std::queue<std::function<void()>> mJobQ;
+            std::mutex                        mLock;
+            std::condition_variable           mDataCondition;
+            std::atomic<bool>                 mAcceptJobs;
+    };// CLASS - JobPool
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
   } // namespace Plugin
 }  // namespace WPEFramework
