@@ -141,22 +141,10 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   uint32_t PackagerExImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
-    // JsonObject params;
-    // JsonObject result;
-    // // params["jsonrpc"] = "2.0";
-    // params["id"]        = "5";
-    // params["task"]      = atoi(mTaskNumber++);
-    // params["result"]    = result;
-    // result["success"]   = true;
-
-    // sendNotify(DAC_EVT_INSTALL_ACK, params);
-
-    /*return*/ doInstall(pkgId, type,  url, token, listener); // THREAD IT
+    /*return*/ doInstall(pkgId, type,  url, token, listener); //TODO: THREAD THIS
 
     // response["error"] = "params missing";
-
     // response["value"] = "test123";
-
     // returnResponse(true);
 
     return 0;
@@ -282,7 +270,8 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   {
     DDD();
 
-// fprintf(stderr, "\nHUGH >>>>> Fill LIST >>> mPPPlist.size()  = %ld ", mPPPlist.size() ); 
+    // TODO: 
+    // fprintf(stderr, "\nHUGH >>>>> Fill LIST >>> mPPPlist.size()  = %ld ", mPPPlist.size() ); 
 
     return 0;
   }
@@ -298,12 +287,16 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   uint32_t PackagerExImplementation::GetInstallProgress_imp(const string& task)
   {
     DDD();
-    return 31;
+
+    // TODO: 
+    return 42;
   }
 
   PackageInfoEx::IIterator* PackagerExImplementation::GetInstalled_imp()
   {
     DDD();
+
+    // TODO: 
     return nullptr;
   }
 
@@ -317,28 +310,6 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return pkg;
   }
 
-    void PackagerExImplementation::SendN()
-    {
-        // Core::Time now(Core::Time::Now());
-        // Core::JSON::String currentTime;
-
-        // currentTime = now.ToRFC1123();
-
-// JsonObject params;
-// params["Time"] = "dummy";
-// params["name"] = "Testing";
-
-
-        // PluginHost::JSONRPC method to send out a JSONRPC message to all subscribers to the event "clock".
-//        Notify(_T("onInstallComplete"), params);
-
-// LOGERR("PackagerExImplementation::SendN()  .... sent ..." );
-
-
-		// We are currently supporting more release, the old interface is expecting a bit a different response:
-   //    GetHandler(1)->Notify(_T("clock"), "Groundhog Day");// Data::Time(now.Hours(), now.Minutes(), now.Seconds()));
-    }
-
   int64_t PackagerExImplementation::GetAvailableSpace_imp()
   {    
 // JUNK
@@ -346,23 +317,12 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 // JUNK
 LOGERR("PackagerImplementation::GetAvailableSpace()  .... Sending ..." );
 
-
 // JsonObject params;
 // params["descriptor"] = "dummy";
 // params["name"] = "Testing";
 // sendNotify("onInstallComplete", params);
 
 // Notify(_T("onInstallComplete"), params);
-
-// SendN();
-
-// SendN();
-
-// SendN();
-
-// SendN();
-
-// 
 
 LOGERR("PackagerImplementation::GetAvailableSpace()  .... SENT ..." );
 // JUNK
