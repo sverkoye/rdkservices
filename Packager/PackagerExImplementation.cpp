@@ -315,7 +315,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 // JUNK
 // JUNK
 // JUNK
-LOGERR("PackagerImplementation::GetAvailableSpace()  .... Sending ..." );
+LOGERR("PackagerExImplementation::GetAvailableSpace()  .... Sending ..." );
 
 // JsonObject params;
 // params["descriptor"] = "dummy";
@@ -324,14 +324,14 @@ LOGERR("PackagerImplementation::GetAvailableSpace()  .... Sending ..." );
 
 // Notify(_T("onInstallComplete"), params);
 
-LOGERR("PackagerImplementation::GetAvailableSpace()  .... SENT ..." );
+LOGERR("PackagerExImplementation::GetAvailableSpace()  .... SENT ..." );
 // JUNK
 // JUNK
 // JUNK
 
     int64_t used_bytes = PackagerExUtils::sumSizeInBytes();
 
-    LOGERR("PackagerImplementation::GetAvailableSpace()  .... %jd ", used_bytes);
+    LOGERR("PackagerExImplementation::GetAvailableSpace()  .... %jd ", used_bytes);
 
     return ((STORE_BYTES_QUOTA - used_bytes)/1000); // in KB
   }
