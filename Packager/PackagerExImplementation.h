@@ -231,8 +231,6 @@ namespace Plugin {
 
         uint32_t IsInstalled_imp(const string& pkgId);
         uint32_t GetInstallProgress_imp(const string& task);
- 
- void SendN();
 
         using IPackageInfoEx = Exchange::IPackager::IPackageInfoEx;
 

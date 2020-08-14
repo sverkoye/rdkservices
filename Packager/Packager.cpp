@@ -35,13 +35,18 @@ namespace {
 
         _service = service;
         _skipURL = static_cast<uint8_t>(service->WebPrefix().length());
+
         _service->Register(&_notification);
 
          string result;
         _implementation = _service->Root<Exchange::IPackager>(_connectionId, 2000, _T("PackagerImplementation"));
         if (_implementation == nullptr) {
             result = _T("Couldn't create PACKAGER instance ");
+
         } else {
+
+            // PluginHost::IStateControl* stateControl(_implementation->QueryInterface<PluginHost::IStateControl>());
+
             if (_implementation->Configure(_service) != Core::ERROR_NONE) {
                 result = _T("Couldn't initialize PACKAGER instance");
             }
@@ -49,6 +54,13 @@ namespace {
             {
                 fprintf(stderr, "\nHUGH >>>>> Created ... PackagerImplementation  at 0x%p ", _implementation); 
             }
+
+            _implementation->Register(&_notification);
+            // if(stateControl)
+            // {
+            //     stateControl->Register(&_notification);
+            //     stateControl->Release();
+            // }
         }
 
         return (result);
@@ -59,6 +71,7 @@ namespace {
         ASSERT(_service == service);
 
         _service->Unregister(&_notification);
+        _implementation->Unregister(&_notification);
 
         if (_implementation->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
 
@@ -87,6 +100,24 @@ namespace {
     void Packager::Inbound(Web::Request& request)
     {
     }
+
+    // JSONRPC
+
+    // void Packager::event_relayevent(std::string event)
+    // {
+    //     Notify(_T(event.c_str()));
+    // }
+
+    void Packager::event_installstep(uint32_t status)
+    {
+        // TODO:  Add a switch statment to map 'status' to a Notify() call
+
+        Notify(_T("NotifyInstallStep"));
+
+        Notify(_T("onInstallComplete"));
+        Notify(_T("onDownloadComplete"));
+    }
+
 
     Core::ProxyType<Web::Response> Packager::Process(const Web::Request& request)
     {
@@ -324,6 +355,12 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
         }
 
         return(result);
+    }
+
+    void Packager::IntallStep(uint32_t status)
+    {
+        LOGERR("Packager::IntallStep(uint32_t status)  >>> %ul", status);
+        event_installstep(status);
     }
 
     void Packager::Deactivated(RPC::IRemoteConnection* connection)

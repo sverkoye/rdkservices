@@ -151,11 +151,11 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   }
 
   uint32_t PackagerExImplementation::doInstall(const string& pkgId, const string& type, const string& url,
-                                                 const string& token, const string& listener)
+                                               const string& token, const string& listener)
   {
-    std::string install_name( "(empty))" );
-    std::string install_url( url );
-    std::string install_ver( "1.2.3" );
+    std::string install_name;
+    std::string install_url;
+    std::string install_ver;
 
     // Parse the URL...
     //
@@ -175,6 +175,35 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         install_url  = PackagerExUtils::mPackageCfg["install"].String(); // update install from URL
         install_name = PackagerExUtils::mPackageCfg["name"].String();
         install_ver  = PackagerExUtils::mPackageCfg["version"].String();
+
+        // Check NOT empty/exist
+        if(install_url.empty()  || install_url  == "null" ||
+           install_name.empty() || install_name == "null" ||
+           install_ver.empty()  || install_ver  == "null" )
+        {
+            LOGERR( " %s() ... ERROR:  Missing keys in JSON >> %s \n", __PRETTY_FUNCTION__, url.c_str());
+            LOGINFO(" %s() ... ERROR:  install_url: %s   install_name: %s  install_ver: %s\n", 
+                __PRETTY_FUNCTION__, install_url.c_str(), install_name.c_str(), install_ver.c_str());
+
+            return -1; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
+        }
+
+        // Validate URL
+        if(PackagerExUtils::validateURL(install_url.c_str()) != PackagerExUtils::DACrc_t::dac_OK )
+        {
+            LOGERR(" %s() ... ERROR:  Invlaid URL >> %s \n", __PRETTY_FUNCTION__, url.c_str());
+            return -1; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
+        }
+    }
+    else
+    {
+      // No JSON manifest - just a .tgz
+
+      LOGWARN(" %s() ... WARN:  No JSON manifest - just a .tgz - using dummy fields >> %s \n", __PRETTY_FUNCTION__, url.c_str());
+      // TODO:  Find a JSON manifest withing the .tgz ?
+
+      install_name = "(empty)";
+      install_ver  = "1.2.3";
     }
   
     // Download TGZ package...
@@ -311,23 +340,8 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   }
 
   int64_t PackagerExImplementation::GetAvailableSpace_imp()
-  {    
-// JUNK
-// JUNK
-// JUNK
-LOGERR("PackagerExImplementation::GetAvailableSpace()  .... Sending ..." );
-
-// JsonObject params;
-// params["descriptor"] = "dummy";
-// params["name"] = "Testing";
-// sendNotify("onInstallComplete", params);
-
-// Notify(_T("onInstallComplete"), params);
-
-LOGERR("PackagerExImplementation::GetAvailableSpace()  .... SENT ..." );
-// JUNK
-// JUNK
-// JUNK
+  {
+    //::NotifyIntallStep(0);
 
     int64_t used_bytes = PackagerExUtils::sumSizeInBytes();
 
@@ -335,6 +349,5 @@ LOGERR("PackagerExImplementation::GetAvailableSpace()  .... SENT ..." );
 
     return ((STORE_BYTES_QUOTA - used_bytes)/1000); // in KB
   }
-        
   }  // namespace Plugin
 }  // namespace WPEFramework

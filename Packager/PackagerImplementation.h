@@ -112,6 +112,39 @@ namespace Plugin {
         void Register(Exchange::IPackager::INotification* observer) override;
         void Unregister(const Exchange::IPackager::INotification* observer) override;
 
+
+virtual void Register(PluginHost::IStateControl::INotification* sink)
+{
+    _adminLock.Lock();
+
+    // Make sure a sink is not registered multiple times.
+    ASSERT(std::find(_stateControlClients.begin(), _stateControlClients.end(), sink) == _stateControlClients.end());
+
+    _stateControlClients.push_back(sink);
+    sink->AddRef();
+
+    _adminLock.Unlock();
+
+    TRACE_L1("Registered a sink on the browser %p", sink);
+}
+virtual void Unregister(PluginHost::IStateControl::INotification* sink)
+{
+    _adminLock.Lock();
+
+    std::list<PluginHost::IStateControl::INotification*>::iterator index(std::find(_stateControlClients.begin(), _stateControlClients.end(), sink));
+
+    // Make sure you do not unregister something you did not register !!!
+    ASSERT(index != _stateControlClients.end());
+
+    if (index != _stateControlClients.end()) {
+        (*index)->Release();
+        _stateControlClients.erase(index);
+        TRACE_L1("Unregistered a sink on the browser %p", sink);
+    }
+
+    _adminLock.Unlock();
+}
+
         uint32_t Configure(PluginHost::IShell* service) override;
 
         // Packager API
@@ -335,7 +368,8 @@ namespace Plugin {
         void NotifyStateChange();
         void NotifyRepoSynced(uint32_t status);
 
-        void NotifyIntallStep(uint32_t status); // PackagerEx NOTIFY
+        void NotifyIntallStep(uint32_t status);   // NOTIFY
+        void NotifyRelayEvent(std::string event); // NOTIFY
 
         void BlockingInstallUntilCompletionNoLock();
         void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);
@@ -353,6 +387,8 @@ namespace Plugin {
         bool _volatileCache;
         bool _opkgInitialized;
         std::vector<Exchange::IPackager::INotification*> _notifications;
+        std::list<PluginHost::IStateControl::INotification*> _stateControlClients;
+
         InstallationData _inProgress;
         InstallThread _worker;
         bool _isUpgrade;

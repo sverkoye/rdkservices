@@ -92,6 +92,7 @@ class PackageInfoEx; //fwd
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // Install helpers
+            static DACrc_t validateURL(const char *url);
             static DACrc_t downloadJSON(const char *url);
             static DACrc_t downloadURL(const char *url);
             

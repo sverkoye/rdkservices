@@ -35,6 +35,7 @@
 #include <string>
 #include <fstream>
 #include <streambuf>
+#include <regex>
 
 #include <inttypes.h>
 #include <dirent.h>
@@ -460,14 +461,14 @@ void* WPEFramework::Plugin::PackagerExUtils::mData = nullptr;
             {
                 if (errmsg)
                 {
-                    fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+                    LOGERR(" %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
 
                     // LOGERR("%s", errmsg);
                     sqlite3_free(errmsg);
                 }
                 else
                 {
-                    fprintf(stderr, " %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none2)");
+                    LOGERR(" %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none2)");
                     // LOGERR("%d", rc);
                 }
             }
@@ -1024,7 +1025,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         // here we should send our jobs
         for (int i = 0; i < 10; i++)
         {
-            fprintf(stderr, " %s() ... Adding JOB  i: %d \n", __PRETTY_FUNCTION__, i);
+            LOGINFO(" %s() ... Adding JOB  i: %d \n", __PRETTY_FUNCTION__, i);
             mJobPool.push(example_function);
         }
     }
@@ -1057,6 +1058,37 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         }
 
          return DACrc_t::dac_FAIL;
+    }
+
+    // Inspired by -
+    //
+    // https://stackoverflow.com/questions/5620235/cpp-regular-expression-to-validate-url/31613265
+    //
+    PackagerExUtils::DACrc_t PackagerExUtils::validateURL(const char *url)
+    {
+        std::regex url_regex (
+            R"(^(([^:\/?#]+):)?(//([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)",
+            std::regex::extended
+        );
+
+        std::smatch url_match_result;
+
+        LOGINFO(" %s() ... Checking URL: %s \n", __PRETTY_FUNCTION__, url);
+
+        std::string urlS(url);
+
+        if (std::regex_match( urlS, url_match_result, url_regex))
+        {
+            LOGINFO(" %s() ... Valid URL: %s \n", __PRETTY_FUNCTION__, url);
+
+            return DACrc_t::dac_OK;  /// ok
+        }
+        else
+        {
+            LOGERR(" %s() ... Invalid URL: %s \n", __PRETTY_FUNCTION__, url);
+            
+            return DACrc_t::dac_FAIL;
+        }
     }
 
     PackagerExUtils::DACrc_t PackagerExUtils::downloadURL(const char *url)

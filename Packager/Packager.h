@@ -21,7 +21,9 @@
 
 
 #include "Module.h"
+
 #include <interfaces/IPackager.h>
+#include <interfaces/json/JsonData_StateControl.h>
 
 #include "utils.h"
 
@@ -214,27 +216,15 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                 // JsonObject json = PackageInfoEx::pkg2json( (PackageInfoEx*) pkg);
 
                 char str[255];
-
-                snprintf(str, 255, "%s", pkg->Name().c_str());
-                response["name"] = string(str);
-
-                snprintf(str, 255, "%s", pkg->BundlePath().c_str());
-                response["bundlePath"] = string(str);
-
-                snprintf(str, 255, "%s", pkg->Version().c_str());
-                response["version"] = string(str);
-
-                snprintf(str, 255, "%s", pkg->PkgId().c_str());
-                response["id"] = string(str);
-
-                snprintf(str, 255, "%s", pkg->Installed().c_str());
-                response["installed"] = string(str);
-
                 snprintf(str, 255, "%jd", pkg->SizeInBytes());
-                response["size"] = string(str);
 
-                snprintf(str, 255, "%s", pkg->Type().c_str());
-                response["type"] = string(str);
+                response["name"]       = pkg->Name();
+                response["bundlePath"] = pkg->BundlePath();
+                response["version"]    = pkg->Version();
+                response["id"]         = pkg->PkgId();
+                response["installed"]  = pkg->Installed();
+                response["size"]       = string(str);
+                response["type"]       = pkg->Type();
 
                 return 0;
             };
@@ -343,8 +333,15 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
         Core::ProxyType<Web::Response> Process(const Web::Request& request) override;
 
     private:
-        class Notification : public RPC::IRemoteConnection::INotification
+        class Notification : public RPC::IRemoteConnection::INotification,
+                             public PluginHost::IStateControl::INotification,
+                             public Exchange::IPackager::INotification
         {
+        private:
+            Notification() = delete;
+            Notification(const Notification&) = delete;
+            Notification& operator=(const Notification&) = delete;
+
         public:
             explicit Notification(Packager* parent)
                 : _parent(*parent)
@@ -356,21 +353,45 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             {
             }
 
-            Notification() = delete;
-            Notification(const Notification&) = delete;
-            Notification& operator=(const Notification&) = delete;
-
-            void Activated(RPC::IRemoteConnection*) override
+        public:
+            virtual void Activated(RPC::IRemoteConnection*) //override
             {
             }
 
-            void Deactivated(RPC::IRemoteConnection* connection) override
+            virtual void Deactivated(RPC::IRemoteConnection* connection) //override
             {
                 _parent.Deactivated(connection);
             }
 
+            virtual void StateChange(Exchange::IPackager::IPackageInfo* package, 
+                                     Exchange::IPackager::IInstallationInfo* install) //override
+            {
+                fprintf(stderr, "\n ########\n ########  StateChange() !!! \n ########");
+               // _parent.IntallStep(status);
+            }
+
+            virtual void RepositorySynchronize(uint32_t status) //override
+            {
+                fprintf(stderr, "\n ########\n ########  RepositorySynchronize() !!! status: %ul\n ########", status);
+               // _parent.IntallStep(status);
+            }
+
+            virtual void IntallStep(uint32_t status) //override
+            {
+                fprintf(stderr, "\n ########\n ########  IntallStep() !!! status: %ul\n ########", status);
+                _parent.IntallStep(status);
+            }
+
+            virtual void StateChange(const PluginHost::IStateControl::state state) //override
+            {
+                fprintf(stderr, "\n ########\n ########  StateChange() !!! state: %ul\n ########", state);
+                // _parent.StateChange(state);
+            }
+
             BEGIN_INTERFACE_MAP(Notification)
-                INTERFACE_ENTRY(RPC::IRemoteConnection::INotification)
+                INTERFACE_ENTRY(Exchange::IPackager::INotification)
+                INTERFACE_ENTRY(PluginHost::IStateControl::INotification)
+                INTERFACE_ENTRY(RPC::IRemoteConnection::INotification)                
             END_INTERFACE_MAP
 
         private:
@@ -378,6 +399,13 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
         }; // CLASS - Notification
 
         void Deactivated(RPC::IRemoteConnection* connection);
+
+        void IntallStep(uint32_t status);
+
+        // JSONRPC
+        void event_relayevent(std::string event);
+        // void event_installstep(uint32_t status);
+
 
         uint8_t _skipURL;
         uint32_t _connectionId;

@@ -120,41 +120,6 @@ namespace Plugin {
         FreeOPKG();
     }
 
-/*
-
-   virtual void Register(PluginHost::IStateControl::INotification* sink)
-        {
-            _adminLock.Lock();
-
-            // Make sure a sink is not registered multiple times.
-            ASSERT(std::find(_stateControlClients.begin(), _stateControlClients.end(), sink) == _stateControlClients.end());
-
-            _stateControlClients.push_back(sink);
-            sink->AddRef();
-
-            _adminLock.Unlock();
-
-            TRACE_L1("Registered a sink on the browser %p", sink);
-        }
-        virtual void Unregister(PluginHost::IStateControl::INotification* sink)
-        {
-            _adminLock.Lock();
-
-            std::list<PluginHost::IStateControl::INotification*>::iterator index(std::find(_stateControlClients.begin(), _stateControlClients.end(), sink));
-
-            // Make sure you do not unregister something you did not register !!!
-            ASSERT(index != _stateControlClients.end());
-
-            if (index != _stateControlClients.end()) {
-                (*index)->Release();
-                _stateControlClients.erase(index);
-                TRACE_L1("Unregistered a sink on the browser %p", sink);
-            }
-
-            _adminLock.Unlock();
-        }
-        
-*/
     void PackagerImplementation::Register(Exchange::IPackager::INotification* notification)
     {
         fprintf(stderr, "\nHUGH >>>>>  PackagerImplementation::Register() - ENTER"); 
@@ -339,21 +304,34 @@ namespace Plugin {
         _adminLock.Unlock();
     }
 
+    // void PackagerImplementation::NotifyRelayEvent(std::string event)
+    // {
+    //     LOGERR("DEBUG:  NotifyRelayEvent() - ENTER" );
+
+    //     _adminLock.Lock();
+    //     _isSyncing = false;
+    //     for (auto* notification : _notifications)
+    //     {
+    //         notification->RelayEvent(event);
+    //     }
+    //     _adminLock.Unlock();
+
+    //     // LOGERR("DEBUG:  NotifyRelayEvent() - EXIT" );
+    // }
+
     void PackagerImplementation::NotifyIntallStep(uint32_t status)
     {
         LOGERR("DEBUG:  NotifyIntallStep() - ENTER" );
 
         _adminLock.Lock();
         _isSyncing = false;
-        for (auto* notification : _notifications) {
-
-            LOGERR("DEBUG:  NotifyIntallStep() - notify !!" );
-
+        for (auto* notification : _notifications)
+        {
             notification->IntallStep(status);
         }
         _adminLock.Unlock();
 
-        LOGERR("DEBUG:  NotifyIntallStep() - EXIT" );
+        // LOGERR("DEBUG:  NotifyIntallStep() - EXIT" );
     }
 
     bool PackagerImplementation::InitOPKG()
@@ -446,9 +424,14 @@ namespace Plugin {
         return GetPackageInfo_imp(pkgId); // Call IMPL
     }
 
+    // void PackagerImplementation::CallRelayEvent(std::string event)
+    // {
+    //     NotifyRelayEvent(event);
+    // }
+
     int64_t PackagerImplementation::GetAvailableSpace()
     {
-        LOGERR("PackagerImplementation::GetAvailableSpace()  .... call >> NotifyIntallStep()" );
+        // LOGERR("PackagerImplementation::GetAvailableSpace()  .... call >> NotifyIntallStep()" );
 
         NotifyIntallStep(0);
 
