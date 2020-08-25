@@ -214,43 +214,5 @@ namespace Plugin {
     };// CLASS - PackageInfoEx
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    class PackagerExImplementation: /* public PluginHost::IPlugin,*/ public PluginHost::JSONRPC
-    {
-      public:
-
-        PackagerExImplementation(const PackagerExImplementation&) = delete;
-        PackagerExImplementation& operator=(const PackagerExImplementation&) = delete;
-
-        PackagerExImplementation();
-        ~PackagerExImplementation();
-
-        // DAC Installer API
-        uint32_t Install_imp(const string& pkgId, const string& type, const string& url, const string& token, const string& listener);
-        uint32_t Remove_imp( const string& pkgId, const string& listener);
-        uint32_t Cancel_imp( const string& task,  const string& listener);
-
-        uint32_t IsInstalled_imp(const string& pkgId);
-        uint32_t GetInstallProgress_imp(const string& task);
-
-        using IPackageInfoEx = Exchange::IPackager::IPackageInfoEx;
-
-        IPackageInfoEx::IIterator* GetInstalled_imp();
-
-        PackageInfoEx* GetPackageInfo_imp(const string& pkgId);
-
-        int64_t GetAvailableSpace_imp();
-
-        std::vector<PackageInfoEx *> mPPPlist;
-
-        static const int64_t STORE_BYTES_QUOTA;
-        static const char*   STORE_NAME;
-        static const char*   STORE_KEY;
-
-    private:
-        uint32_t doInstall(const string& pkgId, const string& type, const string& url,const string& token, const string& listener);
-
-        uint32_t mTaskNumber;
-    };//CLASS - PackagerExImplementation
-
   } // namespace Plugin
 }  // namespace WPEFramework

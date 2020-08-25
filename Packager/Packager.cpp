@@ -103,19 +103,32 @@ namespace {
 
     // JSONRPC
 
-    // void Packager::event_relayevent(std::string event)
-    // {
-    //     Notify(_T(event.c_str()));
-    // }
-
     void Packager::event_installstep(uint32_t status)
     {
-        // TODO:  Add a switch statment to map 'status' to a Notify() call
+        // TODO:  Add a switch statement to map 'status' to a Notify() call
 
-        Notify(_T("NotifyInstallStep"));
+        JsonObject params;
+        params["installStep"] = "Testing 123";
+        params["status"] = std::to_string( status );
 
-        Notify(_T("onInstallComplete"));
-        Notify(_T("onDownloadComplete"));
+        std::string str("empty");
+
+        switch(status)
+        {
+            case Exchange::IPackager::DOWNLOADING: str = "onDownloadCommence"; break;
+            case Exchange::IPackager::DOWNLOADED:  str = "onDownloadComplete"; break;
+
+            case Exchange::IPackager::VERIFYING:   str = "onExtractCommence";  break;
+            case Exchange::IPackager::VERIFIED:    str = "onExtractComplete";  break;
+
+            case Exchange::IPackager::INSTALLING:  str = "onInstallCommence";  break;
+            case Exchange::IPackager::INSTALLED:   str = "onInstallComplete";  break;
+                    
+            default: str = "NotifyInstallStep";  break;
+        }
+
+        Notify(str, params);
+//        Notify(_T("NotifyInstallStep"), params);
     }
 
 

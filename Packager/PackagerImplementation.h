@@ -39,8 +39,7 @@ namespace Plugin {
 
 
     class PackagerImplementation : public Exchange::IPackager
-    , public PackagerExImplementation 
-
+    // , public PackagerExImplementation 
     {
     public:
         PackagerImplementation(const PackagerImplementation&) = delete;
@@ -99,7 +98,10 @@ namespace Plugin {
             , _worker(this)
             , _isUpgrade(false)
             , _isSyncing(false)
+
+            , _taskNumber(0)
         {
+            InitPackageDB();
         }
 
         ~PackagerImplementation() override;
@@ -155,17 +157,19 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
 
         // using PackageInfoEx = PackagerExImplementation::PackageInfoEx; 
 
-        virtual uint32_t Install(const string& pkgId, const string& type,  const string& url, 
-                                 const string& token, const string& listener) override;
+        uint32_t Install(const string& pkgId, const string& type, const string& url, 
+                         const string& token, const string& listener);
 
-        virtual uint32_t Remove(const string& pkgId, const string& listener) override;
-        virtual uint32_t Cancel(const string& task, const string& listener) override;
+        uint32_t Remove(const string& pkgId, const string& listener);
+        uint32_t Cancel(const string& task, const string& listener);
 
-        virtual uint32_t                   IsInstalled(const string& pkgId) override;
-        virtual uint32_t                   GetInstallProgress( const string& task) override;
-        virtual PackageInfoEx::IIterator*  GetInstalled() override;
-        virtual PackageInfoEx*             GetPackageInfo(const string& pkgId) override;
-        virtual int64_t                    GetAvailableSpace() override;
+        uint32_t                   IsInstalled(const string& pkgId);
+        uint32_t                   GetInstallProgress( const string& task);
+        PackageInfoEx::IIterator*  GetInstalled();
+        PackageInfoEx*             GetPackageInfo(const string& pkgId);
+        int64_t                    GetAvailableSpace();
+
+      //  uint32_t                   getNextTaskID()  { return _taskNumber++; }
 
     private:
         class PackageInfo : public Exchange::IPackager::IPackageInfo {
@@ -368,8 +372,20 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
         void NotifyStateChange();
         void NotifyRepoSynced(uint32_t status);
 
-        void NotifyIntallStep(uint32_t status);   // NOTIFY
-        void NotifyRelayEvent(std::string event); // NOTIFY
+        void InitPackageDB();
+
+        void NotifyIntallStep(uint8_t status);   // NOTIFY
+      //  void NotifyRelayEvent(std::string event); // NOTIFY
+
+
+        std::vector<PackageInfoEx *> mPPPlist;
+
+        static const int64_t STORE_BYTES_QUOTA;
+        static const char*   STORE_NAME;
+        static const char*   STORE_KEY;
+
+    private:
+        uint32_t doInstall(const string& pkgId, const string& type, const string& url, const string& token, const string& listener);
 
         void BlockingInstallUntilCompletionNoLock();
         void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);
@@ -393,6 +409,8 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
         InstallThread _worker;
         bool _isUpgrade;
         bool _isSyncing;
+
+        uint32_t _taskNumber;
     };
 
 }  // namespace Plugin

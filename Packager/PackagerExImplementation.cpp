@@ -17,22 +17,36 @@
  * limitations under the License.
  */
  
+
+
+ // JUNK
+ // JUNK
+ // JUNK
+ #define JUNK_MS   500
+ // JUNK
+ // JUNK
+ // JUNK
+ 
 #include <glib.h>
 
 #include "time.h"
 #include <locale>
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::seconds
 
 #include "utils.h"
 
 #include "PackagerExUtils.h"
+
+#include "PackagerImplementation.h"
 #include "PackagerExImplementation.h"
 
 
 #define MB_in_BYTES  1000000
 
-const int64_t WPEFramework::Plugin::PackagerExImplementation::STORE_BYTES_QUOTA = 10 * MB_in_BYTES;
-const char*   WPEFramework::Plugin::PackagerExImplementation::STORE_NAME        = "DACstorage";
-const char*   WPEFramework::Plugin::PackagerExImplementation::STORE_KEY         = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
+const int64_t WPEFramework::Plugin::PackagerImplementation::STORE_BYTES_QUOTA = 10 * MB_in_BYTES;
+const char*   WPEFramework::Plugin::PackagerImplementation::STORE_NAME        = "DACstorage";
+const char*   WPEFramework::Plugin::PackagerImplementation::STORE_KEY         = "4d4680a1-b3b0-471c-968b-39495d2b1cc3";
 
 using namespace std;
 
@@ -42,8 +56,9 @@ namespace Plugin {
 // Events
 #define DAC_EVT_INSTALL_ACK "DAC_InstallAck"
 
-  PackagerExImplementation::PackagerExImplementation()
-                                : mTaskNumber(0)
+  // PackagerExImplementation::PackagerExImplementation()
+  //                               : _taskNumber(0)
+  void PackagerImplementation::InitPackageDB()
   {
     DDD();
 
@@ -127,21 +142,18 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     g_free(file);
   }
 
-  PackagerExImplementation::~PackagerExImplementation()
-  {
-    DDD();
-
-   // UnregisterAll();
-
-    PackagerExUtils::term();
-  }
-
-
   // DAC Installer API
-  uint32_t PackagerExImplementation::Install_imp(const string& pkgId, const string& type, const string& url,
+  uint32_t PackagerImplementation::Install(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
-    /*return*/ doInstall(pkgId, type,  url, token, listener); //TODO: THREAD THIS
+      LOGERR("\n\n HUGH .... PackagerImplementation::Install() - ENTER");
+
+      std::thread threadObj([pkgId, type,  url, token, listener, this]
+      {
+        this->doInstall(pkgId, type,  url, token, listener); // TODO: THREAD THIS
+      });
+
+     // threadObj.join();
 
     // response["error"] = "params missing";
     // response["value"] = "test123";
@@ -150,12 +162,14 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return 0;
   }
 
-  uint32_t PackagerExImplementation::doInstall(const string& pkgId, const string& type, const string& url,
-                                               const string& token, const string& listener)
+  uint32_t PackagerImplementation::doInstall(const string& pkgId, const string& type, const string& url,
+                                             const string& token, const string& listener)
   {
     std::string install_name;
     std::string install_url;
     std::string install_ver;
+
+//    NotifyIntallStep(INSTALL_START);
 
     // Parse the URL...
     //
@@ -168,7 +182,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         if(PackagerExUtils::downloadJSON(url.c_str()) != PackagerExUtils::DACrc_t::dac_OK)
         {
             LOGERR(" %s() ... ERROR:  Failed to download JSON >> %s \n", __PRETTY_FUNCTION__, url.c_str());
-            return -1; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;
+            return 11; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;
         }
 
         // Parse JSON for meta...
@@ -185,14 +199,14 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
             LOGINFO(" %s() ... ERROR:  install_url: %s   install_name: %s  install_ver: %s\n", 
                 __PRETTY_FUNCTION__, install_url.c_str(), install_name.c_str(), install_ver.c_str());
 
-            return -1; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
+            return 22; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
         }
 
         // Validate URL
         if(PackagerExUtils::validateURL(install_url.c_str()) != PackagerExUtils::DACrc_t::dac_OK )
         {
             LOGERR(" %s() ... ERROR:  Invlaid URL >> %s \n", __PRETTY_FUNCTION__, url.c_str());
-            return -1; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
+            return 33; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
         }
     }
     else
@@ -206,6 +220,9 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
       install_ver  = "1.2.3";
     }
   
+    NotifyIntallStep(Exchange::IPackager::DOWNLOADING);
+/* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
+
     // Download TGZ package...
     //
     LOGINFO(" %s() ... DOWNLOAD >>>  %s\n", __PRETTY_FUNCTION__, install_url.c_str());
@@ -213,10 +230,16 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     if(PackagerExUtils::downloadURL(install_url.c_str()) != PackagerExUtils::DACrc_t::dac_OK)
     {
         LOGERR(" %s() ... DOWNLOAD (%s)>>>  FAILED\n", __PRETTY_FUNCTION__, install_url.c_str());
-        return -1; // FAIL
+        return 44; // FAIL
     }
     else
     {
+        NotifyIntallStep(Exchange::IPackager::DOWNLOADED);
+ /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
+
+        NotifyIntallStep(Exchange::IPackager::VERIFYING);
+/* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
+
         char uuid_path[PATH_MAX];
 
         // Get UUID ...
@@ -233,8 +256,11 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
             PackagerExUtils::removeFolder(uuid_path); // remove debris
 
-            return -1; // FAIL
+            return 55; // FAIL
         }
+
+        NotifyIntallStep(Exchange::IPackager::VERIFIED);
+/* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
         // TODO: look for JSON meta in app bundle...
         //
@@ -243,10 +269,20 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         // Always cleanup
         PackagerExUtils::fileRemove(TMP_FILENAME);
 
+        NotifyIntallStep(Exchange::IPackager::INSTALLING);
+/* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
+
         PackageInfoEx* pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
 
         time_t rawtime;
         time (&rawtime);
+        std::string strtime = ctime (&rawtime);
+
+        // NOTE:  Remove trailing '\n' >> illegal in JSON  
+        //
+        // "Tue Aug 25 18:04:14 2020\n"  >>> "Tue Aug 25 18:04:14 2020"
+        //
+        strtime.pop_back(); // (C++11 code) 
 
         int32_t bytes = PackagerExUtils::folderSize(uuid_path);
 
@@ -254,21 +290,27 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         pkg->setName(install_name);
         pkg->setBundlePath(uuid_path);
         pkg->setVersion(install_ver);
-        pkg->setInstalled(ctime (&rawtime));
+        pkg->setInstalled( strtime );
         pkg->setSizeInBytes(bytes);
         pkg->setType(type);
         
         PackagerExUtils::addPkgRow(pkg); // add to SQL 
 
+/* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
+
+        NotifyIntallStep(Exchange::IPackager::INSTALLED);
+
         pkg->Release();
     }
 
-    return 0;
+    LOGERR("\n\n HUGH .... PackagerImplementation::doInstall() - EXIT"); 
+
+    return 0; // no error
   }
 
-  uint32_t PackagerExImplementation::Remove_imp( const string& pkgId, const string& listener)
+  uint32_t PackagerImplementation::Remove( const string& pkgId, const string& listener)
   {
-    LOGINFO("... Remove_imp(%s, %s) - ENTER ", pkgId.c_str(), listener.c_str());
+    LOGINFO("... Remove(%s, %s) - ENTER ", pkgId.c_str(), listener.c_str());
 
     PackageInfoEx* pkg = PackagerExUtils::getPkgRow(pkgId);
 
@@ -282,20 +324,20 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
       if(rc == false)
       {
-        LOGINFO("... Remove_imp(%s, %s) - FAILED... not found ? ", pkgId.c_str(), listener.c_str());
+        LOGINFO("... Remove(%s, %s) - FAILED... not found ? ", pkgId.c_str(), listener.c_str());
         return -1; // FAILED
       }
     }
     else
     {
-      LOGERR(" .Remove_imp( %s ) ... NOT found", pkgId.c_str());
+      LOGERR(" .Remove( %s ) ... NOT found", pkgId.c_str());
       return -1; // FAILED
     }
 
     return 0; // SUCCESS
   }
 
-  uint32_t PackagerExImplementation::Cancel_imp( const string& task, const string& listener)
+  uint32_t PackagerImplementation::Cancel( const string& task, const string& listener)
   {
     DDD();
 
@@ -305,23 +347,24 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return 0;
   }
 
-  uint32_t PackagerExImplementation::IsInstalled_imp(const string& pkgId)//, JsonObject &response)
+  uint32_t PackagerImplementation::IsInstalled(const string& pkgId)//, JsonObject &response)
   {
-    fprintf(stderr, "\n\nPackagerExImplementation::IsInstalled_imp() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
-    LOGERR("DAC::IsInstalled_imp(%s) ... ENTER", pkgId.c_str() ); 
+    LOGERR("\n\nPackagerExImplementation::IsInstalled() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
 
     return PackagerExUtils::hasPkgRow( pkgId );
   }
 
-  uint32_t PackagerExImplementation::GetInstallProgress_imp(const string& task)
+  uint32_t PackagerImplementation::GetInstallProgress(const string& task)
   {
     DDD();
+
+    NotifyIntallStep(22);
 
     // TODO: 
     return 42;
   }
 
-  PackageInfoEx::IIterator* PackagerExImplementation::GetInstalled_imp()
+  PackageInfoEx::IIterator* PackagerImplementation::GetInstalled()
   {
     DDD();
 
@@ -329,23 +372,27 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     return nullptr;
   }
 
-  PackageInfoEx* PackagerExImplementation::GetPackageInfo_imp(const string& pkgId)
+  PackageInfoEx* PackagerImplementation::GetPackageInfo(const string& pkgId)
   {
+    LOGERR("DEBUG:  GetPackageInfo() - ENTER" );
+
     PackageInfoEx* pkg = PackagerExUtils::getPkgRow(pkgId);
 
-    PackagerExUtils::showTable();
-    // sendNotify("MyDummy Event", JsonObject());
+    // if(pkg)
+    // {
+    //   PackagerExUtils::showTable();
+    // }
 
     return pkg;
   }
 
-  int64_t PackagerExImplementation::GetAvailableSpace_imp()
+  int64_t PackagerImplementation::GetAvailableSpace()
   {
-    //::NotifyIntallStep(0);
+    NotifyIntallStep(0);
 
     int64_t used_bytes = PackagerExUtils::sumSizeInBytes();
 
-    LOGERR("PackagerExImplementation::GetAvailableSpace()  .... %jd ", used_bytes);
+    LOGERR("PackagerExImplementation::GetAvailableSpace()  ... used_bytes: %jd ", used_bytes);
 
     return ((STORE_BYTES_QUOTA - used_bytes)/1000); // in KB
   }

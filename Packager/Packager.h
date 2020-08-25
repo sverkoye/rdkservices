@@ -25,6 +25,8 @@
 #include <interfaces/IPackager.h>
 #include <interfaces/json/JsonData_StateControl.h>
 
+#include "PackagerExImplementation.h"
+
 #include "utils.h"
 
 namespace WPEFramework {
@@ -114,7 +116,7 @@ namespace {
             , _notification(this)
         {
             // Packager API
-            Register<Params, JsonObject>(kInstallMethodName, [this](const Params& params, JsonObject response) -> uint32_t
+            Register<Params, JsonObject>(kInstallMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {
                 if( ( params.PkgId.IsSet() && params.PkgId.Value().empty() == false ) &&
                     ( params.Type.IsSet()  && params.Type.Value().empty()  == false ) &&
@@ -124,20 +126,15 @@ namespace {
                     //
                     // DAC::Install()
                     //
-                    this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
-                                                   params.Url.Value(),   params.Token.Value(),
-                                                   params.Listener.Value()); 
+                    uint32_t rc = this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
+                                                                 params.Url.Value(),   params.Token.Value(),
+                                                                 params.Listener.Value()); 
+                    // rc == 0 ... means ERROR
 
-                    // char taskId[255];
+                    response["task"]   = (rc >  0) ? std::to_string( rc ) : "Install Failed";
+                    response["result"] = (rc >= 0);
 
-                    // sprintf(taskId, 255, "%d", this->_implementation->getNextTaskID() );
-
-                    // string foo(this->_implementation->getNextTaskID());
-
-                    // response["task"]   = string( taskId );
-                    // response["result"] = true;
-
-                    return 0;
+                    return rc;
                 }
                 else // default to Packager API
                 {
@@ -156,18 +153,26 @@ namespace {
             //
             // DAC::Remove()
             //
-            Register<Params, void>(kDAC_RemoveMethodName, [this](const Params& params) -> uint32_t
+            Register<Params, JsonObject>(kDAC_RemoveMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {                 
-                return this->_implementation->Remove(params.PkgId.Value(), params.Listener.Value());
+                uint32_t rc = this->_implementation->Remove(params.PkgId.Value(), params.Listener.Value());
+
+                response["task"]   = (rc > 0) ? std::to_string( rc ) : "Remove Failed";
+                response["result"] = (rc > 0);
+
+                return rc;
             });
             //
             // DAC::Cancel()
             //
-            Register<Params, void>(kDAC_CancelMethodName, [this](const Params& params) -> uint32_t
+            Register<Params, JsonObject>(kDAC_CancelMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {
-                //sendNotify("MyDummy Event", JsonObject());
+                uint32_t rc = this->_implementation->Cancel(params.Task.Value(), params.Listener.Value());
 
-                return this->_implementation->Cancel(params.Task.Value(), params.Listener.Value());
+                response["task"]   = (rc > 0) ? std::to_string( rc ) : "Cancel Failed";
+                response["result"] = (rc > 0);
+
+                return rc;
             });
             //
             // DAC::IsInstalled()
@@ -178,9 +183,7 @@ namespace {
 
 fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", params.PkgId.Value().c_str() ); 
 
-                bool isInstalled = this->_implementation->IsInstalled(params.PkgId.Value());
-
-                response["available"] = (isInstalled ? true : false);
+                response["available"] = this->_implementation->IsInstalled(params.PkgId.Value());
 
                 return result;
             });
@@ -193,12 +196,9 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
 
                 uint32_t pc = this->_implementation->GetInstallProgress(params.Task.Value());
                 
-                fprintf(stderr, "\nHUGH >>>>> Call ... DAC::GetInstallProgress()   pc: [%d]", pc); 
+                LOGERR("\nHUGH >>>>> Call ... DAC::GetInstallProgress()   pc: [%d]", pc); 
 
-                char str[255];
-                snprintf(str, 255, "%d%%", pc);
-
-                response["percentage"] =  string(str);
+                response["percentage"] =  std::to_string(pc);
 
                 return result;
             });
@@ -215,15 +215,12 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                 //
                 // JsonObject json = PackageInfoEx::pkg2json( (PackageInfoEx*) pkg);
 
-                char str[255];
-                snprintf(str, 255, "%jd", pkg->SizeInBytes());
-
                 response["name"]       = pkg->Name();
                 response["bundlePath"] = pkg->BundlePath();
                 response["version"]    = pkg->Version();
                 response["id"]         = pkg->PkgId();
                 response["installed"]  = pkg->Installed();
-                response["size"]       = string(str);
+                response["size"]       = std::to_string( pkg->SizeInBytes() );
                 response["type"]       = pkg->Type();
 
                 return 0;
@@ -244,14 +241,18 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
 
                     //Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo("foo");
 
-                    LOGERR("Packager::GetInstalled() - App: %s", pkg->Name().c_str());
-
                     if(pkg != nullptr)
                     {
+                        LOGERR("Packager::GetInstalled() - App: %s", pkg->Name().c_str());
+
                         JsonObject pkgJson;
                         PkgInfo2json(pkg, pkgJson);
 
                         list.Add( pkgJson );
+                    }
+                    else
+                    {
+                        LOGERR("Packager::GetInstalled() - ERRORS...");
                     }
 
                     if(pkg)
@@ -261,8 +262,6 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                 }//WHILE
                
                 response["applications"] = list;
-                
-                // sendNotify("MyDummy Event", JsonObject());
 
                 return 0;
             });
@@ -274,14 +273,26 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             {
                 Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo(params.PkgId.Value());
 
-                LOGERR("Packager::GetPackageInfo() - App: %s", pkg->Name().c_str());
-
-                JsonObject pkgJson;
-                PkgInfo2json(pkg, response);
-
-                if(pkg)
+                if(pkg) // Found
                 {
-                    pkg->Release();
+                    LOGERR("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - FOUND", params.PkgId.Value().c_str());
+
+                    PkgInfo2json(pkg, response);
+
+                   // PackageInfoEx::printPkg( (PackageInfoEx *) pkg); /// DEBUG
+
+                    if(pkg)
+                    {
+                        pkg->Release();
+                    }
+                }
+                else
+                {
+                    // NOT found
+                    LOGERR("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - NOT FOUND", params.PkgId.Value().c_str());
+
+                    // response["task"]   = (rc >  0) ? std::to_string( rc ) : "Install Failed";
+                    response["result"] = "not found";
                 }
 
                 return 0; 
@@ -293,10 +304,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             {
                 int64_t bytes = this->_implementation->GetAvailableSpace();
 
-                char str[255];
-                snprintf(str, 255, "%jd", bytes);
-
-                response["availableSpaceInKB"] = string(str);
+                response["availableSpaceInKB"] = std::to_string(bytes);
 
                 return 0;
             });
@@ -354,7 +362,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             }
 
         public:
-            virtual void Activated(RPC::IRemoteConnection*) //override
+            virtual void Activated(RPC::IRemoteConnection*) override
             {
             }
 
@@ -403,8 +411,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
         void IntallStep(uint32_t status);
 
         // JSONRPC
-        void event_relayevent(std::string event);
-        // void event_installstep(uint32_t status);
+        void event_installstep(uint32_t status);
 
 
         uint8_t _skipURL;

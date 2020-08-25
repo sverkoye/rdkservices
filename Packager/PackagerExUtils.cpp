@@ -62,6 +62,7 @@ namespace Plugin {
 
 std::vector<std::thread>       PackagerExUtils::mThreadPool; // thread pool
 WPEFramework::Plugin::JobPool  PackagerExUtils::mJobPool;
+Core::CriticalSection          PackagerExUtils::mThreadLock;
 
 
 void* WPEFramework::Plugin::PackagerExUtils::mData = nullptr;
@@ -1187,6 +1188,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
                 mJobQ.pop();
                 //release the lock
             }
+
             func();
         }
     }

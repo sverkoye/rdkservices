@@ -37,7 +37,7 @@
 namespace WPEFramework {
 namespace Plugin {
 
-class PackageInfoEx; //fwd
+    class PackageInfoEx; //fileEndsWith
 
     class JobPool; //fwd
 
@@ -81,7 +81,7 @@ class PackageInfoEx; //fwd
 
             static int64_t        sumSizeInBytes();
 
-            static void showTable();
+            static void           showTable();
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // House-keeping
@@ -108,6 +108,8 @@ class PackageInfoEx; //fwd
 
             static JobPool                     mJobPool;
             static std::vector<std::thread> mThreadPool; // thread pool
+
+            static Core::CriticalSection    mThreadLock;
 
             static const int64_t  MAX_SIZE_BYTES;
             static const int64_t  MAX_VALUE_SIZE_BYTES;

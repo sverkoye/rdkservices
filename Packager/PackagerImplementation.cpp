@@ -19,6 +19,8 @@
  
 #include "PackagerImplementation.h"
 
+#include "PackagerExUtils.h"
+
 #if defined (DO_NOT_USE_DEPRECATED_API)
 #include <opkg_cmd.h>
 #else
@@ -118,13 +120,13 @@ namespace Plugin {
     PackagerImplementation::~PackagerImplementation()
     {
         FreeOPKG();
+
+        PackagerExUtils::term();
     }
 
     void PackagerImplementation::Register(Exchange::IPackager::INotification* notification)
     {
-        fprintf(stderr, "\nHUGH >>>>>  PackagerImplementation::Register() - ENTER"); 
-        fprintf(stderr, "\nHUGH >>>>>  PackagerImplementation::Register() - ENTER"); 
-        fprintf(stderr, "\nHUGH >>>>>  PackagerImplementation::Register() - ENTER"); 
+        LOGERR("\nHUGH >>>>>  PackagerImplementation::Register() - ENTER"); 
 
         ASSERT(notification);
         _adminLock.Lock();
@@ -319,7 +321,7 @@ namespace Plugin {
     //     // LOGERR("DEBUG:  NotifyRelayEvent() - EXIT" );
     // }
 
-    void PackagerImplementation::NotifyIntallStep(uint32_t status)
+    void PackagerImplementation::NotifyIntallStep(uint8_t status)
     {
         LOGERR("DEBUG:  NotifyIntallStep() - ENTER" );
 
@@ -384,59 +386,5 @@ namespace Plugin {
             NotifyRepoSynced(result);
         }
     }
-
-    //
-    // Adapter methods to call DAC Installer implementation
-    //
-    uint32_t PackagerImplementation::Install(const string& pkgId, const string& type, const string& url, 
-                     const string& token, const string& listener)
-    { 
-        return Install_imp(pkgId, type, url, token, listener); // Call IMPL
-    }
-
-    uint32_t PackagerImplementation::Remove(const string& pkgId, const string& listener)
-    {
-        return Remove_imp(pkgId, listener); // Call IMPL
-    }
-
-    uint32_t PackagerImplementation::Cancel(const string& task, const string& listener)
-    {
-        return Cancel_imp(task, listener); // Call IMPL
-    };
-
-    uint32_t PackagerImplementation::IsInstalled(const string& pkgId)
-    {
-        return IsInstalled_imp(pkgId); // Call IMPL
-    }
-
-    uint32_t PackagerImplementation::GetInstallProgress( const string& task)
-    {
-        return GetInstallProgress_imp(task); // Call IMPL
-    }
-
-    PackageInfoEx::IIterator* PackagerImplementation::GetInstalled()
-    {
-        return GetInstalled_imp(); // Call IMPL
-    }
-
-    PackageInfoEx* PackagerImplementation::GetPackageInfo(const string& pkgId)
-    {
-        return GetPackageInfo_imp(pkgId); // Call IMPL
-    }
-
-    // void PackagerImplementation::CallRelayEvent(std::string event)
-    // {
-    //     NotifyRelayEvent(event);
-    // }
-
-    int64_t PackagerImplementation::GetAvailableSpace()
-    {
-        // LOGERR("PackagerImplementation::GetAvailableSpace()  .... call >> NotifyIntallStep()" );
-
-        NotifyIntallStep(0);
-
-        return GetAvailableSpace_imp(); // Call IMPL
-    }
-
 }  // namespace Plugin
 }  // namespace WPEFramework
