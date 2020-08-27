@@ -1158,6 +1158,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
           curl_easy_setopt(curl, CURLOPT_URL, url);
           curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
           curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+          curl_easy_setopt(curl, CURLOPT_USERAGENT, "Packager/1.0");
           
           res = curl_easy_perform(curl);
           if(res == CURLE_OK)
