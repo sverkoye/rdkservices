@@ -231,35 +231,37 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             //
             Register<void, JsonObject>(kDAC_GetInstalledMethodName,  [this, PkgInfo2json](JsonObject& response) -> uint32_t
             {
-                JsonArray list; // installed packages
-
                 Exchange::IPackager::IPackageInfoEx::IIterator *iter = this->_implementation->GetInstalled();
 
-                while (iter->Next() == true)
+                JsonArray list; // installed packages
+
+                if(iter != nullptr)
                 {
-                    Exchange::IPackager::IPackageInfoEx *pkg = (Exchange::IPackager::IPackageInfoEx *) iter;
-
-                    //Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo("foo");
-
-                    if(pkg != nullptr)
+                    do
                     {
-                        LOGERR("Packager::GetInstalled() - App: %s", pkg->Name().c_str());
+                        Exchange::IPackager::IPackageInfoEx *pkg = iter->Current();
 
-                        JsonObject pkgJson;
-                        PkgInfo2json(pkg, pkgJson);
+                        if(pkg)
+                        {
+                            LOGERR("Packager::GetInstalled() - Adding >>> App: %s", pkg->PkgId().c_str());
 
-                        list.Add( pkgJson );
-                    }
-                    else
-                    {
-                        LOGERR("Packager::GetInstalled() - ERRORS...");
-                    }
+                            JsonObject pkgJson;
+                            PkgInfo2json(pkg, pkgJson); // PKG >> JSON
 
-                    if(pkg)
-                    {
-                        pkg->Release();
-                    }
-                }//WHILE
+                            list.Add( pkgJson );
+
+                            pkg->Release();
+                        }
+                        else
+                        {
+                            LOGERR("Packager::GetInstalled() - No PKG...");
+                        }
+                    } while( iter->Next() );
+                }
+                else
+                {
+                    LOGERR("Packager::GetInstalled() - ERRORS...");
+                }
                
                 response["applications"] = list;
 
@@ -288,7 +290,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                 }
                 else
                 {
-                    // NOT found
+                    // NOT Found
                     LOGERR("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - NOT FOUND", params.PkgId.Value().c_str());
 
                     // response["task"]   = (rc >  0) ? std::to_string( rc ) : "Install Failed";
@@ -366,34 +368,30 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             {
             }
 
-            virtual void Deactivated(RPC::IRemoteConnection* connection) //override
+            virtual void Deactivated(RPC::IRemoteConnection* connection) override
             {
                 _parent.Deactivated(connection);
             }
 
             virtual void StateChange(Exchange::IPackager::IPackageInfo* package, 
-                                     Exchange::IPackager::IInstallationInfo* install) //override
+                                     Exchange::IPackager::IInstallationInfo* install) override
             {
-                fprintf(stderr, "\n ########\n ########  StateChange() !!! \n ########");
-               // _parent.IntallStep(status);
+               // Needed >> Exchange::IPackager::INotification is Pure Virtual
             }
 
-            virtual void RepositorySynchronize(uint32_t status) //override
+            virtual void RepositorySynchronize(uint32_t status) override
             {
-                fprintf(stderr, "\n ########\n ########  RepositorySynchronize() !!! status: %ul\n ########", status);
-               // _parent.IntallStep(status);
+               // Needed >> Exchange::IPackager::INotification is Pure Virtual
             }
 
-            virtual void IntallStep(uint32_t status) //override
+            virtual void IntallStep(uint32_t status) override
             {
-                fprintf(stderr, "\n ########\n ########  IntallStep() !!! status: %ul\n ########", status);
                 _parent.IntallStep(status);
             }
 
-            virtual void StateChange(const PluginHost::IStateControl::state state) //override
+            virtual void StateChange(const PluginHost::IStateControl::state state) override
             {
-                fprintf(stderr, "\n ########\n ########  StateChange() !!! state: %ul\n ########", state);
-                // _parent.StateChange(state);
+               // Needed >> Exchange::IPackager::INotification is Pure Virtual
             }
 
             BEGIN_INTERFACE_MAP(Notification)

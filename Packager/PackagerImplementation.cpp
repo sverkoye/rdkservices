@@ -126,8 +126,6 @@ namespace Plugin {
 
     void PackagerImplementation::Register(Exchange::IPackager::INotification* notification)
     {
-        LOGERR("\nHUGH >>>>>  PackagerImplementation::Register() - ENTER"); 
-
         ASSERT(notification);
         _adminLock.Lock();
 

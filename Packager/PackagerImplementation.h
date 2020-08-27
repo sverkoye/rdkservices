@@ -155,8 +155,6 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
 
         // DAC Installer API
 
-        // using PackageInfoEx = PackagerExImplementation::PackageInfoEx; 
-
         uint32_t Install(const string& pkgId, const string& type, const string& url, 
                          const string& token, const string& listener);
 
@@ -375,10 +373,6 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
         void InitPackageDB();
 
         void NotifyIntallStep(uint8_t status);   // NOTIFY
-      //  void NotifyRelayEvent(std::string event); // NOTIFY
-
-
-        std::vector<PackageInfoEx *> mPPPlist;
 
         static const int64_t STORE_BYTES_QUOTA;
         static const char*   STORE_NAME;
@@ -411,6 +405,8 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
         bool _isSyncing;
 
         uint32_t _taskNumber;
+
+        PackageList_t _packageList;
     };
 
 }  // namespace Plugin

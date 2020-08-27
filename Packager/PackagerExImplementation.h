@@ -30,16 +30,18 @@
 
 using namespace std;
 
-#define DDD()   fprintf(stderr, "\nHUGH >>>>> DAC Impl ... Call ... %s()", __FUNCTION__);
+#define DDD()   fprintf(stderr, "\nHUGH >>>>> DAC Impl ... Call ... %s()\n", __FUNCTION__);
 
 namespace WPEFramework {
 namespace Plugin {
+
+  using IPackageInfoEx = Exchange::IPackager::IPackageInfoEx;
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     //
     // Encapsulate Package Info
     //
-    class PackageInfoEx : public Exchange::IPackager::IPackageInfoEx
+    class PackageInfoEx : public IPackageInfoEx
     {
       public:
         // PackageInfoEx() = delete;
@@ -57,8 +59,9 @@ namespace Plugin {
                         : _name(name)
                         , _version(version)
                         , _pkgId(pkgId)
+                        , _refCount(0)
         {
-          //AddRef();
+          AddRef();
         }
 
         PackageInfoEx() = default;
@@ -73,7 +76,7 @@ namespace Plugin {
 
         virtual uint32_t Release() //const
         {
-            if (--_refCount == 0)
+            if ( Core::InterlockedDecrement(_refCount) == 0)
             {
               LOGERR("\n PackageInfoEx <<< Release()  - DELETE");
               delete const_cast<PackageInfoEx*>(this);
@@ -82,7 +85,7 @@ namespace Plugin {
         }
 
         BEGIN_INTERFACE_MAP(PackageInfoEx)
-            INTERFACE_ENTRY(Exchange::IPackager::IPackageInfoEx)
+            INTERFACE_ENTRY(IPackageInfoEx)
         END_INTERFACE_MAP
 
         typedef const unsigned char uchar_t; // helper
@@ -212,6 +215,115 @@ namespace Plugin {
         int _refCount;
 
     };// CLASS - PackageInfoEx
+
+
+    typedef std::list<PackageInfoEx *>    PackageList_t;
+
+    class PackageInfoExIterator : public IPackageInfoEx::IIterator
+    {
+      public:
+          PackageInfoExIterator() = delete;
+          PackageInfoExIterator(const PackageInfoExIterator&) = delete;
+          PackageInfoExIterator& operator= (const PackageInfoExIterator&) = delete;
+
+          PackageInfoExIterator(const PackageList_t& pkgs)
+              : _index(pkgs.size())
+              // , _refCount(0)
+             , _packages(pkgs)
+          {
+          }
+          virtual ~PackageInfoExIterator()
+          {
+              _packages.clear();
+          }
+
+      public:
+          bool IsValid() const override
+          {
+              return ((_index != 0) && (_index <= _packages.size()));
+          }
+
+          bool Next() override
+          {
+              if (_index == 0) {
+                  _index = 1;
+              } else if (_index <= _packages.size()) {
+                  _index++;
+              }
+              return (IsValid());
+          }
+
+          void Reset() override
+          {
+              _index = 0;
+          }
+
+          uint32_t Count() const override
+          {
+            LOGERR("##### PackageInfoExIterator::Count() = %ld", _packages.size());
+
+            return _packages.size();  // DUMMY
+          };
+        
+          IPackageInfoEx* Current() const override
+          {
+//            LOGERR("##### PackageInfoExIterator::Current() - ENTER _index: %d " ,_index);
+
+            ASSERT(IsValid() == true);
+            PackageList_t::const_iterator iter = std::next(_packages.begin(), _index - 1);
+            ASSERT(*iter != nullptr);
+
+// JUNK JUNK JUNK JUNK
+// JUNK JUNK JUNK JUNK
+//
+// IPackageInfoEx *pkg = *iter;
+// LOGERR("##### Current() - *pkg = %p ", pkg);
+// LOGERR("##### Current() - PkgID = [%s] ", (*iter)->PkgId().c_str() );
+// LOGERR("##### Current() - Name  = [%s] ", "bar" );//pkg->Name().c_str()  );
+// LOGERR("##### Current() - EXIT");
+//
+// JUNK JUNK JUNK JUNK
+// JUNK JUNK JUNK JUNK
+
+              return *iter;
+          }
+
+
+          WPEFramework::Plugin::PackageInfoEx* Package() const
+          {
+              ASSERT(IsValid() == true);
+              PackageList_t::const_iterator itr = std::next(_packages.begin(), _index - 1);
+              ASSERT(*itr != nullptr);
+
+              return *itr;
+          }
+
+          // Ref Counting
+          // virtual void AddRef() // const
+          // {
+          //     Core::InterlockedIncrement(_refCount);
+          // }
+
+          // virtual uint32_t Release() // const
+          // {
+          //     if ( Core::InterlockedDecrement(_refCount) == 0)
+          //     {
+          //       LOGERR("\n PackageInfoExIterator <<< Release()  - DELETE");
+          //       delete const_cast<PackageInfoExIterator*>(this);
+          //     }
+          //     return (0);
+          // }
+
+          BEGIN_INTERFACE_MAP(PackageInfoExIteratorImplementation)
+            INTERFACE_ENTRY(Exchange::IPackager::IPackageInfoEx::IIterator)
+          END_INTERFACE_MAP
+
+      private:
+          uint16_t       _index;
+          // int            _refCount;
+          PackageList_t  _packages;
+      };
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   } // namespace Plugin

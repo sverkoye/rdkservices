@@ -28,6 +28,8 @@
 
 #include "utils.h"
 
+#include "PackagerExImplementation.h"
+
 //TODO: make configurable and scoped
 //
 #define TMP_FILENAME  "/opt/tmpApp.tgz"
@@ -73,6 +75,7 @@ namespace Plugin {
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // SQL helpers
+
             static bool           hasPkgRow(const string& pkgId);
             static bool           hasPkgRow(const char* pkgId);
             static bool           addPkgRow(const PackageInfoEx* pkg);
@@ -82,6 +85,8 @@ namespace Plugin {
             static int64_t        sumSizeInBytes();
 
             static void           showTable();
+
+            static void           updatePkgList(PackageList_t& list);
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // House-keeping
@@ -110,6 +115,9 @@ namespace Plugin {
             static std::vector<std::thread> mThreadPool; // thread pool
 
             static Core::CriticalSection    mThreadLock;
+
+            // static std::list<PackageInfoEx *> mPackages;
+            // static std::list<PackageInfoEx *>::iterator mPkgIter;
 
             static const int64_t  MAX_SIZE_BYTES;
             static const int64_t  MAX_VALUE_SIZE_BYTES;

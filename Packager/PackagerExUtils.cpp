@@ -42,8 +42,6 @@
 #include <sys/stat.h>
 
 #include "PackagerExUtils.h"
-#include "PackagerExImplementation.h"
-
 
 #ifndef SQLITE_FILE_HEADER
 #define SQLITE_FILE_HEADER "SQLite format 3"
@@ -51,21 +49,27 @@
 
 #define SQLITE *(sqlite3**) &mData
 
-const int64_t WPEFramework::Plugin::PackagerExUtils::MAX_SIZE_BYTES = 1000000;
-const int64_t WPEFramework::Plugin::PackagerExUtils::MAX_VALUE_SIZE_BYTES = 1000;
-
-JsonObject   WPEFramework::Plugin::PackagerExUtils::mPackageCfg;
-
 namespace WPEFramework {
 namespace Plugin {
 
+// Helper
+//
+static PackageInfoEx* row2pkg(sqlite3_stmt *stmt); // private fwd
 
-std::vector<std::thread>       PackagerExUtils::mThreadPool; // thread pool
-WPEFramework::Plugin::JobPool  PackagerExUtils::mJobPool;
-Core::CriticalSection          PackagerExUtils::mThreadLock;
+// Storage
+//
+const int64_t                        PackagerExUtils::MAX_SIZE_BYTES       = 1000000;
+const int64_t                        PackagerExUtils::MAX_VALUE_SIZE_BYTES = 1000;
+JsonObject                           PackagerExUtils::mPackageCfg;
 
+// std::list<PackageInfoEx *>           PackagerExUtils::mPackages;
+//std::list<PackageInfoEx *>::iterator PackagerExUtils::mPkgIter;
 
-void* WPEFramework::Plugin::PackagerExUtils::mData = nullptr;
+std::vector<std::thread>             PackagerExUtils::mThreadPool; // thread pool
+WPEFramework::Plugin::JobPool        PackagerExUtils::mJobPool;
+Core::CriticalSection                PackagerExUtils::mThreadLock;
+
+void*                                PackagerExUtils::mData = nullptr;
 
 #if defined(SQLITE_HAS_CODEC)
 
@@ -420,14 +424,6 @@ void* WPEFramework::Plugin::PackagerExUtils::mData = nullptr;
                 return false;
             }
         }
-        else
-        {
-             fprintf(stderr, "\n TABLE READY \n");
-
-            //  PackagerExUtils::showTable();
-        }
-
-       // PackagerExUtils::term(); // ensure closed 
     
         return true;
     }
@@ -435,8 +431,6 @@ void* WPEFramework::Plugin::PackagerExUtils::mData = nullptr;
 
     void PackagerExUtils::term()
     {
-        // LOGINFO();
-
         sqlite3* &db = SQLITE;
 
         if (db)
@@ -704,6 +698,37 @@ success = true;
         return success;
     }
 
+    PackageInfoEx* row2pkg(sqlite3_stmt *stmt)
+    {
+        PackageInfoEx* pkg = nullptr;
+
+        if(stmt)
+        {
+            pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
+
+            if(pkg)
+            {
+                pkg->setName(        sqlite3_column_text(stmt, 0) ); // name
+                pkg->setBundlePath(  sqlite3_column_text(stmt, 1) ); // path
+                pkg->setVersion(     sqlite3_column_text(stmt, 2) ); // version
+                pkg->setPkgId(       sqlite3_column_text(stmt, 3) ); // id
+                pkg->setInstalled(   sqlite3_column_text(stmt, 4) ); // installed
+                pkg->setSizeInBytes( sqlite3_column_int( stmt, 5) ); // size (bytes)
+                pkg->setType(        sqlite3_column_text(stmt, 6) ); // type
+            }
+            else
+            {
+                LOGERR(" row2pkg() - pkg create failed.");
+            }
+        }
+        else
+        {
+            LOGERR(" row2pkg() - bad args.");
+        }
+
+        return pkg;
+    }
+
     PackageInfoEx* PackagerExUtils::getPkgRow(const string& pkgId)
     {
         PackageInfoEx* pkg = nullptr;
@@ -726,17 +751,7 @@ success = true;
             rc = sqlite3_step(stmt);
             if (rc == SQLITE_ROW) // FOUND !!
             {
-                pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
-
-                pkg->setName(        sqlite3_column_text(stmt, 0) ); // name
-                pkg->setBundlePath(  sqlite3_column_text(stmt, 1) ); // path
-                pkg->setVersion(     sqlite3_column_text(stmt, 2) ); // version
-                pkg->setPkgId(       sqlite3_column_text(stmt, 3) ); // id
-                pkg->setInstalled(   sqlite3_column_text(stmt, 4) ); // installed
-                pkg->setSizeInBytes( sqlite3_column_int( stmt, 5) ); // size (bytes)
-                pkg->setType(        sqlite3_column_text(stmt, 6) ); // type
-
-               // PackageInfoEx::printPkg(pkg);
+                pkg = row2pkg(stmt);
             }
             else
             {
@@ -748,7 +763,6 @@ success = true;
 
         return pkg;
     }
-
 
     bool PackagerExUtils::delPkgRow(const string& pkgId)
     {
@@ -823,6 +837,37 @@ success = true;
         if (rc != SQLITE_OK)
         {
             LOGERR("ERROR showing table ... %s", sqlite3_errmsg(db));
+        }
+    }
+
+    void PackagerExUtils::updatePkgList(PackageList_t& list)
+    {
+        list.clear();
+
+        sqlite3* &db = SQLITE;
+
+        if (db)
+        {
+            sqlite3_stmt *stmt;
+            sqlite3_prepare( db, "SELECT * from dacTable;", -1, &stmt, NULL );//preparing the statement
+            sqlite3_step( stmt );//executing the statement
+
+            while( sqlite3_column_text( stmt, 0 ) )
+            {
+                PackageInfoEx* pkg = row2pkg(stmt);
+                sqlite3_step( stmt );
+
+                if(pkg)
+                {
+                    list.push_back(pkg);
+
+                    LOGINFO("ADDING pkg to list ... %s", pkg->PkgId().c_str() );
+                }
+            }//WHILE
+        }
+        else
+        {
+            LOGERR(" updatePkgList() ...  FAILED");
         }
     }
 

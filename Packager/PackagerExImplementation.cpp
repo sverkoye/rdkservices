@@ -22,7 +22,7 @@
  // JUNK
  // JUNK
  // JUNK
- #define JUNK_MS   500
+ #define JUNK_MS   200
  // JUNK
  // JUNK
  // JUNK
@@ -35,6 +35,8 @@
 #include <chrono>         // std::chrono::seconds
 
 #include "utils.h"
+
+#include <interfaces/IPackager.h>
 
 #include "PackagerExUtils.h"
 
@@ -56,12 +58,9 @@ namespace Plugin {
 // Events
 #define DAC_EVT_INSTALL_ACK "DAC_InstallAck"
 
-  // PackagerExImplementation::PackagerExImplementation()
-  //                               : _taskNumber(0)
+
   void PackagerImplementation::InitPackageDB()
   {
-    DDD();
-
    // RegisterAll();  
 
     auto path = g_build_filename("/opt", "persistent", nullptr);
@@ -74,12 +73,11 @@ namespace Plugin {
     auto file = g_build_filename(path, STORE_NAME, nullptr);
 
     bool success = PackagerExUtils::init(file, STORE_KEY);
-    LOGERR("\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
+    
+    //LOGERR("\n %s() ... SQLite >> Init()  %s ", __PRETTY_FUNCTION__, (success ? " OK" : " FAILED !"));
 
     if(success)
     {
-
-
 //JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
 //JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK JUNK 
 //
@@ -153,7 +151,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         this->doInstall(pkgId, type,  url, token, listener); // TODO: THREAD THIS
       });
 
-     // threadObj.join();
+     threadObj.join();
 
     // response["error"] = "params missing";
     // response["value"] = "test123";
@@ -169,6 +167,11 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     std::string install_url;
     std::string install_ver;
 
+    // TODO: Check to see if Package ALREADY installed... bug out !
+    // TODO: Check to see if Package ALREADY installed... bug out !
+    // TODO: Check to see if Package ALREADY installed... bug out !
+    // TODO: Check to see if Package ALREADY installed... bug out !
+    
 //    NotifyIntallStep(INSTALL_START);
 
     // Parse the URL...
@@ -366,10 +369,11 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
   PackageInfoEx::IIterator* PackagerImplementation::GetInstalled()
   {
-    DDD();
+    PackagerExUtils::updatePkgList( _packageList ); // Populate 'list' from SQL
 
-    // TODO: 
-    return nullptr;
+    PackageInfoExIterator *iter = Core::Service<PackageInfoExIterator>::Create<PackageInfoExIterator>(_packageList);
+
+    return iter;
   }
 
   PackageInfoEx* PackagerImplementation::GetPackageInfo(const string& pkgId)

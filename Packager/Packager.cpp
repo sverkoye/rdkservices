@@ -50,10 +50,6 @@ namespace {
             if (_implementation->Configure(_service) != Core::ERROR_NONE) {
                 result = _T("Couldn't initialize PACKAGER instance");
             }
-            else
-            {
-                fprintf(stderr, "\nHUGH >>>>> Created ... PackagerImplementation  at 0x%p ", _implementation); 
-            }
 
             _implementation->Register(&_notification);
             // if(stateControl)
