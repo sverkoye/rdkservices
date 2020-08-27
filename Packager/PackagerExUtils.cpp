@@ -861,7 +861,7 @@ success = true;
                 {
                     list.push_back(pkg);
 
-                    LOGINFO("ADDING pkg to list ... %s", pkg->PkgId().c_str() );
+                    // LOGINFO("ADDING pkg to list ... %s", pkg->PkgId().c_str() );
                 }
             }//WHILE
         }

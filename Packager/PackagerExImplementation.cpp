@@ -160,10 +160,14 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     std::string install_url;
     std::string install_ver;
 
-    // TODO: Check to see if Package ALREADY installed... bug out !
-    // TODO: Check to see if Package ALREADY installed... bug out !
-    // TODO: Check to see if Package ALREADY installed... bug out !
-    // TODO: Check to see if Package ALREADY installed... bug out !
+    if(IsInstalled(pkgId))
+    {
+      LOGERR(" - %s ... ALREADY installed", pkgId.c_str());
+
+      NotifyIntallStep(Exchange::IPackager::INSTALLED); // technically true
+
+      return 9; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;
+    }
     
 //    NotifyIntallStep(INSTALL_START);
 
@@ -351,7 +355,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
   uint32_t PackagerImplementation::IsInstalled(const string& pkgId)//, JsonObject &response)
   {
-    LOGERR("\n\nPackagerExImplementation::IsInstalled() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
+    // LOGINFO("\n\nPackagerExImplementation::IsInstalled() ... pkgId: [%s]\n\n", pkgId.c_str() ); 
 
     return PackagerExUtils::hasPkgRow( pkgId );
   }
@@ -391,8 +395,6 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
   int64_t PackagerImplementation::GetAvailableSpace()
   {
-    NotifyIntallStep(0);
-
     int64_t used_bytes = PackagerExUtils::sumSizeInBytes();
 
     LOGERR("PackagerExImplementation::GetAvailableSpace()  ... used_bytes: %jd ", used_bytes);
