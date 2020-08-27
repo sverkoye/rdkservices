@@ -121,7 +121,7 @@ namespace Plugin {
         void setType( uchar_t *v )          { _type = uchar2string(v);        };
 
         // Helpers
-#if 0
+#if 1
         static JsonObject pkg2json(PackageInfoEx *pkg)
         {
             JsonObject json;
@@ -132,19 +132,21 @@ namespace Plugin {
               return json; // empty
             }
 
-            char sizeInBytes[255];
-            snprintf(sizeInBytes, sizeof(sizeInBytes), "%jd", pkg->SizeInBytes());
-
             json["name"]       = pkg->Name();
             json["bundlePath"] = pkg->BundlePath();
             json["version"]    = pkg->Version();
             json["id"]         = pkg->PkgId();
             json["installed"]  = pkg->Installed();
-            json["size"]       = std::string(sizeInBytes);//pgk.SizeInBytes();
+            json["size"]       = std::to_string( pkg->SizeInBytes() );
             json["type"]       = pkg->Type();
 
             return json;
         };
+
+        static JsonObject pkg2json(Exchange::IPackager::IPackageInfoEx *pkg)
+        {
+          return pkg2json( (PackageInfoEx *) pkg);
+        }
 
         static JsonObject pkg2json(PackageInfoEx &pkg)
         {
@@ -227,7 +229,7 @@ namespace Plugin {
           PackageInfoExIterator& operator= (const PackageInfoExIterator&) = delete;
 
           PackageInfoExIterator(const PackageList_t& pkgs)
-              : _index(pkgs.size())
+              : _index(0)
               // , _refCount(0)
              , _packages(pkgs)
           {
@@ -260,32 +262,20 @@ namespace Plugin {
 
           uint32_t Count() const override
           {
-            LOGERR("##### PackageInfoExIterator::Count() = %ld", _packages.size());
+            // LOGINFO("##### PackageInfoExIterator::Count() = %ld", _packages.size());
 
             return _packages.size();  // DUMMY
           };
         
           IPackageInfoEx* Current() const override
           {
-//            LOGERR("##### PackageInfoExIterator::Current() - ENTER _index: %d " ,_index);
+            // LOGINFO("##### PackageInfoExIterator::Current() - ENTER _index: %d " ,_index);
 
             ASSERT(IsValid() == true);
             PackageList_t::const_iterator iter = std::next(_packages.begin(), _index - 1);
             ASSERT(*iter != nullptr);
 
-// JUNK JUNK JUNK JUNK
-// JUNK JUNK JUNK JUNK
-//
-// IPackageInfoEx *pkg = *iter;
-// LOGERR("##### Current() - *pkg = %p ", pkg);
-// LOGERR("##### Current() - PkgID = [%s] ", (*iter)->PkgId().c_str() );
-// LOGERR("##### Current() - Name  = [%s] ", "bar" );//pkg->Name().c_str()  );
-// LOGERR("##### Current() - EXIT");
-//
-// JUNK JUNK JUNK JUNK
-// JUNK JUNK JUNK JUNK
-
-              return *iter;
+            return *iter;
           }
 
 

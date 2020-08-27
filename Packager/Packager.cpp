@@ -368,7 +368,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
 
     void Packager::IntallStep(uint32_t status)
     {
-        LOGERR("Packager::IntallStep(uint32_t status)  >>> %ul", status);
+        // LOGINFO("Packager::IntallStep(uint32_t status)  >>> %u", status);
         event_installstep(status);
     }
 

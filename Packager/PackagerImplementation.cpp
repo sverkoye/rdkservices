@@ -321,8 +321,6 @@ namespace Plugin {
 
     void PackagerImplementation::NotifyIntallStep(uint8_t status)
     {
-        LOGERR("DEBUG:  NotifyIntallStep() - ENTER" );
-
         _adminLock.Lock();
         _isSyncing = false;
         for (auto* notification : _notifications)
@@ -330,8 +328,6 @@ namespace Plugin {
             notification->IntallStep(status);
         }
         _adminLock.Unlock();
-
-        // LOGERR("DEBUG:  NotifyIntallStep() - EXIT" );
     }
 
     bool PackagerImplementation::InitOPKG()

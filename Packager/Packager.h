@@ -181,8 +181,6 @@ namespace {
             {
                 uint32_t result = Core::ERROR_NONE;
 
-fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", params.PkgId.Value().c_str() ); 
-
                 response["available"] = this->_implementation->IsInstalled(params.PkgId.Value());
 
                 return result;
@@ -203,33 +201,10 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                 return result;
             });
 
-            auto PkgInfo2json = [](Exchange::IPackager::IPackageInfoEx *pkg, JsonObject& response)
-            {
-                if(pkg == nullptr)
-                {
-                    LOGERR("Packager::PkgInfo2json() - Bad args !!! ... pkg == NULL");
-                    return -1; // ERROR
-                }
-
-                // TODO:  Use instead ??
-                //
-                // JsonObject json = PackageInfoEx::pkg2json( (PackageInfoEx*) pkg);
-
-                response["name"]       = pkg->Name();
-                response["bundlePath"] = pkg->BundlePath();
-                response["version"]    = pkg->Version();
-                response["id"]         = pkg->PkgId();
-                response["installed"]  = pkg->Installed();
-                response["size"]       = std::to_string( pkg->SizeInBytes() );
-                response["type"]       = pkg->Type();
-
-                return 0;
-            };
-
             //
             // DAC::GetInstalled()
             //
-            Register<void, JsonObject>(kDAC_GetInstalledMethodName,  [this, PkgInfo2json](JsonObject& response) -> uint32_t
+            Register<void, JsonObject>(kDAC_GetInstalledMethodName, [this](JsonObject& response) -> uint32_t
             {
                 Exchange::IPackager::IPackageInfoEx::IIterator *iter = this->_implementation->GetInstalled();
 
@@ -237,16 +212,15 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
 
                 if(iter != nullptr)
                 {
-                    do
+                    while( iter->Next() )
                     {
                         Exchange::IPackager::IPackageInfoEx *pkg = iter->Current();
 
                         if(pkg)
                         {
-                            LOGERR("Packager::GetInstalled() - Adding >>> App: %s", pkg->PkgId().c_str());
+                            // LOGINFO("Packager::GetInstalled() - Adding >>> App: %s", pkg->PkgId().c_str());
 
-                            JsonObject pkgJson;
-                            PkgInfo2json(pkg, pkgJson); // PKG >> JSON
+                            JsonObject pkgJson = PackageInfoEx::pkg2json( pkg );
 
                             list.Add( pkgJson );
 
@@ -256,7 +230,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                         {
                             LOGERR("Packager::GetInstalled() - No PKG...");
                         }
-                    } while( iter->Next() );
+                    }
                 }
                 else
                 {
@@ -271,7 +245,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
             //
             // DAC::GetPackageInfo()
             //
-            Register<Params, JsonObject>(kDAC_GetPackageInfoMethodName, [this, PkgInfo2json](const Params& params, JsonObject& response) -> uint32_t
+            Register<Params, JsonObject>(kDAC_GetPackageInfoMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {
                 Exchange::IPackager::IPackageInfoEx *pkg = this->_implementation->GetPackageInfo(params.PkgId.Value());
 
@@ -279,7 +253,7 @@ fprintf(stderr, "\n\npackager.h >>> IsInstalled_imp() ... pkgId: [%s]\n\n", para
                 {
                     LOGERR("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - FOUND", params.PkgId.Value().c_str());
 
-                    PkgInfo2json(pkg, response);
+                    response = PackageInfoEx::pkg2json( pkg );
 
                    // PackageInfoEx::printPkg( (PackageInfoEx *) pkg); /// DEBUG
 

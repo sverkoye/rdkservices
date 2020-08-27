@@ -1098,7 +1098,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
                              std::istreambuf_iterator<char>());
 
             // Parse the text to JSON ... and get install URL.
-            mPackageCfg    = JsonObject(txt);
+            mPackageCfg = JsonObject(txt);
 
             return DACrc_t::dac_OK;
         }
@@ -1148,7 +1148,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
       PackagerExUtils::DACrc_t rc = DACrc_t::dac_FAIL;
 
-      fprintf(stderr, " %s() ... download: %s \n", __PRETTY_FUNCTION__, url);
+      LOGINFO(" PackagerExUtils::downloadURL() ... download: %s \n", url);
 
       curl = curl_easy_init();
       if (curl)

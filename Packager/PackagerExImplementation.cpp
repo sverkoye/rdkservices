@@ -95,7 +95,6 @@ namespace Plugin {
       pkg->setType("DAC");
 
 
-
 LOGERR("########## addPkgRow \n");
   PackagerExUtils::addPkgRow(pkg);  
 
@@ -144,18 +143,12 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   uint32_t PackagerImplementation::Install(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
-      LOGERR("\n\n HUGH .... PackagerImplementation::Install() - ENTER");
+    std::thread threadObj( [pkgId, type, url, token, listener, this] // lambda capture
+    {
+      this->doInstall(pkgId, type,  url, token, listener); // TODO: THREAD THIS
+    });
 
-      std::thread threadObj([pkgId, type,  url, token, listener, this]
-      {
-        this->doInstall(pkgId, type,  url, token, listener); // TODO: THREAD THIS
-      });
-
-     threadObj.join();
-
-    // response["error"] = "params missing";
-    // response["value"] = "test123";
-    // returnResponse(true);
+    threadObj.join();
 
     return 0;
   }
@@ -205,7 +198,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
             return 22; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
         }
 
-        // Validate URL
+        // Validate URL from JSON
         if(PackagerExUtils::validateURL(install_url.c_str()) != PackagerExUtils::DACrc_t::dac_OK )
         {
             LOGERR(" %s() ... ERROR:  Invlaid URL >> %s \n", __PRETTY_FUNCTION__, url.c_str());
@@ -215,6 +208,14 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     else
     {
       // No JSON manifest - just a .tgz
+      install_url = url;
+
+      // Validate URL 
+      if(PackagerExUtils::validateURL(install_url.c_str()) != PackagerExUtils::DACrc_t::dac_OK )
+      {
+          LOGERR(" %s() ... ERROR:  Invlaid URL >> %s \n", __PRETTY_FUNCTION__, url.c_str());
+          return 35; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;          
+      }
 
       LOGWARN(" %s() ... WARN:  No JSON manifest - just a .tgz - using dummy fields >> %s \n", __PRETTY_FUNCTION__, url.c_str());
       // TODO:  Find a JSON manifest withing the .tgz ?
@@ -305,8 +306,6 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
         pkg->Release();
     }
-
-    LOGERR("\n\n HUGH .... PackagerImplementation::doInstall() - EXIT"); 
 
     return 0; // no error
   }
