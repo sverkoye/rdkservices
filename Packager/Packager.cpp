@@ -99,12 +99,11 @@ namespace {
 
     // JSONRPC
 
-    void Packager::event_installstep(uint32_t status)
+    void Packager::event_installstep(Exchange::IPackager::state status, uint32_t task, string id)
     {
-        // TODO:  Add a switch statement to map 'status' to a Notify() call
-
         JsonObject params;
-        params["installStep"] = "Testing 123";
+        params["pkgId"]  = id;
+        params["task"]   = std::to_string( task );
         params["status"] = std::to_string( status );
 
         std::string str("empty");
@@ -366,10 +365,10 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
         return(result);
     }
 
-    void Packager::IntallStep(uint32_t status)
+    void Packager::IntallStep(Exchange::IPackager::state status, uint32_t task, string id)
     {
         // LOGINFO("Packager::IntallStep(uint32_t status)  >>> %u", status);
-        event_installstep(status);
+        event_installstep(status, task, id);
     }
 
     void Packager::Deactivated(RPC::IRemoteConnection* connection)

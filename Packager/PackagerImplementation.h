@@ -372,14 +372,16 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
 
         void InitPackageDB();
 
-        void NotifyIntallStep(uint8_t status);   // NOTIFY
+        void NotifyIntallStep(Exchange::IPackager::state status, uint32_t task = 0, string id = "");   // NOTIFY
 
         static const int64_t STORE_BYTES_QUOTA;
         static const char*   STORE_NAME;
         static const char*   STORE_KEY;
 
     private:
-        uint32_t doInstall(const string& pkgId, const string& type, const string& url, const string& token, const string& listener);
+        uint32_t doInstall(uint32_t taskId, 
+                const string& pkgId, const string& type, const string& url,
+                const string& token, const string& listener);
 
         void BlockingInstallUntilCompletionNoLock();
         void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);

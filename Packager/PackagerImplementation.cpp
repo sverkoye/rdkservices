@@ -319,13 +319,13 @@ namespace Plugin {
     //     // LOGERR("DEBUG:  NotifyRelayEvent() - EXIT" );
     // }
 
-    void PackagerImplementation::NotifyIntallStep(uint8_t status)
+    void PackagerImplementation::NotifyIntallStep(Exchange::IPackager::state status, uint32_t task /*= 0*/, string id /* = "" */)
     {
         _adminLock.Lock();
         _isSyncing = false;
         for (auto* notification : _notifications)
         {
-            notification->IntallStep(status);
+            notification->IntallStep(status, task, id);
         }
         _adminLock.Unlock();
     }

@@ -55,10 +55,6 @@ using namespace std;
 namespace WPEFramework {
 namespace Plugin {
 
-// Events
-#define DAC_EVT_INSTALL_ACK "DAC_InstallAck"
-
-
   void PackagerImplementation::InitPackageDB()
   {
    // RegisterAll();  
@@ -143,18 +139,23 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   uint32_t PackagerImplementation::Install(const string& pkgId, const string& type, const string& url,
                                                    const string& token, const string& listener)
   { 
-    std::thread threadObj( [pkgId, type, url, token, listener, this] // lambda capture
+    uint32_t task = _taskNumber++;
+
+    std::thread threadObj( [task, pkgId, type, url, token, listener, this] // lambda capture
     {
-      this->doInstall(pkgId, type,  url, token, listener); // TODO: THREAD THIS
+      this->doInstall(task, pkgId, type,  url, token, listener); // TODO: THREAD THIS
     });
 
-    threadObj.join();
+//    threadObj.join();
+    threadObj.detach();
 
-    return 0;
+    return task;
   }
 
-  uint32_t PackagerImplementation::doInstall(const string& pkgId, const string& type, const string& url,
-                                             const string& token, const string& listener)
+  uint32_t PackagerImplementation::doInstall(
+        uint32_t taskId,
+        const string& pkgId, const string& type, const string& url,
+        const string& token, const string& listener)
   {
     std::string install_name;
     std::string install_url;
@@ -164,7 +165,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     {
       LOGERR(" - %s ... ALREADY installed", pkgId.c_str());
 
-      NotifyIntallStep(Exchange::IPackager::INSTALLED); // technically true
+      NotifyIntallStep(Exchange::IPackager::INSTALLED, taskId, pkgId); // technically true
 
       return 9; // FAIL  //PackagerExUtils::DACrc_t::dac_FAIL;
     }
@@ -228,7 +229,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
       install_ver  = "1.2.3";
     }
   
-    NotifyIntallStep(Exchange::IPackager::DOWNLOADING);
+    NotifyIntallStep(Exchange::IPackager::DOWNLOADING, taskId, pkgId);
 /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
     // Download TGZ package...
@@ -242,10 +243,10 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
     }
     else
     {
-        NotifyIntallStep(Exchange::IPackager::DOWNLOADED);
+        NotifyIntallStep(Exchange::IPackager::DOWNLOADED, taskId, pkgId);
  /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
-        NotifyIntallStep(Exchange::IPackager::VERIFYING);
+        NotifyIntallStep(Exchange::IPackager::VERIFYING, taskId, pkgId);
 /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
         char uuid_path[PATH_MAX];
@@ -267,7 +268,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
             return 55; // FAIL
         }
 
-        NotifyIntallStep(Exchange::IPackager::VERIFIED);
+        NotifyIntallStep(Exchange::IPackager::VERIFIED, taskId, pkgId);
 /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
         // TODO: look for JSON meta in app bundle...
@@ -277,7 +278,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
         // Always cleanup
         PackagerExUtils::fileRemove(TMP_FILENAME);
 
-        NotifyIntallStep(Exchange::IPackager::INSTALLING);
+        NotifyIntallStep(Exchange::IPackager::INSTALLING, taskId, pkgId);
 /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
         PackageInfoEx* pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
@@ -306,7 +307,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
 
 /* JUNK */ std::this_thread::sleep_for(std::chrono::milliseconds(JUNK_MS)); // JUNK
 
-        NotifyIntallStep(Exchange::IPackager::INSTALLED);
+        NotifyIntallStep(Exchange::IPackager::INSTALLED, taskId, pkgId);
 
         pkg->Release();
     }
@@ -364,7 +365,7 @@ LOGERR("########## NOW ? hasPkgRow('TestApp0123456') == %s\n",
   {
     DDD();
 
-    NotifyIntallStep(22);
+   NotifyIntallStep(Exchange::IPackager::state::IDLE);
 
     // TODO: 
     return 42;

@@ -126,15 +126,16 @@ namespace {
                     //
                     // DAC::Install()
                     //
-                    uint32_t rc = this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
+                    uint32_t task = this->_implementation->Install(params.PkgId.Value(), params.Type.Value(), 
                                                                  params.Url.Value(),   params.Token.Value(),
                                                                  params.Listener.Value()); 
-                    // rc == 0 ... means ERROR
+                    JsonObject result;
+                    result["success"] = true;
 
-                    response["task"]   = (rc >  0) ? std::to_string( rc ) : "Install Failed";
-                    response["result"] = (rc >= 0);
+                    response["task"]   = std::to_string( task );
+                    response["result"] = result;
 
-                    return rc;
+                    return 0;
                 }
                 else // default to Packager API
                 {
@@ -358,9 +359,9 @@ namespace {
                // Needed >> Exchange::IPackager::INotification is Pure Virtual
             }
 
-            virtual void IntallStep(uint32_t status) override
+            virtual void IntallStep(Exchange::IPackager::state status, uint32_t task, string id) override
             {
-                _parent.IntallStep(status);
+                _parent.IntallStep(status, task, id);
             }
 
             virtual void StateChange(const PluginHost::IStateControl::state state) override
@@ -380,10 +381,10 @@ namespace {
 
         void Deactivated(RPC::IRemoteConnection* connection);
 
-        void IntallStep(uint32_t status);
+        void IntallStep(Exchange::IPackager::state status, uint32_t task, string id);
 
         // JSONRPC
-        void event_installstep(uint32_t status);
+        void event_installstep(Exchange::IPackager::state status, uint32_t task, string id);
 
 
         uint8_t _skipURL;
