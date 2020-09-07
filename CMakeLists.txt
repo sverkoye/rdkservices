@@ -29,6 +29,7 @@ if(COMCAST_CONFIG)
 endif()
 
 option(PLUGIN_OCICONTAINER "Include OCIContainer plugin" OFF)
+option(PLUGIN_DACAPPLICATION "Include DACApplication plugin" OFF)
 
 # Library installation section
 string(TOLOWER ${NAMESPACE} STORAGE_DIRECTORY)
@@ -40,6 +41,10 @@ get_directory_property(SEVICES_DEFINES COMPILE_DEFINITIONS)
 
 if(PLUGIN_PACKAGER)
     add_subdirectory(Packager)
+endif()
+
+if(PLUGIN_DACAPPLICATION)
+    add_subdirectory(DACApplication)
 endif()
 
 if(PLUGIN_BLUETOOTH)
