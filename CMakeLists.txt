@@ -52,6 +52,7 @@ option(PLUGIN_MONITOR "Include Monitor plugin" OFF)
 option(PLUGIN_OPENCDMI "Include OpenCDMi plugin" OFF)
 option(PLUGIN_SECURITYAGENT "Include SecurityAgent plugin" OFF)
 option(PLUGIN_TRACECONTROL "Include TraceControl plugin" OFF)
+option(PLUGIN_DACAPPLICATION "Include DACApplication plugin" OFF)
 
 # Library installation section
 string(TOLOWER ${NAMESPACE} STORAGE_DIRECTORY)
@@ -63,6 +64,10 @@ get_directory_property(SEVICES_DEFINES COMPILE_DEFINITIONS)
 
 if(PLUGIN_PACKAGER)
     add_subdirectory(Packager)
+endif()
+
+if(PLUGIN_DACAPPLICATION)
+    add_subdirectory(DACApplication)
 endif()
 
 if(PLUGIN_BLUETOOTH)
