@@ -4002,7 +4002,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      {
 	        mountX: 0.0, x: 1980 * 0.25, y: 397,
 	        text: {
-	          text: "Use  (A)ll or (I)nfo for package metadate",
+	          text: "Use  (A)ll or (I)nfo for package metadata",
 	          textAlign: 'right',
 	          fontFace: 'Regular',
 	          fontSize: 16,
