@@ -99,12 +99,13 @@ namespace {
 
     // JSONRPC
 
-    void Packager::event_installstep(Exchange::IPackager::state status, uint32_t task, string id)
+    void Packager::event_installstep(Exchange::IPackager::state status, uint32_t task, string id, int32_t code)
     {
         JsonObject params;
         params["pkgId"]  = id;
         params["task"]   = std::to_string( task );
         params["status"] = std::to_string( status );
+        params["code"]   = std::to_string( code );
 
         std::string str("empty");
 
@@ -365,10 +366,10 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
         return(result);
     }
 
-    void Packager::IntallStep(Exchange::IPackager::state status, uint32_t task, string id)
+    void Packager::IntallStep(Exchange::IPackager::state status, uint32_t task, string id, int32_t code)
     {
         // LOGINFO("Packager::IntallStep(uint32_t status)  >>> %u", status);
-        event_installstep(status, task, id);
+        event_installstep(status, task, id, code);
     }
 
     void Packager::Deactivated(RPC::IRemoteConnection* connection)

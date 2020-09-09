@@ -256,7 +256,7 @@ namespace {
 
                     response = PackageInfoEx::pkg2json( pkg );
 
-                   // PackageInfoEx::printPkg( (PackageInfoEx *) pkg); /// DEBUG
+                    // PackageInfoEx::printPkg( (PackageInfoEx *) pkg); /// DEBUG
 
                     if(pkg)
                     {
@@ -359,9 +359,9 @@ namespace {
                // Needed >> Exchange::IPackager::INotification is Pure Virtual
             }
 
-            virtual void IntallStep(Exchange::IPackager::state status, uint32_t task, string id) override
+            virtual void IntallStep(Exchange::IPackager::state status, uint32_t task, string id, int32_t code) override
             {
-                _parent.IntallStep(status, task, id);
+                _parent.IntallStep(status, task, id, code);
             }
 
             virtual void StateChange(const PluginHost::IStateControl::state state) override
@@ -381,10 +381,10 @@ namespace {
 
         void Deactivated(RPC::IRemoteConnection* connection);
 
-        void IntallStep(Exchange::IPackager::state status, uint32_t task, string id);
+        void IntallStep(Exchange::IPackager::state status, uint32_t task, string id, int32_t code);
 
         // JSONRPC
-        void event_installstep(Exchange::IPackager::state status, uint32_t task, string id);
+        void event_installstep(Exchange::IPackager::state status, uint32_t task, string id, int32_t code);
 
 
         uint8_t _skipURL;

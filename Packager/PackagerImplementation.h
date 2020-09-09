@@ -33,6 +33,7 @@
 struct opkg_conf;
 struct _opkg_progress_data_t;
 
+struct JobMeta_t; // fwd
 
 namespace WPEFramework {
 namespace Plugin {
@@ -371,24 +372,29 @@ virtual void Unregister(PluginHost::IStateControl::INotification* sink)
         void NotifyRepoSynced(uint32_t status);
 
         void InitPackageDB();
+        void TermPackageDB();
 
-        void NotifyIntallStep(Exchange::IPackager::state status, uint32_t task = 0, string id = "");   // NOTIFY
+        void NotifyIntallStep(Exchange::IPackager::state status, uint32_t task = 0, string id = "", int32_t code = 0);   // NOTIFY
 
         static const int64_t STORE_BYTES_QUOTA;
         static const char*   STORE_NAME;
         static const char*   STORE_KEY;
 
-    private:
+        uint32_t doInstall(const JobMeta_t &job);
+
         uint32_t doInstall(uint32_t taskId, 
                 const string& pkgId, const string& type, const string& url,
                 const string& token, const string& listener);
 
+    private:
+ 
         void BlockingInstallUntilCompletionNoLock();
         void BlockingSetupLocalRepoNoLock(RepoSyncMode mode);
         bool InitOPKG();
         void FreeOPKG();
 
         Core::CriticalSection _adminLock;
+
         string _configFile;
         string _tempPath;
         string _cachePath;

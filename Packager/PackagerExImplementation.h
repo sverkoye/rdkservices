@@ -121,7 +121,6 @@ namespace Plugin {
         void setType( uchar_t *v )          { _type = uchar2string(v);        };
 
         // Helpers
-#if 1
         static JsonObject pkg2json(PackageInfoEx *pkg)
         {
             JsonObject json;
@@ -180,7 +179,6 @@ namespace Plugin {
 
             return pkg;
         };
-#endif //0
 
         static void printPkg(PackageInfoEx *pkg)
         {

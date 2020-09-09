@@ -43,6 +43,9 @@
 
 #include "PackagerExUtils.h"
 
+#include "PackagerExImplementation.h"
+
+
 #ifndef SQLITE_FILE_HEADER
 #define SQLITE_FILE_HEADER "SQLite format 3"
 #endif
@@ -96,6 +99,8 @@ void*                                PackagerExUtils::mData = nullptr;
 
     bool PackagerExUtils::fileRemove(const char* f)
     {
+        LOGERR(" ... Removing >>>  '%s' ", f);
+
         return ( remove (f) == 0);
     }
 
@@ -128,7 +133,7 @@ void*                                PackagerExUtils::mData = nullptr;
             exists = stat(de->d_name, &buf);
             if (exists < 0)
             {
-                fprintf(stderr, "Couldn't stat %s\n", de->d_name);
+                LOGERR("Couldn't stat %s\n", de->d_name);
             }
             else
             {
@@ -153,6 +158,20 @@ void*                                PackagerExUtils::mData = nullptr;
             if (tolower(a[i]) != tolower(b[i]))
                 return false;
         return true;
+    }
+
+    string PackagerExUtils::fileExtension(const std::string& f)
+    {
+        std::string::size_type idx = f.rfind('.');
+
+        if(idx != std::string::npos)
+        {
+            std::string extension = f.substr(idx+1);
+
+            return extension;
+        }
+
+        return "";
     }
 
     bool PackagerExUtils::fileEndsWith(const std::string& f, const std::string& ext)
@@ -187,7 +206,7 @@ void*                                PackagerExUtils::mData = nullptr;
 
         if (path == nullptr)
         {
-            fprintf(stderr, "Out of memory error\n");
+            LOGERR("Out of memory error");
             return 0;
         }
 
@@ -232,9 +251,9 @@ void*                                PackagerExUtils::mData = nullptr;
         return std::string( uuid_str );
     }
 
-    bool PackagerExUtils::init(const char* filename, const char* key)
+    bool PackagerExUtils::initDB(const char* filename, const char* key)
     {
-        LOGINFO(" %s() ... SQLite >>  filename: %s    key: %s", __PRETTY_FUNCTION__, filename, key);
+        LOGINFO(" ... SQLite >>  filename: %s    key: %s", filename, key);
 
         sqlite3* &db = SQLITE;
 
@@ -249,9 +268,7 @@ void*                                PackagerExUtils::mData = nullptr;
         int rc = sqlite3_open(filename, &db);
         if (rc)
         {
-            fprintf(stderr, " %s() ... SQLite >>  %d : %s", __PRETTY_FUNCTION__, rc, sqlite3_errmsg(db));
-
-            // LOGERR("%d : %s", rc, sqlite3_errmsg(db));
+            LOGERR(" ... SQLite >>  %d : %s", rc, sqlite3_errmsg(db));
             term();
             return false;
         }
@@ -300,7 +317,7 @@ void*                                PackagerExUtils::mData = nullptr;
 
             if (rc != SQLITE_OK)
             {
-              fprintf(stderr, " %s() ... Failed to attach encryption key to SQLite", __PRETTY_FUNCTION__);
+              LOGERR(" ... Failed to attach encryption key to SQLite");
                 // LOGERR("Failed to attach encryption key to SQLite database %s\nCause - %s", filename, sqlite3_errmsg(db));
                 PackagerExUtils::term();
                 return false;
@@ -308,7 +325,7 @@ void*                                PackagerExUtils::mData = nullptr;
 
             if (shouldReKey && !fileEncrypted(filename))
             {
-                fprintf(stderr, " %s() ... SQLite database file is clear after re-key", __PRETTY_FUNCTION__);
+                LOGERR(" ... SQLite database file is clear after re-key");
 
                 // LOGERR("SQLite database file is clear after re-key, path=%s", filename);
             }
@@ -367,12 +384,12 @@ void*                                PackagerExUtils::mData = nullptr;
     //             return false;
     //         }
     //         // LOGWARN("SQLite database has been reset, trying re-key");
-    //         return PackagerExUtils::init(filename, key);
+    //         return PackagerExUtils::initDB(filename, key);
     //     }
 
         if ( createTable() == false)
         {
-            LOGERR(" %s() ... SQLite >> createTable() .... FAILED ! \n", __PRETTY_FUNCTION__);
+            LOGERR(" ... SQLite >> createTable() .... FAILED ! \n");
             return false;
         }
 
@@ -382,13 +399,13 @@ void*                                PackagerExUtils::mData = nullptr;
         {
             if (errmsg)
             {
-              LOGERR(" %s() ... SQLite >> %d : %s \n", __PRETTY_FUNCTION__, rc, errmsg);
+              LOGERR(" ... SQLite >> %d : %s \n", rc, errmsg);
               // LOGERR("%d : %s", rc, errmsg);
               sqlite3_free(errmsg);
             }
             else
             {
-              LOGERR(" %s() ... SQLite >> %d : %s \n", __PRETTY_FUNCTION__, rc, "(none1)");
+              LOGERR(" ... SQLite >> %d : %s \n", rc, "(none1)");
               // LOGERR("%d", rc);
             }
         }
@@ -417,7 +434,7 @@ void*                                PackagerExUtils::mData = nullptr;
         {
             if (errmsg)
             {
-                LOGERR(" %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+                LOGERR(" ... SQLite >> %d : %s", rc, errmsg);
 
                 // LOGERR("%d : %s", rc, errmsg);
                 sqlite3_free(errmsg);
@@ -443,8 +460,7 @@ void*                                PackagerExUtils::mData = nullptr;
 
     void PackagerExUtils::vacuum()
     {
-        // LOGINFO();
-        fprintf(stderr, " %s() ... ENTER", __PRETTY_FUNCTION__);
+        LOGINFO(" ... ENTER");
 
         sqlite3* &db = SQLITE;
 
@@ -456,14 +472,14 @@ void*                                PackagerExUtils::mData = nullptr;
             {
                 if (errmsg)
                 {
-                    LOGERR(" %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, errmsg);
+                    LOGERR(" ... SQLite >> %d : %s", rc, errmsg);
 
                     // LOGERR("%s", errmsg);
                     sqlite3_free(errmsg);
                 }
                 else
                 {
-                    LOGERR(" %s() ... SQLite >> %d : %s", __PRETTY_FUNCTION__, rc, "(none2)");
+                    LOGERR(" ... SQLite >> %d : %s", rc, "(none2)");
                     // LOGERR("%d", rc);
                 }
             }
@@ -490,13 +506,13 @@ void*                                PackagerExUtils::mData = nullptr;
 
             // excute SQL
             rc = sqlite3_step(stmt);
-            if (rc == SQLITE_ROW) // FOUND !!
+            if (rc == SQLITE_ROW)
             {
-                success = true;
+                success = true; // FOUND !!
             }
             else
             {
-                LOGWARN("ERROR:  hasPkgRow() ...  %s not found ", pkgId.c_str());
+                LOGINFO("... '%s' not found ... ", pkgId.c_str());
             }
 
             sqlite3_finalize(stmt);
@@ -514,11 +530,11 @@ void*                                PackagerExUtils::mData = nullptr;
     {
         if(pkg == nullptr)
         {
-            LOGERR(" %s() ...  Bad Args...  NULL", __PRETTY_FUNCTION__);
+            LOGERR(" ...  Bad Args...  NULL");
             return false;
         }
     
-LOGINFO(" %s() ... Adding row for '%s'... ", __PRETTY_FUNCTION__, pkg->Name().c_str());
+LOGINFO(" ... Adding row for '%s'... ", pkg->Name().c_str());
 
         bool success = false;
 
@@ -582,7 +598,7 @@ success = true;
 
         if (success)
         {
-            LOGINFO("INFO inserting data ...");
+            LOGINFO("...  Inserting data ... %ld bytes", pkg->SizeInBytes());
 
             success = false;
 
@@ -803,8 +819,7 @@ success = true;
 
     static int showCallback(void *NotUsed, int argc, char **argv, char **azColName)
     {
-        fprintf(stderr, "\n showTable() - showCallback \n");
-
+        // fprintf(stderr, "\n - - - - - - - - - - - - - - - - - - - - - - - - - - - - <showCallback> \n");
         // int argc: holds the number of results
         // (array) azColName: holds each column returned
         // (array) argv: holds each value
@@ -816,6 +831,7 @@ success = true;
 
         // Insert a newline
         cout << endl;
+        // fprintf(stderr, "\n - - - - - - - - - - - - - - - - - - - - - - - - - - - - </showCallback> \n");
 
         // Return successful
         return 0;
@@ -823,7 +839,7 @@ success = true;
 
     void PackagerExUtils::showTable()
     {
-        fprintf(stderr, "\n showTable() - ENTER \n");
+        // LOGERR(" - ENTER \n");
 
         char *zErrMsg;
         sqlite3* &db = SQLITE;
@@ -838,6 +854,8 @@ success = true;
         {
             LOGERR("ERROR showing table ... %s", sqlite3_errmsg(db));
         }
+
+        // LOGERR(" - DONE \n");
     }
 
     void PackagerExUtils::updatePkgList(PackageList_t& list)
@@ -900,7 +918,6 @@ success = true;
     }
 
 
-    
     // ARCHIVE CODE
     static int
     copy_data(struct archive *ar, struct archive *aw)
@@ -935,8 +952,7 @@ success = true;
       }
     }
 
-
-    PackagerExUtils::DACrc_t PackagerExUtils::extract(const char *filename, const char *to_path /* = nullptr */)
+    PackagerExUtils::DACrc_t PackagerExUtils::extractPKG(const char *filename, const char *to_path /* = nullptr */)
     {
       struct archive *a;
       struct archive *ext;
@@ -944,7 +960,7 @@ success = true;
       int flags;
       int r;
 
-fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename);
+LOGERR(" ... Extracting >>>  '%s' ", filename);
 
       // Select which attributes we want to restore. 
       flags =  ARCHIVE_EXTRACT_TIME;
@@ -964,7 +980,7 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
       if ((r = archive_read_open_filename(a, filename, 10240)))
       {
-        fprintf(stderr, " EXTRACT >>>  FATAL - '%s' NOT found.", filename);
+        LOGERR("  >>>  FATAL - '%s' NOT found.", filename);
         return DACrc_t::dac_FAIL;
       }
 
@@ -977,12 +993,12 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         }
         if (r < ARCHIVE_OK)
         {
-          fprintf(stderr, "%s\n", archive_error_string(a));
+            LOGERR(" %s ", archive_error_string(a));
         }
 
         if (r < ARCHIVE_WARN)
         {
-            fprintf(stderr, " %s() ... ERROR:   Next Header ... Unexpected > ARCHIVE_WARN\n", __PRETTY_FUNCTION__);
+            LOGERR(" .. Next Header ... Unexpected > ARCHIVE_WARN\n");
             return DACrc_t::dac_FAIL;
         }
 
@@ -993,25 +1009,25 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
             archive_entry_set_pathname(entry, targetFilepath.c_str()); 
 
-//            fprintf(stderr, " EXTRACT >>>  entry: %s", targetFilepath.c_str());
+//          LOGINFO(" EXTRACT >>>  entry: %s", targetFilepath.c_str());
         }
 
         r = archive_write_header(ext, entry);
         if (r < ARCHIVE_OK)
         {
-          fprintf(stderr, "%s\n", archive_error_string(ext));
+          LOGERR("%s", archive_error_string(ext));
         }
         else if (archive_entry_size(entry) > 0)
         {
           r = copy_data(a, ext);
           if (r < ARCHIVE_OK)
           {
-            fprintf(stderr, "%s\n", archive_error_string(ext));
+            LOGERR("%s", archive_error_string(ext));
           }
 
           if (r < ARCHIVE_WARN)
           {
-            fprintf(stderr, " %s() ... ERROR:   Entry Size ... Unexpected > ARCHIVE_WARN\n", __PRETTY_FUNCTION__);              
+            LOGERR(" ... Entry Size ... Unexpected > ARCHIVE_WARN");              
             return DACrc_t::dac_FAIL;
           }
         }
@@ -1019,12 +1035,12 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         r = archive_write_finish_entry(ext);
         if (r < ARCHIVE_OK)
         {
-          fprintf(stderr, "%s\n", archive_error_string(ext));
+          LOGERR("%s", archive_error_string(ext));          
         }
         if (r < ARCHIVE_WARN)
         {
-           fprintf(stderr, " %s() ... ERROR:   Write Finish ... Unexpected > ARCHIVE_WARN\n", __PRETTY_FUNCTION__);              
-           return DACrc_t::dac_FAIL;
+          LOGERR("  ...  Write Finish ... Unexpected > ARCHIVE_WARN");              
+          return DACrc_t::dac_FAIL;
         }
       }
 
@@ -1041,15 +1057,16 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         std::cout << "bla" << std::endl;
     }
 
-    void PackagerExUtils::setupThreadQ()
+#ifdef USE_THREAD_POOL
+    void PackagerExUtils::setupThreadQ(PackagerImplementation *ptr)
     {
-        int num_threads = std::thread::hardware_concurrency() / 2; // be nice
+        int num_threads = max<int>(1, std::thread::hardware_concurrency() / 2); // be nice
 
-        fprintf(stderr, " %s() ... hardware_concurrency()  tt: %d \n", __PRETTY_FUNCTION__, num_threads);
+        LOGINFO(" ... hardware_concurrency()  tt: %d \n", num_threads);
 
         for (int i = 0; i < num_threads; i++)
         {
-            fprintf(stderr, " %s() ... Starting Worker()  i: %d \n", __PRETTY_FUNCTION__, i);
+            LOGINFO(" ... Starting Worker()  i: %d \n", i);
             mThreadPool.push_back(std::thread(&JobPool::worker_func, &mJobPool));
         }
     }
@@ -1061,19 +1078,21 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         // Kill workers
         for (unsigned int i = 0; i < PackagerExUtils::mThreadPool.size(); i++)
         {
-            fprintf(stderr, " %s() ... Killing WORKER  i: %d\n", __PRETTY_FUNCTION__, i);
+            LOGINFO(" ... Killing WORKER  i: %d\n", i);
             PackagerExUtils::mThreadPool.at(i).join();
         }
     }
+#endif // USE_THREAD_POOL
 
-    void PackagerExUtils::addJob( )
+    void PackagerExUtils::addJob(JobMeta_t &job)
+    // void PackagerExUtils::addJob( FOO_T &job )
     {
-        // here we should send our jobs
-        for (int i = 0; i < 10; i++)
-        {
-            LOGINFO(" %s() ... Adding JOB  i: %d \n", __PRETTY_FUNCTION__, i);
-            mJobPool.push(example_function);
-        }
+        mJobPool.push( job );
+
+        // for (int i = 0; i < 10; i++)
+        // {
+        //     LOGINFO(" ... Adding JOB  i: %d \n", i);
+        // }
     }
 
     size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
@@ -1083,17 +1102,14 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
         return written;
     }
 
-    PackagerExUtils::DACrc_t PackagerExUtils::downloadJSON(const char *url)
+    PackagerExUtils::DACrc_t PackagerExUtils::downloadJSON(const char *url, const char *tempName)
     {
-        // Always cleanup
-        PackagerExUtils::fileRemove(TMP_FILENAME);
-
         // Download JSON manifest...
         //
-        if(downloadURL(url) == DACrc_t::dac_OK)
+        if(downloadURL(url, tempName) == DACrc_t::dac_OK)
         {
             // Read entire JSON text file...
-            std::ifstream t(TMP_FILENAME);
+            std::ifstream t(tempName);
             std::string txt((std::istreambuf_iterator<char>(t)),
                              std::istreambuf_iterator<char>());
 
@@ -1119,41 +1135,53 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
         std::smatch url_match_result;
 
-        LOGINFO(" %s() ... Checking URL: %s \n", __PRETTY_FUNCTION__, url);
+        LOGINFO(" ... Checking URL: %s ", url);
 
         std::string urlS(url);
 
         if (std::regex_match( urlS, url_match_result, url_regex))
         {
-            LOGINFO(" %s() ... Valid URL: %s \n", __PRETTY_FUNCTION__, url);
+            LOGINFO(" ... Valid URL: %s \n", url);
 
             return DACrc_t::dac_OK;  /// ok
         }
         else
         {
-            LOGERR(" %s() ... Invalid URL: %s \n", __PRETTY_FUNCTION__, url);
+            LOGERR(" ... Invalid URL: %s \n", url);
             
             return DACrc_t::dac_FAIL;
         }
     }
 
-    PackagerExUtils::DACrc_t PackagerExUtils::downloadURL(const char *url)
+    PackagerExUtils::DACrc_t PackagerExUtils::downloadURL(const char *url, const char *tempName)
     {
       CURL *curl;
       FILE *fp;
       CURLcode res;
 
-      // Always cleanup
-      PackagerExUtils::fileRemove(TMP_FILENAME);
-
       PackagerExUtils::DACrc_t rc = DACrc_t::dac_FAIL;
 
-      LOGINFO(" PackagerExUtils::downloadURL() ... download: %s \n", url);
+      if(!url || !tempName)
+      {
+          LOGERR("... ERROR: BAD args ... nullptr");
+          return rc;
+      }
+
+      // Always cleanup
+      PackagerExUtils::fileRemove(tempName);
+
+      LOGINFO(" ... Downloading >>> '%s' ... as '%s' ", url, tempName);
 
       curl = curl_easy_init();
       if (curl)
       {
-          fp = fopen(TMP_FILENAME,"wb");
+          fp = fopen(tempName,"wb");
+
+          if(!fp)
+          {
+            LOGINFO("... download: '%s' ... as '%s'  - FAILED  (disk full ?) \n", url, tempName);
+            return rc;
+          }
 
           curl_easy_setopt(curl, CURLOPT_URL, url);
           curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
@@ -1186,14 +1214,14 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
     {
     }
 
-    void JobPool::push(std::function<void()> func)
+//    void JobPool::push(const FOO_T &job)
+    void JobPool::push(JobMeta_t& job)
     {
         std::unique_lock<std::mutex> lock(mLock);
-        mJobQ.push(func);
+        mJobQ.push(job);
 
         // when we send the notification immediately, 
         // the consumer will try to get the lock , so unlock asap
-
         lock.unlock();
         mDataCondition.notify_one();
     }
@@ -1213,7 +1241,11 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
 
     void JobPool::worker_func()
     {
-        std::function<void()> func;
+        //std::function<void()> func;
+        JobMeta_t job;
+        
+        // FOO_T func;
+
         while (true)
         {
             {
@@ -1230,14 +1262,18 @@ fprintf(stderr, " %s() ... Extracting >>>  %s\n", __PRETTY_FUNCTION__, filename)
                     return;
                 }
 
-                func = mJobQ.front();
+                job = mJobQ.front();
                 mJobQ.pop();
-                //release the lock
-            }
+                
+            }//release the lock - scope !
 
-            func();
+            LOGERR("CALLING JOB");
+            LOGERR("CALLING JOB");
+            LOGERR("CALLING JOB");
+//            func();
+
+            // doInstall( job )
         }
     }
-
   }  // namespace Plugin
 }  // namespace WPEFramework

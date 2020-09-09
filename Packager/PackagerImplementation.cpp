@@ -121,7 +121,11 @@ namespace Plugin {
     {
         FreeOPKG();
 
-        PackagerExUtils::term();
+#ifdef USE_THREAD_POOL
+      PackagerExUtils::klllThreadQ(this);
+#endif
+
+        TermPackageDB();
     }
 
     void PackagerImplementation::Register(Exchange::IPackager::INotification* notification)
@@ -319,13 +323,13 @@ namespace Plugin {
     //     // LOGERR("DEBUG:  NotifyRelayEvent() - EXIT" );
     // }
 
-    void PackagerImplementation::NotifyIntallStep(Exchange::IPackager::state status, uint32_t task /*= 0*/, string id /* = "" */)
+    void PackagerImplementation::NotifyIntallStep(Exchange::IPackager::state status, uint32_t task /*= 0*/, string id /* = "" */, int32_t code /*= 0*/)
     {
         _adminLock.Lock();
         _isSyncing = false;
         for (auto* notification : _notifications)
         {
-            notification->IntallStep(status, task, id);
+            notification->IntallStep(status, task, id, code);
         }
         _adminLock.Unlock();
     }

@@ -30,18 +30,82 @@
 
 #include "PackagerExImplementation.h"
 
+//#define FOO_T  std::function<uint32_t (JobMeta_t)>
+
+#define FOO_T  std::function<void (const string&, const string&, const string&, const string&, const string&)>
+
 //TODO: make configurable and scoped
 //
-#define TMP_FILENAME  "/opt/tmpApp.tgz"
-#define APPS_ROOT     "/opt/dac_apps"
 
+#define TMP_FILENAME    "/opt/tmpApp.tgz"
+#define APPS_ROOT_PATH  "/opt/dac_apps"
 
 namespace WPEFramework {
 namespace Plugin {
 
+    class PackagerImplementation; // fwd
+
     class PackageInfoEx; //fileEndsWith
 
-    class JobPool; //fwd
+    typedef struct JobMeta_
+    {
+        //public:
+       
+        // JobMeta_t(const JobMeta_t&) = delete;
+        // JobMeta_t& operator=(const JobMeta_t&) = delete;
+        // ~JobMeta_t() {};
+
+        JobMeta_() {};
+        JobMeta_( const uint32_t tid, 
+                   const string   &pid, 
+                   const string   &tt, 
+                   const string   &u,
+                   const string   &tk, 
+                   const string   &ll)
+
+        : taskId(tid), pkgId(pid), type(tt), url(u), token(tk), listener(ll)
+        {}
+
+        uint32_t taskId;
+        string   pkgId; 
+        string   type; 
+        string   url;
+        string   token; 
+        string   listener;
+
+        // PackagerImplementation *ctx;
+        // std::function< uint32_t (JobMeta_ &) > func;
+
+    } JobMeta_t;
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Threaded Job
+    class JobPool
+    {
+       public:
+            JobPool(const JobPool&) = delete;
+            JobPool& operator=(const JobPool&) = delete;
+
+            JobPool();
+            ~JobPool();
+
+            // void push(const FOO_T &job);
+            void push(JobMeta_t& job);
+            void done();
+            void worker_func();
+
+      private:
+//            std::queue<std::function<void()>> mJobQ;
+
+            std::queue<JobMeta_t>    mJobQ;
+            // std::queue< FOO_T > mJobQ;
+
+            std::mutex               mLock;
+            std::condition_variable  mDataCondition;
+            std::atomic<bool>        mAcceptJobs;
+    };// CLASS - JobPool
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
     class PackagerExUtils
     {
@@ -51,7 +115,7 @@ namespace Plugin {
             PackagerExUtils(const PackagerExUtils&) = delete;
             PackagerExUtils& operator=(const PackagerExUtils&) = delete;
 
-            static bool init(const char* filename, const char* key);
+            static bool initDB(const char* filename, const char* key);
             static bool createTable();
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -60,11 +124,12 @@ namespace Plugin {
             static void vacuum();
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            // File hepers
+            // File helpers
             static bool    fileRemove(const char* f);
             static bool    fileExists(const char* f);
             static bool    fileEncrypted(const char* f);
             static bool    fileEndsWith(const string& f, const string& ext);
+            static string  fileExtension(const string& f);
 
             static bool    removeFolder(const string& dirname);
             static bool    removeFolder(const char *dirname);
@@ -90,61 +155,38 @@ namespace Plugin {
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // House-keeping
-            static void setupThreadQ();
+            static void setupThreadQ(PackagerImplementation *ptr);
             static void killThreadQ();
 
-            static void addJob();
+            static void addJob(JobMeta_t &job);
+            // static void addJob( FOO_T &job );
 
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            // Install helpers
+            // Download helpers
             static DACrc_t validateURL(const char *url);
-            static DACrc_t downloadJSON(const char *url);
-            static DACrc_t downloadURL(const char *url);
-            
-            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            // Adrhive helpers
-            static DACrc_t extract(const char *filename, const char *to_path = nullptr);
+            static DACrc_t downloadJSON(const char *url, const char *tempName);
+            static DACrc_t downloadURL( const char *url, const char *tempName);
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            // Archive helpers
+            static DACrc_t extractPKG(const char *filename, const char *to_path = nullptr);
+
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             // private data
             static void*        mData;
             static JsonObject   mPackageCfg;
 
         private:
 
-            static JobPool                     mJobPool;
+            static PackagerImplementation   *mImpl;
+
+            static JobPool                  mJobPool;
             static std::vector<std::thread> mThreadPool; // thread pool
 
             static Core::CriticalSection    mThreadLock;
 
-            // static std::list<PackageInfoEx *> mPackages;
-            // static std::list<PackageInfoEx *>::iterator mPkgIter;
-
             static const int64_t  MAX_SIZE_BYTES;
             static const int64_t  MAX_VALUE_SIZE_BYTES;
     };
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Threaded Job
-    class JobPool
-    {
-       public:
-            JobPool(const JobPool&) = delete;
-            JobPool& operator=(const JobPool&) = delete;
-
-            JobPool();
-            ~JobPool();
-
-            void push(std::function<void()> func);
-            void done();
-            void worker_func();
-
-      private:
-            std::queue<std::function<void()>> mJobQ;
-            std::mutex                        mLock;
-            std::condition_variable           mDataCondition;
-            std::atomic<bool>                 mAcceptJobs;
-    };// CLASS - JobPool
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   } // namespace Plugin
 }  // namespace WPEFramework
