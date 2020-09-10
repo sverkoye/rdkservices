@@ -111,22 +111,23 @@ namespace {
 
         switch(status)
         {
-            case Exchange::IPackager::DOWNLOADING: str = "onDownloadCommence"; break;
-            case Exchange::IPackager::DOWNLOADED:  str = "onDownloadComplete"; break;
+            case Exchange::IPackager::DOWNLOADING:         str = "onDownloadCommence";    break;
+            case Exchange::IPackager::DOWNLOADED:          str = "onDownloadComplete";    break;        
+            case Exchange::IPackager::VERIFYING:           str = "onExtractCommence";     break;
+            case Exchange::IPackager::VERIFIED:            str = "onExtractComplete";     break;        
+            case Exchange::IPackager::INSTALLING:          str = "onInstallCommence";     break;
+            case Exchange::IPackager::INSTALLED:           str = "onInstallComplete";     break;
+            case Exchange::IPackager::DOWNLOAD_FAILED:     str = "onDownload_FAILED";     break;
+            case Exchange::IPackager::DECRYPTION_FAILED:   str = "onDecryption_FAILED";   break;
+            case Exchange::IPackager::EXTRACTION_FAILED:   str = "onExtraction_FAILED";   break;
+            case Exchange::IPackager::VERIFICATION_FAILED: str = "onVerification_FAILED"; break;
+            case Exchange::IPackager::INSTALL_FAILED:      str = "onInstall_FAILED";      break;
 
-            case Exchange::IPackager::VERIFYING:   str = "onExtractCommence";  break;
-            case Exchange::IPackager::VERIFIED:    str = "onExtractComplete";  break;
-
-            case Exchange::IPackager::INSTALLING:  str = "onInstallCommence";  break;
-            case Exchange::IPackager::INSTALLED:   str = "onInstallComplete";  break;
-                    
             default: str = "NotifyInstallStep";  break;
         }
 
         Notify(str, params);
-//        Notify(_T("NotifyInstallStep"), params);
     }
-
 
     Core::ProxyType<Web::Response> Packager::Process(const Web::Request& request)
     {
