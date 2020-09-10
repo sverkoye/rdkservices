@@ -131,7 +131,7 @@ export default class App extends Lightning.Component
       ConsoleBG:
       {
         mountX: 0.5, //mountY: 1.0,
-        x: 1920/2, y: 150, w: 1140,
+        x: 1920/2, y: 150, w: 1240,
         h: 600, rect: true,
         alpha: 0.0, shader: { radius: 20, type: RR },
         color: 0xcc222222, // #222222ee
