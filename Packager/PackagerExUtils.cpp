@@ -984,16 +984,25 @@ LOGERR(" ... Extracting >>>  '%s' ", filename);
         return DACrc_t::dac_FAIL;
       }
 
+      int read_count = 0;
       for (;;)
       {
         r = archive_read_next_header(a, &entry);
         if (r == ARCHIVE_EOF)
         {
+          LOGERR(" %s r: %d ", archive_error_string(a), r);
+
+          if(read_count == 0)
+          {
+            LOGERR(" .. Next Header ... Empty / Bad file > ARCHIVE_EOF\n");
+            return DACrc_t::dac_FAIL;
+          }
+
           break; // complete
         }
         if (r < ARCHIVE_OK)
         {
-            LOGERR(" %s ", archive_error_string(a));
+            LOGERR("r < ARCHIVE_OK ... %s   r: %d", archive_error_string(a), r);
         }
 
         if (r < ARCHIVE_WARN)
@@ -1011,6 +1020,8 @@ LOGERR(" ... Extracting >>>  '%s' ", filename);
 
 //          LOGINFO(" EXTRACT >>>  entry: %s", targetFilepath.c_str());
         }
+
+        read_count++;
 
         r = archive_write_header(ext, entry);
         if (r < ARCHIVE_OK)

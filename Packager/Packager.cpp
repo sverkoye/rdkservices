@@ -126,6 +126,8 @@ namespace {
             default: str = "NotifyInstallStep";  break;
         }
 
+        printf("\n #######  event_installstep() >>>   %s", str.c_str());
+        
         Notify(str, params);
     }
 

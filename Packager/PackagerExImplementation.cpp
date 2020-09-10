@@ -304,7 +304,7 @@ JUNK_SLEEP_MS(200);
         NotifyIntallStep(Exchange::IPackager::DOWNLOADED, taskId, pkgId);
  JUNK_SLEEP_MS(200);
 
-        NotifyIntallStep(Exchange::IPackager::VERIFYING, taskId, pkgId);
+        NotifyIntallStep(Exchange::IPackager::VERIFYING, taskId, pkgId);  // aka "onExtractCommence"
 JUNK_SLEEP_MS(200);
 
         // Get UUID ...
@@ -321,7 +321,7 @@ JUNK_SLEEP_MS(200);
           //
           LOGERR(" ... EXTRACT >>>  FAILED\n");
 
-          NotifyIntallStep(Exchange::IPackager::EXTRACTION_FAILED, 0, pkgId, -1);
+          NotifyIntallStep(Exchange::IPackager::EXTRACTION_FAILED, taskId, pkgId, -1);
 
           PackagerExUtils::fileRemove(download_name); // Always cleanup
           PackagerExUtils::removeFolder(uuid_path);   // Remove debris
