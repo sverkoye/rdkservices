@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Thu, 10 Sep 2020 17:42:48 GMT
+ * Generated: Thu, 10 Sep 2020 18:48:13 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3363,9 +3363,17 @@ var APP_com_comcast_pkgDemo = (function () {
 	  },
 
 	  {
-	    "pkgId": "TestAppMissing",
+	    "pkgId": "TestAppMissing1",
 	    "type": "non-OCI",
-	    "url": "http://10.0.2.15/testAppMissing.json",
+	    "url": "http://10.0.2.15/testAppMissing1.json",
+	    "token": "TODO: Security",
+	    "listener": "TODO: url or endpoint of event listener provided by caller"
+	  },
+
+	  {
+	    "pkgId": "TestAppMissing2",
+	    "type": "non-OCI",
+	    "url": "http://10.0.2.15/testAppMissing2.tgz",
 	    "token": "TODO: Security",
 	    "listener": "TODO: url or endpoint of event listener provided by caller"
 	  },
@@ -3665,7 +3673,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	          {
 	            RRect:
 	            {
-	              w: 150, h: 120, rtt: true, rect: true, alpha: 0.8, color: frameClr, shader: { radius: 20, type: RR, stroke: stroke, strokeColor: strokeClr},
+	              w: 190, h: 120, rtt: true, rect: true, alpha: 0.8, color: frameClr, shader: { radius: 20, type: RR, stroke: stroke, strokeColor: strokeClr},
 
 	              Image: {
 	                mountX: 0.5,
@@ -3954,36 +3962,13 @@ var APP_com_comcast_pkgDemo = (function () {
 	    let RR = Lightning.shaders.RoundedRectangle;
 	    let IMG = Utils.asset('images/logo.png');
 
-	    console.log("IMG >>>>>  " + IMG);
+	    //console.log("IMG >>>>>  " + IMG)
 	    var ui = {
 	      Background: {
 	        w: 1920,
 	        h: 1080,
 	        color: 0xff8888aa,
 	        src: Utils.asset('images/background1.png'),
-	      },
-
-	      ConsoleBG:
-	      {
-	        mountX: 0.5, //mountY: 1.0,
-	        w: 1180,
-	        h: 600,
-	        x: 1920/2, y: 420, rect: true,
-	        alpha: 0.0,
-	        color: 0x4F888888, // #8888884f
-	        // colorTop: 0xFF636EFB, colorBottom: 0xFF1C27bC,
-
-	        Console: {
-
-	          x: 10, y: 10,
-	          w: 1160,
-	          //h: 500,
-	          text: {
-	            fontFace: 'Regular',
-	            fontSize: 18,
-	            textColor: 0xbbffffff,
-	          },
-	        },
 	      },
 
 	      Title: {
@@ -4066,7 +4051,30 @@ var APP_com_comcast_pkgDemo = (function () {
 	          shadowOffsetY: 2,
 	          shadowBlur: 8,
 	        },
+
 	      },
+
+	      ConsoleBG:
+	      {
+	        mountX: 0.5, //mountY: 1.0,
+	        x: 1920/2, y: 150, w: 1140,
+	        h: 600, rect: true,
+	        alpha: 0.0, shader: { radius: 20, type: RR },
+	        color: 0xcc222222, // #222222ee
+	        // colorTop: 0xFF636EFB, colorBottom: 0xFF1C27bC,
+
+	        Console: {
+
+	          x: 10, y: 10,
+	          w: 1160,
+	          //h: 500,
+	          text: {
+	            fontFace: 'Regular',
+	            fontSize: 18,
+	            textColor: 0xFFffffff,
+	          },
+	        },
+	      }, // ConsoleBG
 
 	      // InfoButton: {
 	      //   w: 60,
@@ -4209,13 +4217,13 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    progress.setProgress(0); // reset
 
-	    let handleFailure = (notification) =>
+	    let handleFailure = (notification, str) =>
 	    {
 	      let pid = pkg_id;
 
-	      console.log("FAILURE >>  notification = " + JSON.stringify(notification) );
+	      console.log("FAILURE >> '"+str+"' ... notification = " + JSON.stringify(notification) );
 
-	      var taskId = notification.task;
+	//      var taskId = notification.task;
 	      var  pkgId = notification.pkgId;
 
 	      if(pkgId == pid)
@@ -4238,13 +4246,19 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	    };
 
+	    let handleFailureDownload     = (notification) => { handleFailure(notification,'FailureDownload');     };
+	    let handleFailureDecryption   = (notification) => { handleFailure(notification,'FailureDecryption');   };
+	    let handleFailureExtraction   = (notification) => { handleFailure(notification,'FailureExtraction');   };
+	    let handleFailureVerification = (notification) => { handleFailure(notification,'FailureVerification'); };
+	    let handleFailureInstall      = (notification) => { handleFailure(notification,'FailureInstall');      };
+
 	    let handleProgress = (notification) =>
 	    {
 	      let pid = pkg_id;
 
 	      console.log("HANDLER >>  notification = " + JSON.stringify(notification) );
 
-	      var taskId = notification.task;
+	//      var taskId = notification.task;
 	      var  pkgId = notification.pkgId;
 
 	      if(pkgId == pid)
@@ -4281,11 +4295,11 @@ var APP_com_comcast_pkgDemo = (function () {
 	    let hh6 = await this.handleEvent('Packager', 'onInstallComplete',  handleProgress);
 
 
-	    let hh7 = await this.handleEvent('Packager', 'onDownload_FAILED',     handleFailure);
-	    let hh8 = await this.handleEvent('Packager', 'onDecryption_FAILED',   handleFailure);
-	    let hh9 = await this.handleEvent('Packager', 'onExtraction_FAILED',   handleFailure);
-	    let hhA = await this.handleEvent('Packager', 'onVerification_FAILED', handleFailure);
-	    let hhB = await this.handleEvent('Packager', 'onInstall_FAILED',      handleFailure);
+	    let hh7 = await this.handleEvent('Packager', 'onDownload_FAILED',     handleFailureDownload);
+	    let hh8 = await this.handleEvent('Packager', 'onDecryption_FAILED',   handleFailureDecryption);
+	    let hh9 = await this.handleEvent('Packager', 'onExtraction_FAILED',   handleFailureExtraction);
+	    let hhA = await this.handleEvent('Packager', 'onVerification_FAILED', handleFailureVerification);
+	    let hhB = await this.handleEvent('Packager', 'onInstall_FAILED',      handleFailureInstall);
 	  }
 
 	  async removePkg(pkg_id)

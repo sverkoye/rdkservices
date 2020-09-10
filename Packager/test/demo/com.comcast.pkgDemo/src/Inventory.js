@@ -25,9 +25,17 @@ export const Inventory =
   },
 
   {
-    "pkgId": "TestAppMissing",
+    "pkgId": "TestAppMissing1",
     "type": "non-OCI",
-    "url": "http://10.0.2.15/testAppMissing.json",
+    "url": "http://10.0.2.15/testAppMissing1.json",
+    "token": "TODO: Security",
+    "listener": "TODO: url or endpoint of event listener provided by caller"
+  },
+
+  {
+    "pkgId": "TestAppMissing2",
+    "type": "non-OCI",
+    "url": "http://10.0.2.15/testAppMissing2.tgz",
     "token": "TODO: Security",
     "listener": "TODO: url or endpoint of event listener provided by caller"
   },
