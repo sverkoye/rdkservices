@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Wed, 09 Sep 2020 12:45:15 GMT
+ * Generated: Thu, 10 Sep 2020 17:42:48 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3360,6 +3360,22 @@ var APP_com_comcast_pkgDemo = (function () {
 	    "url": "http://10.0.2.15/testApp3.tgz",
 	    "token": "TODO: Security",
 	    "listener": "TODO: url or endpoint of event listener provided by caller"
+	  },
+
+	  {
+	    "pkgId": "TestAppMissing",
+	    "type": "non-OCI",
+	    "url": "http://10.0.2.15/testAppMissing.json",
+	    "token": "TODO: Security",
+	    "listener": "TODO: url or endpoint of event listener provided by caller"
+	  },
+
+	  {
+	    "pkgId": "TestAppBroken",
+	    "type": "non-OCI",
+	    "url": "http://10.0.2.15/test_BAD_DUMMY_file.tgz",
+	    "token": "TODO: Security",
+	    "listener": "TODO: url or endpoint of event listener provided by caller"
 	  }
 	];
 
@@ -3616,7 +3632,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    setProgress(pc)
 	    {
 	      this.value = pc;
-	      console.log(" setProgress: " + pc);
+	      //console.log(" setProgress: " + pc)
 
 	      var ww = (this.w -4) * pc;
 
@@ -3950,7 +3966,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      ConsoleBG:
 	      {
 	        mountX: 0.5, //mountY: 1.0,
-	        w: 1040,
+	        w: 1180,
 	        h: 600,
 	        x: 1920/2, y: 420, rect: true,
 	        alpha: 0.0,
@@ -3960,7 +3976,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        Console: {
 
 	          x: 10, y: 10,
-	          w: 1040,
+	          w: 1160,
 	          //h: 500,
 	          text: {
 	            fontFace: 'Regular',
@@ -3991,7 +4007,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	      PackagesList:
 	      {
-	        mountX: 0.5, x: 1920/2, y: 120, w: 1000, h: 225, flex: {direction: 'row', padding: 25, wrap: true}, rect: true, rtt: true, shader: { radius: 20, type: RR}, color: 0x4F888888,
+	        mountX: 0.5, x: 1920/2, y: 150, w: 1150, /*h: 225,*/ flex: {direction: 'row', padding: 45, wrap: true}, rect: true, rtt: true, shader: { radius: 20, type: RR}, color: 0x4F888888,
 
 	        // Available PACKAGES from Inventory ... injected here
 
@@ -4000,7 +4016,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	      HelpTip1:
 	      {
-	        mountX: 0.0, x: 1980 * 0.25, y: 397,
+	        mountX: 0.0, x: 1980 * 0.25, y: 120, //397,
 	        text: {
 	          text: "Use  (A)ll or (I)nfo for package metadata",
 	          textAlign: 'right',
@@ -4018,7 +4034,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	      HelpTip2:
 	      {
-	        mountX: 1.0, x: 1980 * 0.72, y: 397,
+	        mountX: 1.0, x: 1980 * 0.72, y: 120, //397,
 	        text: {
 	          text: "Use  UP/DN  arrow keys for Console",
 	          textAlign: 'right',
@@ -4036,7 +4052,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	      SpaceLeft:
 	      {
-	        x: 1240, y: 130,
+	        x: 1240, y: 160,
 	        text: {
 	          text: "Space Remaining: 0 Kb",
 	          textAlign: 'right',
@@ -4193,7 +4209,36 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    progress.setProgress(0); // reset
 
-	    let handler = (notification) =>
+	    let handleFailure = (notification) =>
+	    {
+	      let pid = pkg_id;
+
+	      console.log("FAILURE >>  notification = " + JSON.stringify(notification) );
+
+	      var taskId = notification.task;
+	      var  pkgId = notification.pkgId;
+
+	      if(pkgId == pid)
+	      {
+	        button.setIcon(Utils.asset('images/x_mark.png'));
+
+	        progress.setSmooth('alpha', 0, {duration: 1.3});
+
+	        setTimeout( () =>
+	        {
+	          button.setIcon(Utils.asset('images/x_mark.png'));
+
+	          progress.setProgress(0); //reset
+
+	          this.getAvailableSpace();
+
+	        }, 1.2 * 1000); //ms
+
+	        this.setConsole( jsonBeautify(notification, null, 2, 100) );
+	      }
+	    };
+
+	    let handleProgress = (notification) =>
 	    {
 	      let pid = pkg_id;
 
@@ -4205,7 +4250,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      if(pkgId == pid)
 	      {
 	        let pc = notification.status / 8.0;
-	        console.log("New pc = " + pc);
+	        // console.log("New pc = " + pc);
 
 	        progress.setProgress(pc);
 
@@ -4217,6 +4262,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	          {
 	            button.setIcon(Utils.asset('images/check_mark.png'));
 
+	            progress.setProgress(0); //reset
+
 	            this.getAvailableSpace();
 
 	          }, 2.2 * 1000); //ms
@@ -4224,14 +4271,21 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	    };
 
-	    let hh1 = await this.handleEvent('Packager', 'onDownloadCommence', handler);
-	    let hh2 = await this.handleEvent('Packager', 'onDownloadComplete', handler);
+	    let hh1 = await this.handleEvent('Packager', 'onDownloadCommence', handleProgress);
+	    let hh2 = await this.handleEvent('Packager', 'onDownloadComplete', handleProgress);
 
-	    let hh3 = await this.handleEvent('Packager', 'onExtractCommence',  handler);
-	    let hh4 = await this.handleEvent('Packager', 'onExtractComplete',  handler);
+	    let hh3 = await this.handleEvent('Packager', 'onExtractCommence',  handleProgress);
+	    let hh4 = await this.handleEvent('Packager', 'onExtractComplete',  handleProgress);
 
-	    let hh5 = await this.handleEvent('Packager', 'onInstallCommence',  handler);
-	    let hh6 = await this.handleEvent('Packager', 'onInstallComplete',  handler);
+	    let hh5 = await this.handleEvent('Packager', 'onInstallCommence',  handleProgress);
+	    let hh6 = await this.handleEvent('Packager', 'onInstallComplete',  handleProgress);
+
+
+	    let hh7 = await this.handleEvent('Packager', 'onDownload_FAILED',     handleFailure);
+	    let hh8 = await this.handleEvent('Packager', 'onDecryption_FAILED',   handleFailure);
+	    let hh9 = await this.handleEvent('Packager', 'onExtraction_FAILED',   handleFailure);
+	    let hhA = await this.handleEvent('Packager', 'onVerification_FAILED', handleFailure);
+	    let hhB = await this.handleEvent('Packager', 'onInstall_FAILED',      handleFailure);
 	  }
 
 	  async removePkg(pkg_id)
@@ -4321,7 +4375,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            _handleRight()
 	            {
-	              if(++this.buttonIndex > 3) this.buttonIndex = 3;
+	              if(++this.buttonIndex > Inventory.length) this.buttonIndex = Inventory.length;
 	            }
 
 	            _handleBack()
