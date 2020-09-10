@@ -295,6 +295,7 @@ JUNK_SLEEP_MS(200);
     if(PackagerExUtils::downloadURL(install_url.c_str(), download_name) != PackagerExUtils::DACrc_t::dac_OK)
     {
       NotifyIntallStep(Exchange::IPackager::DOWNLOAD_FAILED, 0, pkgId, -5);
+JUNK_SLEEP_MS(200);
 
       LOGERR(" ... DOWNLOAD (%s)>>>  FAILED\n", install_url.c_str());
       return 55; // FAIL
