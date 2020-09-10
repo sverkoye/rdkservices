@@ -1190,20 +1190,31 @@ LOGERR(" ... Extracting >>>  '%s' ", filename);
 
           if(!fp)
           {
-            LOGINFO("... download: '%s' ... as '%s'  - FAILED  (disk full ?) \n", url, tempName);
+            LOGERR("... download: '%s' ... as '%s'  - FAILED  (disk full ?) \n", url, tempName);
             return rc;
           }
 
           curl_easy_setopt(curl, CURLOPT_URL, url);
           curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
           curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+          curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+          curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
           curl_easy_setopt(curl, CURLOPT_USERAGENT, "Packager/1.0");
           
           res = curl_easy_perform(curl);
+
           if(res == CURLE_OK)
           {
-              rc = DACrc_t::dac_OK;
-              /// queue download for install
+              LOGERR("... download: '%s' ... as '%s'  - OK \n", url, tempName);
+
+              rc = DACrc_t::dac_OK;  // SUCCESS
+
+              // queue download for install
+          }
+          else
+          {
+            LOGERR("... download: '%s' ... as '%s'  - FAILED  (Not found ?) \n", url, tempName);
+            return rc;
           }
 
           curl_easy_cleanup(curl);
