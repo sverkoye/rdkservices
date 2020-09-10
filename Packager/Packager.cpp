@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "Packager.h"
 
 namespace WPEFramework {
@@ -112,9 +112,9 @@ namespace {
         switch(status)
         {
             case Exchange::IPackager::DOWNLOADING:         str = "onDownloadCommence";    break;
-            case Exchange::IPackager::DOWNLOADED:          str = "onDownloadComplete";    break;        
+            case Exchange::IPackager::DOWNLOADED:          str = "onDownloadComplete";    break;
             case Exchange::IPackager::VERIFYING:           str = "onExtractCommence";     break;
-            case Exchange::IPackager::VERIFIED:            str = "onExtractComplete";     break;        
+            case Exchange::IPackager::VERIFIED:            str = "onExtractComplete";     break;
             case Exchange::IPackager::INSTALLING:          str = "onInstallCommence";     break;
             case Exchange::IPackager::INSTALLED:           str = "onInstallComplete";     break;
             case Exchange::IPackager::DOWNLOAD_FAILED:     str = "onDownload_FAILED";     break;
@@ -131,7 +131,7 @@ namespace {
 
     Core::ProxyType<Web::Response> Packager::Process(const Web::Request& request)
     {
-        fprintf(stderr, "\nHUGH abc >>>>> ... %s()   <<< ENTER ", __FUNCTION__); 
+        fprintf(stderr, "\nHUGH abc >>>>> ... %s()   <<< ENTER ", __FUNCTION__);
 
         ASSERT(_skipURL <= request.Path.length());
 
@@ -144,7 +144,7 @@ namespace {
         result->ErrorCode = Web::STATUS_BAD_REQUEST;
         result->Message = _T("Invalid request to packager plugin.");
 
-fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.Current().Text().c_str()); 
+fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.Current().Text().c_str());
 
         if (index.Next() && (request.Verb == Web::Request::HTTP_POST || request.Verb == Web::Request::HTTP_PUT)) {
             uint32_t status = Core::ERROR_UNAVAILABLE;
@@ -181,7 +181,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                     }
 
                     // Packager API
-                    status = _implementation->Install(package.data(), version.data(), arch.data()); 
+                    status = _implementation->Install(package.data(), version.data(), arch.data());
                 }
                 else
                 if( ( options.Exists(_T("pkgId"), true) == true ) &&
@@ -216,7 +216,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                     }
 
                     // DAC Installer API
-                    status = _implementation->Install(pkgId.data(), type.data(), url.data(), token.data(), listener.data()); 
+                    status = _implementation->Install(pkgId.data(), type.data(), url.data(), token.data(), listener.data());
                 }
             }
             else
@@ -310,7 +310,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
                 }
 
                 float pc = _implementation->GetInstallProgress(task.data());
-                
+
                 char str[255];
                 snprintf(str, 255, "%0.2f%%", pc);
 
@@ -350,7 +350,7 @@ fprintf(stderr, "\nHUGH abc >>>>> ... %s()  >>>  CMD: %s", __FUNCTION__, index.C
             //
             if (index.Current().Text() == "GetAvailableSpace")
             {
-                fprintf(stderr, "\nHUGH >>>>> Call ... Pacakger::GetAvailableSpace() ... " ); 
+                fprintf(stderr, "\nHUGH >>>>> Call ... Pacakger::GetAvailableSpace() ... " );
 
                 /* status = */ _implementation->GetAvailableSpace();
             }

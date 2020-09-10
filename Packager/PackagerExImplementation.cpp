@@ -19,15 +19,17 @@
 
 
 
- // JUNK
- // JUNK
- // JUNK
- #define JUNK_MS   200
-
- #define JUNK_SLEEP_MS(ms) { std::this_thread::sleep_for(std::chrono::milliseconds( (ms) )); }
- // JUNK
- // JUNK
- // JUNK
+// JUNK
+// JUNK
+// JUNK
+#ifdef DEBUG
+  #define JUNK_SLEEP_MS(ms) { std::this_thread::sleep_for(std::chrono::milliseconds( (ms) )); }
+#else
+  #define JUNK_SLEEP_MS(ms)  // noop
+#endif
+// JUNK
+// JUNK
+// JUNK
 
 #include <glib.h>
 
