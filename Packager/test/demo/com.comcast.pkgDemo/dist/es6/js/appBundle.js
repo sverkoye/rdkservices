@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Thu, 17 Sep 2020 13:38:59 GMT
+ * Generated: Thu, 17 Sep 2020 13:51:49 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -4518,12 +4518,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  async installPkg(pkg_id, info)
 	  {
-	    var result = await thunderJS$1.call('Packager', 'install', info);
-
-	    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
-
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
-
 	    var info = AvailableApps[this.storeButtonIndex];
 
 	    let buttons  = this.tag('AvailableList').children;
@@ -4614,6 +4608,12 @@ var APP_com_comcast_pkgDemo = (function () {
 	    let hh9 = await this.handleEvent('Packager', 'onExtraction_FAILED',   handleFailureExtraction);
 	    let hhA = await this.handleEvent('Packager', 'onVerification_FAILED', handleFailureVerification);
 	    let hhB = await this.handleEvent('Packager', 'onInstall_FAILED',      handleFailureInstall);
+
+	    var result = await thunderJS$1.call('Packager', 'install', info);
+
+	    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
+
+	    this.setConsole( jsonBeautify(result, null, 2, 100) );
 	  }
 
 	  async removePkg(pkg_id)
