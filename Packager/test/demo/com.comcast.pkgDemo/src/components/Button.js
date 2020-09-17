@@ -57,8 +57,6 @@ export default class AppTile extends lng.Component {
 
   _unfocus()
   {
-    console.log("BUTTON - _unfocus()")
-
     var bb  = this.tag("Button")
     var bg  = this.tag("RRect")
     var clr = this.clrBlur;

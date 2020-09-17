@@ -20,8 +20,8 @@ export default class AppList extends lng.Component {
     {
       console.log('addTile() ... ENTER')
 
-      console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) )
-      console.log("LIST  addTile( )    ... this.children.length " + this.children.length  )
+     // console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) )
+     // console.log("LIST  addTile( )    ... this.children.length " + this.children.length  )
 
       this.children[n].setInfo( info );
       this.children[n].show();

@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Thu, 17 Sep 2020 18:00:50 GMT
+ * Generated: Thu, 17 Sep 2020 20:23:01 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3460,7 +3460,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	};
 
 	let api;
-	var thunderJS = options => {
+	var thunderJS$1 = options => {
 	  if (
 	    options.token === undefined &&
 	    typeof window !== 'undefined' &&
@@ -3566,10 +3566,63 @@ var APP_com_comcast_pkgDemo = (function () {
 	  })
 	};
 
+	class Events
+	{
+	  constructor(tt = null, pkdId)
+	  {
+	    if(tt == null)
+	    {
+	      throw "No Thunder !";
+	    }
+
+	    this.thunderJS = tt;
+	    this.pkdId     = pkdId;
+	    this.events    = [];
+	  }
+
+	  async add(plugin, event, cb = null)
+	  {
+	    if( (plugin == null || plugin == "") &&
+	        (event  == null || event  == "") )
+	    {
+	      throw "No plugin/event !";
+	    }
+
+	    this.events.push( await this.handleEvent(plugin, event, cb) );
+	  }
+
+	  disposeAll()
+	  {
+	    console.log( "EVENTS >>>   destroyAll() ");
+
+	    this.events.map( ee => { ee.dispose(); } );
+	  }
+
+	  async handleEvent(plugin, event, cb = null)
+	  {
+	    // console.log('EVENTS >> Listen for >> ['+plugin+'] -> '+event+' ...');
+
+	    if(cb != null)
+	    {
+	      // console.log('Listen for ['+name+'] using CALLBACK ...');
+	      return await this.thunderJS.on(plugin, event, cb);
+	    }
+	    else
+	    {
+	      return await thunderJS.on(plugin, event, (notification) =>
+	      {
+	          var str = " " + event + " ...  Event" + JSON.stringify(notification);
+	          console.log('Handler GOT >> ' + str);
+	      })
+	    }
+	  }
+	}//CLASS
+
 	class Progress extends lng.Component {
 	    static _template( )
 	    {
 	      let RR = lng.shaders.RoundedRectangle;
+
 	      var  barClr1  = 0xFFcccccc;  // #ccccccFF  // Background
 	      var  frameClr = 0xFF666666;  // #666666FF
 
@@ -3586,10 +3639,16 @@ var APP_com_comcast_pkgDemo = (function () {
 	      return this.value;
 	    }
 
+	    reset()
+	    {
+	      this.value = 0;
+	      this.tag("Progress").w = 0;
+	    }
+
 	    setProgress(pc)
 	    {
 	      this.value = pc;
-	      // console.log(" setProgress: " + pc)
+	      console.log(" setProgress: " + pc);
 
 	      var ww = (this.w -4) * pc;
 
@@ -3599,9 +3658,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    _init()
 	    {
 	      this.tag("Background").w = this.w;
-	      this.tag("Progress").w   = 0;
-
-	      this.value = 0.0;
+	      this.reset();
 	    }
 	  }//CLASS
 
@@ -3681,7 +3738,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      var btn  = this.tag("Button");
 	      var tile =  btn.tag("RRect");
 
-	      console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
+	      // console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
 
 	      tile.setSmooth('scale', 1.15, {duration: 0.3});
 	    }
@@ -3691,7 +3748,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      var btn  = this.tag("Button");
 	      var tile =  btn.tag("RRect");
 
-	      console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
+	      // console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
 
 	      tile.setSmooth('scale', 1.0, {duration: 0.3});
 	    }
@@ -3742,11 +3799,11 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    set info( ii )
 	    {
-	      if(ii == undefined || ii == null)
-	      {
-	        console.log('SET info() ...ERROR: Bad Args ');
-	        return
-	      }
+	      // if(ii == undefined || ii == null)
+	      // {
+	      //   console.log('SET info() ...ERROR: Bad Args ');
+	      //   return
+	      // }
 
 	      this.setInfo(ii);
 	    }
@@ -3757,28 +3814,34 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    setInfo(ii)
 	    {
-	      if(ii.id)
-	      {
-	        ii.pkgId = ii.id;
-	      }
-
-	      if(ii.name)  this.setLabel(ii.name);
-	      else
-	      if(ii.label) this.setLabel(ii.label);
-	      else
-	      if(ii.id)    this.setLabel(ii.id);
-	      else
-	      if(ii.pkgId) this.setLabel(ii.pkgId);
-	      else         this.setLabel("unknown22");
-
 	      var check_mark_PNG = Utils.asset('images/check_mark.png');
 	      var download_PNG   = Utils.asset('images/download3.png');
 
-	      var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
-	      this.setIcon(icon);
+	      if(ii)
+	      {
+	        if(ii.id)
+	        {
+	          ii.pkgId = ii.id;
+	        }
 
-	      this.pkgInfo = ii.pkgId;
-	      this._info   = ii;
+	        if(ii.name)  this.setLabel(ii.name);
+	        else
+	        if(ii.label) this.setLabel(ii.label);
+	        else
+	        if(ii.id)    this.setLabel(ii.id);
+	        else
+	        if(ii.pkgId) this.setLabel(ii.pkgId);
+	        else         this.setLabel("unknown22");
+
+	        var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
+	        this.setIcon(icon);
+	      }
+	      else
+	      {
+	        this.setIcon(download_PNG);
+	      }
+
+	      this._info = ii; // allow 'null'
 	    }
 
 	    startWiggle()
@@ -3854,8 +3917,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      console.log('addTile() ... ENTER');
 
-	      console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) );
-	      console.log("LIST  addTile( )    ... this.children.length " + this.children.length  );
+	     // console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) )
+	     // console.log("LIST  addTile( )    ... this.children.length " + this.children.length  )
 
 	      this.children[n].setInfo( info );
 	      this.children[n].show();
@@ -3935,8 +3998,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  _unfocus()
 	  {
-	    console.log("BUTTON - _unfocus()");
-
 	    var bb  = this.tag("Button");
 	    var bg  = this.tag("RRect");
 	    var clr = this.clrBlur;
@@ -4127,7 +4188,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  }
 	};
 
-	var thunderJS$1 = null;
+	var thunderJS$2 = null;
 
 	class App extends Lightning.Component
 	{
@@ -4423,19 +4484,23 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $InstallClicked(pkg_id)
 	  {
-	    console.log("INSTALL >>  InstallClicked() - ENTER");
+	    console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
 
 	    var button = this.tag('AvailableList').children[this.storeButtonIndex];
 
 	    // console.log("INSTALL >>  isInstalled: " + button.isInstalled())
 
-	    // if(button.isInstalled() == false)
+	    this.isInstalled(pkg_id).then( (ans) =>
 	    {
-	      var info = button.info;
-	      console.log("installPkg ENTER - ... info: " + info);
+	      if( ans['available'] == "false")
+	      {
+	        var info = button.info;
 
-	      this.installPkg(pkg_id, info);
-	    }
+	        console.log("CALL >> this.installPkg() ... info: " + info);
+
+	        this.installPkg(pkg_id, info);
+	      }
+	    });
 	  }
 
 	  $LaunchClicked(pkg_id)
@@ -4459,7 +4524,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  async getAvailableSpace()
 	  {
-	    var result = await thunderJS$1.call('Packager', 'getAvailableSpace', null);
+	    var result = await thunderJS$2.call('Packager', 'getAvailableSpace', null);
 
 	    //this.setConsole( beautify(result, null, 2, 100) )
 
@@ -4470,7 +4535,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    let info  = { "pkgId": pkg_id };
 
-	    var result = await thunderJS$1.call('Packager', 'getPackageInfo', info);
+	    var result = await thunderJS$2.call('Packager', 'getPackageInfo', info);
 
 	    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
 
@@ -4481,7 +4546,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    console.log("getInstalled() - ENTER ");
 
-	    var result = await thunderJS$1.call('Packager', 'getInstalled', null);
+	    var result = await thunderJS$2.call('Packager', 'getInstalled', null);
 
 	    this.setConsole( jsonBeautify(result, null, 2, 100) );
 
@@ -4508,6 +4573,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	      else
 	      {
+	        t.info = null;
 	        t.hide();
 	      }
 	    });
@@ -4515,29 +4581,33 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  async isInstalled(pkd_id)
 	  {
-	    var result = await thunderJS$1.call('Packager', 'isInstalled', pkd_id);
+	    let result = await thunderJS$2.call('Packager', 'isInstalled', pkd_id);
 
 	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+
+	    console.log('isInstalled() ... result: ' +  jsonBeautify(result, null, 2, 100) );
+
+	    return result;
 	  }
 
-	  async handleEvent(name, event, cb = null)
-	  {
-	    // console.log('Listen for >> ['+name+'] -> '+event+' ...');
+	  // async handleEvent(name, event, cb = null)
+	  // {
+	  //   // console.log('Listen for >> ['+name+'] -> '+event+' ...');
 
-	    if(cb != null)
-	    {
-	      // console.log('Listen for ['+name+'] using CALLBACK ...');
-	      return await thunderJS$1.on(name, event, cb);
-	    }
-	    else
-	    {
-	      return await thunderJS$1.on(name, event, (notification) =>
-	      {
-	          var str = " " + event + " ...  Event" + JSON.stringify(notification);
-	          console.log('Handler GOT >> ' + str);
-	      })
-	    }
-	  }
+	  //   if(cb != null)
+	  //   {
+	  //     // console.log('Listen for ['+name+'] using CALLBACK ...');
+	  //     return await thunderJS.on(name, event, cb);
+	  //   }
+	  //   else
+	  //   {
+	  //     return await thunderJS.on(name, event, (notification) =>
+	  //     {
+	  //         var str = " " + event + " ...  Event" + JSON.stringify(notification);
+	  //         console.log('Handler GOT >> ' + str)
+	  //     })
+	  //   }
+	  // }
 
 	  async launchPkg(pkg_id, info)
 	  {
@@ -4555,7 +4625,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        "mimeType": "application/dac.native"
 	    };
 
-	    var result = await thunderJS$1.call('org.rdk.RDKShell.1', 'launchApplication', params);
+	    var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
 	    // console.log('installPkg() >>> Called >>  RESULT: ' + JSON.stringify(result));
 
@@ -4563,26 +4633,21 @@ var APP_com_comcast_pkgDemo = (function () {
 	  }
 
 
-	  async installPkg(pkg_id, info)
+	  async installPkg(thisPkgId, info)
 	  {
-	    var info = AvailableApps[this.storeButtonIndex];
+	    var myEvents = new Events(thunderJS$2, thisPkgId);
 
 	    let buttons  = this.tag('AvailableList').children;
 	    let button   = buttons[this.storeButtonIndex];
 	    let progress = button.tag('Progress');
 
-	    progress.setProgress(0); // reset
+	    progress.reset(); // reset
 
 	    let handleFailure = (notification, str) =>
 	    {
-	      let pid = pkg_id;
-
 	      console.log("FAILURE >> '"+str+"' ... notification = " + JSON.stringify(notification) );
 
-	//      var taskId = notification.task;
-	      var  pkgId = notification.pkgId;
-
-	      if(pkgId == pid)
+	      if(thisPkgId == notification.pkgId)
 	      {
 	        button.setIcon(Utils.asset('images/x_mark.png'));
 
@@ -4592,7 +4657,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        {
 	          button.setIcon(Utils.asset('images/x_mark.png'));
 
-	          progress.setProgress(0); //reset
+	          progress.reset(); // reset
 
 	          this.getAvailableSpace();
 
@@ -4610,54 +4675,60 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    let handleProgress = (notification) =>
 	    {
-	      let pid = pkg_id;
+	      // console.log("HANDLER >> pkgId: "+thisPkgId+" ... notification = " + JSON.stringify(notification) );
 
-	//      var taskId = notification.task;
-	      var  pkgId = notification.pkgId;
-
-	      console.log("HANDLER >> pkgId: "+pkgId+" ... notification = " + JSON.stringify(notification) );
-
-	      if(pkgId == pid)
+	      if(thisPkgId == notification.pkgId)
 	      {
-	        console.log("HANDLER >> UPDATE progress");
+	        // console.log("HANDLER >> pkgId: "+thisPkgId+" ... notification = " + JSON.stringify(notification) );
 
+	//        console.log("HANDLER >> UPDATE progress");
 	        let pc = notification.status / 8.0;
-	        // console.log("New pc = " + pc);
-
 	        progress.setProgress(pc);
+
+	        console.log("HANDLER >> pkgId: "+thisPkgId+" ... progress = " + pc );
 
 	        if(pc == 1.0)
 	        {
 	          progress.setSmooth('alpha', 0, {duration: 2.3});
 
-	          var ans = AvailableApps.filter( (o) => { return o.pkgId == pkgId; });
+	          var ans = AvailableApps.filter( (o) => { return o.pkgId == notification.pkgId; });
 
 	          if(ans.length == 1)
 	          {
 	            var info = ans[0];
 	            this.onPkgInstalled(info);
+
+	            console.log( "EVENTS >>> 100% ... ");
+	            if(info.events)
+	            {
+	              console.log( "EVENTS >>> dispose ... ");
+
+	              info.events.disposeAll();
+	              info.events = null;
+	            }
 	          }
 	        }
 	      }
 	    };
 
-	    let hh1 = await this.handleEvent('Packager', 'onDownloadCommence', handleProgress);
-	    let hh2 = await this.handleEvent('Packager', 'onDownloadComplete', handleProgress);
+	    myEvents.add( 'Packager', 'onDownloadCommence', handleProgress);
+	    myEvents.add( 'Packager', 'onDownloadComplete', handleProgress);
 
-	    let hh3 = await this.handleEvent('Packager', 'onExtractCommence',  handleProgress);
-	    let hh4 = await this.handleEvent('Packager', 'onExtractComplete',  handleProgress);
+	    myEvents.add( 'Packager', 'onExtractCommence',  handleProgress);
+	    myEvents.add( 'Packager', 'onExtractComplete',  handleProgress);
 
-	    let hh5 = await this.handleEvent('Packager', 'onInstallCommence',  handleProgress);
-	    let hh6 = await this.handleEvent('Packager', 'onInstallComplete',  handleProgress);
+	    myEvents.add( 'Packager', 'onInstallCommence',  handleProgress);
+	    myEvents.add( 'Packager', 'onInstallComplete',  handleProgress);
 
-	    let hh7 = await this.handleEvent('Packager', 'onDownload_FAILED',     handleFailureDownload);
-	    let hh8 = await this.handleEvent('Packager', 'onDecryption_FAILED',   handleFailureDecryption);
-	    let hh9 = await this.handleEvent('Packager', 'onExtraction_FAILED',   handleFailureExtraction);
-	    let hhA = await this.handleEvent('Packager', 'onVerification_FAILED', handleFailureVerification);
-	    let hhB = await this.handleEvent('Packager', 'onInstall_FAILED',      handleFailureInstall);
+	    myEvents.add( 'Packager', 'onDownload_FAILED',     handleFailureDownload,) ;
+	    myEvents.add( 'Packager', 'onDecryption_FAILED',   handleFailureDecryption) ;
+	    myEvents.add( 'Packager', 'onExtraction_FAILED',   handleFailureExtraction) ;
+	    myEvents.add( 'Packager', 'onVerification_FAILED', handleFailureVerification);
+	    myEvents.add( 'Packager', 'onInstall_FAILED',      handleFailureInstall);
 
-	    var result = await thunderJS$1.call('Packager', 'install', info);
+	    var result = await thunderJS$2.call('Packager', 'install', info);
 
+	    info.events = myEvents;
 	    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
 
 	    this.setConsole( jsonBeautify(result, null, 2, 100) );
@@ -4677,7 +4748,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	      "pkgId": pkg_id
 	    };
 
-	    var result = await thunderJS$1.call('Packager', 'remove', params);
+	    var result = await thunderJS$2.call('Packager', 'remove', params);
 
 	    console.log('Called >> Remove() ... RESULT: ' + JSON.stringify(result));
 	    this.setConsole( jsonBeautify(result, null, 2, 100) );
@@ -4836,7 +4907,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	              .then((cfg) =>
 	              {
 	                console.log(' >>> Creating CUSTOM ThunderJS ...');
-	                thunderJS$1 = thunderJS(cfg);
+	                thunderJS$2 = thunderJS$1(cfg);
 
 	                this.getInstalled();
 	              })
@@ -4845,7 +4916,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	                console.log("Failed to get URL: " + url);
 
 	                console.log(' >>> Creating DEFAULT ThunderJS ...');
-	                thunderJS$1 = thunderJS(thunder_cfg);
+	                thunderJS$2 = thunderJS$1(thunder_cfg);
 
 	                this.getInstalled();
 
@@ -4897,7 +4968,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	              var progress = button.tag("Progress");
 
-	              progress.setProgress(0); // reset
+	              progress.reset(); // reset
 	              progress.setSmooth('alpha', 1, {duration: .1});
 	            }
 
@@ -4977,6 +5048,13 @@ var APP_com_comcast_pkgDemo = (function () {
 	          {
 	            console.log("HANDLE OKC " );
 	            var button = this.tag('InstalledList').children[this.installedButtonIndex];
+
+	            if(button == undefined)
+	            {
+	              console.error(  'BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');
+	              this.setConsole('BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');
+	              return;
+	            }
 	            var pkgId  = button.info.pkgId;
 
 	            button.startWiggle();

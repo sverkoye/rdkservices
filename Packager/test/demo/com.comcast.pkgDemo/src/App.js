@@ -2,7 +2,7 @@ import { Lightning, Utils } from 'wpe-lightning-sdk'
 
 import beautify  from 'json-beautify'
 import ThunderJS from 'ThunderJS'
-
+import Events    from './components/Events'
 import AppList   from "./components/AppList";
 import OkCancel  from "./components/OkCancel";
 
@@ -321,19 +321,23 @@ export default class App extends Lightning.Component
 
   $InstallClicked(pkg_id)
   {
-    console.log("INSTALL >>  InstallClicked() - ENTER");
+    console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
 
     var button = this.tag('AvailableList').children[this.storeButtonIndex];
 
     // console.log("INSTALL >>  isInstalled: " + button.isInstalled())
 
-    // if(button.isInstalled() == false)
+    this.isInstalled(pkg_id).then( (ans) =>
     {
-      var info = button.info;
-      console.log("installPkg ENTER - ... info: " + info)
+      if( ans['available'] == "false")
+      {
+        var info = button.info;
 
-      this.installPkg(pkg_id, info);
-    }
+        console.log("CALL >> this.installPkg() ... info: " + info)
+
+        this.installPkg(pkg_id, info);
+      }
+    });
   }
 
   $LaunchClicked(pkg_id)
@@ -406,6 +410,7 @@ export default class App extends Lightning.Component
       }
       else
       {
+        t.info = null;
         t.hide();
       }
     });
@@ -413,29 +418,33 @@ export default class App extends Lightning.Component
 
   async isInstalled(pkd_id)
   {
-    var result = await thunderJS.call('Packager', 'isInstalled', pkd_id);
+    let result = await thunderJS.call('Packager', 'isInstalled', pkd_id);
 
     this.setConsole( beautify(result, null, 2, 100) )
+
+    console.log('isInstalled() ... result: ' +  beautify(result, null, 2, 100) );
+
+    return result;
   }
 
-  async handleEvent(name, event, cb = null)
-  {
-    // console.log('Listen for >> ['+name+'] -> '+event+' ...');
+  // async handleEvent(name, event, cb = null)
+  // {
+  //   // console.log('Listen for >> ['+name+'] -> '+event+' ...');
 
-    if(cb != null)
-    {
-      // console.log('Listen for ['+name+'] using CALLBACK ...');
-      return await thunderJS.on(name, event, cb);
-    }
-    else
-    {
-      return await thunderJS.on(name, event, (notification) =>
-      {
-          var str = " " + event + " ...  Event" + JSON.stringify(notification);
-          console.log('Handler GOT >> ' + str)
-      })
-    }
-  }
+  //   if(cb != null)
+  //   {
+  //     // console.log('Listen for ['+name+'] using CALLBACK ...');
+  //     return await thunderJS.on(name, event, cb);
+  //   }
+  //   else
+  //   {
+  //     return await thunderJS.on(name, event, (notification) =>
+  //     {
+  //         var str = " " + event + " ...  Event" + JSON.stringify(notification);
+  //         console.log('Handler GOT >> ' + str)
+  //     })
+  //   }
+  // }
 
   async launchPkg(pkg_id, info)
   {
@@ -461,26 +470,21 @@ export default class App extends Lightning.Component
   }
 
 
-  async installPkg(pkg_id, info)
+  async installPkg(thisPkgId, info)
   {
-    var info = AvailableApps[this.storeButtonIndex];
+    var myEvents = new Events(thunderJS, thisPkgId);
 
     let buttons  = this.tag('AvailableList').children
     let button   = buttons[this.storeButtonIndex];
     let progress = button.tag('Progress')
 
-    progress.setProgress(0); // reset
+    progress.reset(); // reset
 
     let handleFailure = (notification, str) =>
     {
-      let pid = pkg_id;
-
       console.log("FAILURE >> '"+str+"' ... notification = " + JSON.stringify(notification) )
 
-//      var taskId = notification.task;
-      var  pkgId = notification.pkgId;
-
-      if(pkgId == pid)
+      if(thisPkgId == notification.pkgId)
       {
         button.setIcon(Utils.asset('images/x_mark.png'))
 
@@ -490,7 +494,7 @@ export default class App extends Lightning.Component
         {
           button.setIcon(Utils.asset('images/x_mark.png'))
 
-          progress.setProgress(0); //reset
+          progress.reset(); // reset
 
           this.getAvailableSpace()
 
@@ -508,54 +512,54 @@ export default class App extends Lightning.Component
 
     let handleProgress = (notification) =>
     {
-      let pid = pkg_id;
+      // console.log("HANDLER >> pkgId: "+thisPkgId+" ... notification = " + JSON.stringify(notification) );
 
-//      var taskId = notification.task;
-      var  pkgId = notification.pkgId;
-
-      console.log("HANDLER >> pkgId: "+pkgId+" ... notification = " + JSON.stringify(notification) );
-
-      if(pkgId == pid)
+      if(thisPkgId == notification.pkgId)
       {
-        console.log("HANDLER >> UPDATE progress");
-
         let pc = notification.status / 8.0;
-        // console.log("New pc = " + pc);
-
         progress.setProgress(pc);
+
+        console.log("HANDLER >> pkgId: "+thisPkgId+" ... progress = " + pc );
 
         if(pc == 1.0)
         {
           progress.setSmooth('alpha', 0, {duration: 2.3});
 
-          var ans = AvailableApps.filter( (o) => { return o.pkgId == pkgId; });
+          var ans = AvailableApps.filter( (o) => { return o.pkgId == notification.pkgId; });
 
           if(ans.length == 1)
           {
             var info = ans[0];
             this.onPkgInstalled(info)
+
+            if(info.events)
+            {
+              info.events.disposeAll(); // remove event handlers
+              info.events = null;
+            }
           }
-        }
+        }//ENDIF - 100%
       }
     }
 
-    let hh1 = await this.handleEvent('Packager', 'onDownloadCommence', handleProgress);
-    let hh2 = await this.handleEvent('Packager', 'onDownloadComplete', handleProgress);
+    myEvents.add( 'Packager', 'onDownloadCommence', handleProgress);
+    myEvents.add( 'Packager', 'onDownloadComplete', handleProgress);
 
-    let hh3 = await this.handleEvent('Packager', 'onExtractCommence',  handleProgress);
-    let hh4 = await this.handleEvent('Packager', 'onExtractComplete',  handleProgress);
+    myEvents.add( 'Packager', 'onExtractCommence',  handleProgress);
+    myEvents.add( 'Packager', 'onExtractComplete',  handleProgress);
 
-    let hh5 = await this.handleEvent('Packager', 'onInstallCommence',  handleProgress);
-    let hh6 = await this.handleEvent('Packager', 'onInstallComplete',  handleProgress);
+    myEvents.add( 'Packager', 'onInstallCommence',  handleProgress);
+    myEvents.add( 'Packager', 'onInstallComplete',  handleProgress);
 
-    let hh7 = await this.handleEvent('Packager', 'onDownload_FAILED',     handleFailureDownload);
-    let hh8 = await this.handleEvent('Packager', 'onDecryption_FAILED',   handleFailureDecryption);
-    let hh9 = await this.handleEvent('Packager', 'onExtraction_FAILED',   handleFailureExtraction);
-    let hhA = await this.handleEvent('Packager', 'onVerification_FAILED', handleFailureVerification);
-    let hhB = await this.handleEvent('Packager', 'onInstall_FAILED',      handleFailureInstall);
+    myEvents.add( 'Packager', 'onDownload_FAILED',     handleFailureDownload,) ;
+    myEvents.add( 'Packager', 'onDecryption_FAILED',   handleFailureDecryption) ;
+    myEvents.add( 'Packager', 'onExtraction_FAILED',   handleFailureExtraction) ;
+    myEvents.add( 'Packager', 'onVerification_FAILED', handleFailureVerification);
+    myEvents.add( 'Packager', 'onInstall_FAILED',      handleFailureInstall);
 
     var result = await thunderJS.call('Packager', 'install', info);
 
+    info.events = myEvents
     // console.log('Called >>  RESULT: ' + JSON.stringify(result));
 
     this.setConsole( beautify(result, null, 2, 100) )
@@ -795,7 +799,7 @@ export default class App extends Lightning.Component
 
               var progress = button.tag("Progress")
 
-              progress.setProgress(0); // reset
+              progress.reset(); // reset
               progress.setSmooth('alpha', 1, {duration: .1});
             }
 
@@ -875,6 +879,13 @@ export default class App extends Lightning.Component
           {
             console.log("HANDLE OKC " )
             var button = this.tag('InstalledList').children[this.installedButtonIndex]
+
+            if(button == undefined)
+            {
+              console.error(  'BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND')
+              this.setConsole('BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');
+              return;
+            }
             var pkgId  = button.info.pkgId;
 
             button.startWiggle();

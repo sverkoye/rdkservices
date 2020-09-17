@@ -79,7 +79,7 @@ export default class AppTile extends lng.Component {
       var btn  = this.tag("Button");
       var tile =  btn.tag("RRect")
 
-      console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
+      // console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
 
       tile.setSmooth('scale', 1.15, {duration: 0.3});
     }
@@ -89,7 +89,7 @@ export default class AppTile extends lng.Component {
       var btn  = this.tag("Button");
       var tile =  btn.tag("RRect")
 
-      console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
+      // console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
 
       tile.setSmooth('scale', 1.0, {duration: 0.3});
     }
@@ -140,11 +140,11 @@ export default class AppTile extends lng.Component {
 
     set info( ii )
     {
-      if(ii == undefined || ii == null)
-      {
-        console.log('SET info() ...ERROR: Bad Args ');
-        return
-      }
+      // if(ii == undefined || ii == null)
+      // {
+      //   console.log('SET info() ...ERROR: Bad Args ');
+      //   return
+      // }
 
       this.setInfo(ii);
     }
@@ -155,28 +155,34 @@ export default class AppTile extends lng.Component {
 
     setInfo(ii)
     {
-      if(ii.id)
-      {
-        ii.pkgId = ii.id;
-      }
-
-      if(ii.name)  this.setLabel(ii.name)
-      else
-      if(ii.label) this.setLabel(ii.label)
-      else
-      if(ii.id)    this.setLabel(ii.id)
-      else
-      if(ii.pkgId) this.setLabel(ii.pkgId)
-      else         this.setLabel("unknown22")
-
       var check_mark_PNG = Utils.asset('images/check_mark.png');
       var download_PNG   = Utils.asset('images/download3.png');
 
-      var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
-      this.setIcon(icon);
+      if(ii)
+      {
+        if(ii.id)
+        {
+          ii.pkgId = ii.id;
+        }
 
-      this.pkgInfo = ii.pkgId;
-      this._info   = ii
+        if(ii.name)  this.setLabel(ii.name)
+        else
+        if(ii.label) this.setLabel(ii.label)
+        else
+        if(ii.id)    this.setLabel(ii.id)
+        else
+        if(ii.pkgId) this.setLabel(ii.pkgId)
+        else         this.setLabel("unknown22")
+
+        var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
+        this.setIcon(icon);
+      }
+      else
+      {
+        this.setIcon(download_PNG);
+      }
+
+      this._info = ii // allow 'null'
     }
 
     startWiggle()
