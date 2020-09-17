@@ -1,30 +1,5 @@
-export default class AppTile extends lng.Component {
-
-  // constructor()
-  // {
-  //   this.pts       = 20;
-  //   this.stroke    = 2;
-  //   this.strokeClr = 0xCC888888;
-
-  //   this.clrFrame = 0xFF666666; // #666666FF
-  //   this.clrText  = 0xFFffffff; // #ffffffFF
-
-  //   this.clrFocus = 0xFFaaaaaa; // #aaaaaaFF  // focus
-  //   this.clrBlur  = 0xFF888808; // #888800FF  // Background
-  // }
-
-  static decimalToHexString(number)
-  {
-    if(number == undefined) return "<UNDEFINED>";
-
-    if (number < 0)
-    {
-      number = 0xFFFFFFFF + number + 1;
-    }
-
-    return number.toString(16).toUpperCase();
-  }
-
+export default class AppTile extends lng.Component
+{
   static _template( )
   {
     let RR = lng.shaders.RoundedRectangle;

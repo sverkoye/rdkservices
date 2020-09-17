@@ -140,13 +140,7 @@ export default class AppTile extends lng.Component {
 
     set info( ii )
     {
-      // if(ii == undefined || ii == null)
-      // {
-      //   console.log('SET info() ...ERROR: Bad Args ');
-      //   return
-      // }
-
-      this.setInfo(ii);
+      this.setInfo(ii);  // allow set 'null'
     }
 
     get info() { 

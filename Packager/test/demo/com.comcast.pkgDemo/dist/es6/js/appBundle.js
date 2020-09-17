@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Thu, 17 Sep 2020 20:23:01 GMT
+ * Generated: Thu, 17 Sep 2020 20:44:30 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3799,13 +3799,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    set info( ii )
 	    {
-	      // if(ii == undefined || ii == null)
-	      // {
-	      //   console.log('SET info() ...ERROR: Bad Args ');
-	      //   return
-	      // }
-
-	      this.setInfo(ii);
+	      this.setInfo(ii);  // allow set 'null'
 	    }
 
 	    get info() { 
@@ -3915,10 +3909,10 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    addTile(n, info)
 	    {
-	      console.log('addTile() ... ENTER');
+	      // console.log('addTile() ... ENTER')
 
-	     // console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) )
-	     // console.log("LIST  addTile( )    ... this.children.length " + this.children.length  )
+	      // console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) )
+	      // console.log("LIST  addTile( )    ... this.children.length " + this.children.length  )
 
 	      this.children[n].setInfo( info );
 	      this.children[n].show();
@@ -3939,33 +3933,8 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  }//CLASS
 
-	class AppTile$1 extends lng.Component {
-
-	  // constructor()
-	  // {
-	  //   this.pts       = 20;
-	  //   this.stroke    = 2;
-	  //   this.strokeClr = 0xCC888888;
-
-	  //   this.clrFrame = 0xFF666666; // #666666FF
-	  //   this.clrText  = 0xFFffffff; // #ffffffFF
-
-	  //   this.clrFocus = 0xFFaaaaaa; // #aaaaaaFF  // focus
-	  //   this.clrBlur  = 0xFF888808; // #888800FF  // Background
-	  // }
-
-	  static decimalToHexString(number)
-	  {
-	    if(number == undefined) return "<UNDEFINED>";
-
-	    if (number < 0)
-	    {
-	      number = 0xFFFFFFFF + number + 1;
-	    }
-
-	    return number.toString(16).toUpperCase();
-	  }
-
+	class AppTile$1 extends lng.Component
+	{
 	  static _template( )
 	  {
 	    let RR = lng.shaders.RoundedRectangle;
@@ -4196,8 +4165,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	    return [{ family: 'Regular', url: Utils.asset('fonts/Roboto-Regular.ttf') }]
 	  }
 
-	  static _template() {
-
+	  static _template()
+	  {
 	    let RR = Lightning.shaders.RoundedRectangle;
 
 	    var ui =
@@ -4484,6 +4453,10 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $InstallClicked(pkg_id)
 	  {
+	    console.log("$InstallClicked() >>>  ENTER");
+	    console.log("$InstallClicked() >>>  ENTER");
+	    console.log("$InstallClicked() >>>  ENTER");
+
 	    console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
 
 	    var button = this.tag('AvailableList').children[this.storeButtonIndex];
@@ -4505,17 +4478,11 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $LaunchClicked(pkg_id)
 	  {
-	    console.log("LaunchClicked() >>>  ENTER");
-	    console.log("LaunchClicked() >>>  ENTER");
-	    console.log("LaunchClicked() >>>  ENTER");
-
 	    console.log("LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id);
-	    var button = this.tag('InstalledList').children[this.installedButtonIndex];
 
 	    let info = InstalledAppMap[pkg_id];
 	    if(info) //button.isInstalled() == true)
 	    {
-	      //var info = button.info;
 	      console.log("LaunchClicked Call >> launchPkg() ... info: " + info);
 
 	      this.launchPkg(pkg_id, info);
@@ -4590,33 +4557,10 @@ var APP_com_comcast_pkgDemo = (function () {
 	    return result;
 	  }
 
-	  // async handleEvent(name, event, cb = null)
-	  // {
-	  //   // console.log('Listen for >> ['+name+'] -> '+event+' ...');
-
-	  //   if(cb != null)
-	  //   {
-	  //     // console.log('Listen for ['+name+'] using CALLBACK ...');
-	  //     return await thunderJS.on(name, event, cb);
-	  //   }
-	  //   else
-	  //   {
-	  //     return await thunderJS.on(name, event, (notification) =>
-	  //     {
-	  //         var str = " " + event + " ...  Event" + JSON.stringify(notification);
-	  //         console.log('Handler GOT >> ' + str)
-	  //     })
-	  //   }
-	  // }
-
 	  async launchPkg(pkg_id, info)
 	  {
-	    console.log("launchPkg ENTER - ... info: " + info);
-
-	    var info = AvailableApps[this.storeButtonIndex];
-
-	    let buttons  = this.tag('AvailableList').children;
-	    let button   = buttons[this.storeButtonIndex];
+	    console.log("launchPkg ENTER - ... pkg_id: " + pkg_id);
+	    console.log("launchPkg ENTER - ... info: " +  info.bundlePath);
 
 	    let params =
 	    {
@@ -4679,9 +4623,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	      if(thisPkgId == notification.pkgId)
 	      {
-	        // console.log("HANDLER >> pkgId: "+thisPkgId+" ... notification = " + JSON.stringify(notification) );
-
-	//        console.log("HANDLER >> UPDATE progress");
 	        let pc = notification.status / 8.0;
 	        progress.setProgress(pc);
 
@@ -4698,16 +4639,13 @@ var APP_com_comcast_pkgDemo = (function () {
 	            var info = ans[0];
 	            this.onPkgInstalled(info);
 
-	            console.log( "EVENTS >>> 100% ... ");
 	            if(info.events)
 	            {
-	              console.log( "EVENTS >>> dispose ... ");
-
-	              info.events.disposeAll();
+	              info.events.disposeAll(); // remove event handlers
 	              info.events = null;
 	            }
 	          }
-	        }
+	        }//ENDIF - 100%
 	      }
 	    };
 
@@ -4837,7 +4775,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	    return true;
 	  }
 
-
 	  static _states(){
 	    return [
 	          class IntroState extends this
@@ -4959,9 +4896,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	              let info   = AvailableApps[this.storeButtonIndex];
 	              let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
-	              //console.log("INSTALL  _installed:  " + info._installed)
-	              console.log("INSTALL   pkgId:" + info.pkgId);
-
 	              console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId);
 
 	              button.fireAncestors('$InstallClicked', info.pkgId);
@@ -4995,7 +4929,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        }, //CLASS
 
 	        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	        class InstalledRowState
+	        class InstalledRowState extends this
 	        {
 	          _handleUp()
 	          {
@@ -5014,19 +4948,13 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	          _handleEnter()
 	          {
-	            console.log("InstalledRowState::_handleEnter() - ENTER");
-
-	            let info = InstalledApps[this.installedButtonIndex];
+	            let info   = InstalledApps[this.installedButtonIndex];
 	            let button = this.tag('InstalledList').children[this.installedButtonIndex];
 
-	            // console.log("InstalledRowState::_handleEnter() - button: " + button);
-	            console.log("InstalledRowState::_handleEnter() - info: " + info);
-	            console.log("InstalledRowState::_handleEnter() - info.pkgId: " + info.pkgId);
+	            console.log("FIRE >>> LAUNCH   pkgId:" + info.pkgId);
 
 	            button.fireAncestors('$LaunchClicked', info.pkgId);
 	            button.clickAnim();
-
-	            console.log("LAUNCH  this.installedButtonIndex: "+this.installedButtonIndex+" info.pkgId: " + info.pkgId);
 	          }
 
 	          _handleBack()

@@ -33,8 +33,8 @@ export default class App extends Lightning.Component
     return [{ family: 'Regular', url: Utils.asset('fonts/Roboto-Regular.ttf') }]
   }
 
-  static _template() {
-
+  static _template()
+  {
     let RR = Lightning.shaders.RoundedRectangle;
 
     var ui =
@@ -321,6 +321,10 @@ export default class App extends Lightning.Component
 
   $InstallClicked(pkg_id)
   {
+    console.log("$InstallClicked() >>>  ENTER")
+    console.log("$InstallClicked() >>>  ENTER")
+    console.log("$InstallClicked() >>>  ENTER")
+
     console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
 
     var button = this.tag('AvailableList').children[this.storeButtonIndex];
@@ -342,17 +346,11 @@ export default class App extends Lightning.Component
 
   $LaunchClicked(pkg_id)
   {
-    console.log("LaunchClicked() >>>  ENTER")
-    console.log("LaunchClicked() >>>  ENTER")
-    console.log("LaunchClicked() >>>  ENTER")
-
     console.log("LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
-    var button = this.tag('InstalledList').children[this.installedButtonIndex];
 
     let info = InstalledAppMap[pkg_id];
     if(info) //button.isInstalled() == true)
     {
-      //var info = button.info;
       console.log("LaunchClicked Call >> launchPkg() ... info: " + info)
 
       this.launchPkg(pkg_id, info);
@@ -427,33 +425,10 @@ export default class App extends Lightning.Component
     return result;
   }
 
-  // async handleEvent(name, event, cb = null)
-  // {
-  //   // console.log('Listen for >> ['+name+'] -> '+event+' ...');
-
-  //   if(cb != null)
-  //   {
-  //     // console.log('Listen for ['+name+'] using CALLBACK ...');
-  //     return await thunderJS.on(name, event, cb);
-  //   }
-  //   else
-  //   {
-  //     return await thunderJS.on(name, event, (notification) =>
-  //     {
-  //         var str = " " + event + " ...  Event" + JSON.stringify(notification);
-  //         console.log('Handler GOT >> ' + str)
-  //     })
-  //   }
-  // }
-
   async launchPkg(pkg_id, info)
   {
-    console.log("launchPkg ENTER - ... info: " + info)
-
-    var info = AvailableApps[this.storeButtonIndex];
-
-    let buttons  = this.tag('AvailableList').children
-    let button   = buttons[this.storeButtonIndex];
+    console.log("launchPkg ENTER - ... pkg_id: " + pkg_id)
+    console.log("launchPkg ENTER - ... info: " +  info.bundlePath)
 
     let params =
     {
@@ -668,7 +643,6 @@ export default class App extends Lightning.Component
     return true;
   }
 
-
   static _states(){
     return [
           class IntroState extends this
@@ -790,9 +764,6 @@ export default class App extends Lightning.Component
               let info   = AvailableApps[this.storeButtonIndex];
               let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
-              //console.log("INSTALL  _installed:  " + info._installed)
-              console.log("INSTALL   pkgId:" + info.pkgId)
-
               console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId)
 
               button.fireAncestors('$InstallClicked', info.pkgId);
@@ -826,7 +797,7 @@ export default class App extends Lightning.Component
         }, //CLASS
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        class InstalledRowState
+        class InstalledRowState extends this
         {
           _handleUp()
           {
@@ -845,19 +816,13 @@ export default class App extends Lightning.Component
 
           _handleEnter()
           {
-            console.log("InstalledRowState::_handleEnter() - ENTER")
-
-            let info = InstalledApps[this.installedButtonIndex];
+            let info   = InstalledApps[this.installedButtonIndex];
             let button = this.tag('InstalledList').children[this.installedButtonIndex];
 
-            // console.log("InstalledRowState::_handleEnter() - button: " + button);
-            console.log("InstalledRowState::_handleEnter() - info: " + info);
-            console.log("InstalledRowState::_handleEnter() - info.pkgId: " + info.pkgId);
+            console.log("FIRE >>> LAUNCH   pkgId:" + info.pkgId)
 
             button.fireAncestors('$LaunchClicked', info.pkgId);
             button.clickAnim();
-
-            console.log("LAUNCH  this.installedButtonIndex: "+this.installedButtonIndex+" info.pkgId: " + info.pkgId);
           }
 
           _handleBack()
