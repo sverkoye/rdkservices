@@ -181,8 +181,9 @@ namespace {
             Register<Params, JsonObject>(kDAC_IsInstalledMethodName, [this](const Params& params, JsonObject& response) -> uint32_t
             {
                 uint32_t result = Core::ERROR_NONE;
+                uint32_t ans    = this->_implementation->IsInstalled(params.PkgId.Value());
 
-                response["available"] = this->_implementation->IsInstalled(params.PkgId.Value());
+                response["available"] = ans ? "true" : "false";
 
                 return result;
             });
@@ -195,7 +196,7 @@ namespace {
 
                 uint32_t pc = this->_implementation->GetInstallProgress(params.Task.Value());
                 
-                LOGERR("\nHUGH >>>>> Call ... DAC::GetInstallProgress()   pc: [%d]", pc); 
+                LOGINFO(" >>>>> Call ... DAC::GetInstallProgress()   pc: [%d]", pc); 
 
                 response["percentage"] =  std::to_string(pc);
 
@@ -252,7 +253,7 @@ namespace {
 
                 if(pkg) // Found
                 {
-                    LOGERR("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - FOUND", params.PkgId.Value().c_str());
+                    LOGINFO("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - FOUND", params.PkgId.Value().c_str());
 
                     response = PackageInfoEx::pkg2json( pkg );
 
