@@ -1,4 +1,3 @@
-export const Inventory =
 [
   {
     "pkgId": "TestApp1",
@@ -47,4 +46,4 @@ export const Inventory =
     "token": "TODO: Security",
     "listener": "TODO: url or endpoint of event listener provided by caller"
   }
-];
+]
