@@ -23,8 +23,6 @@ export default class AppList extends lng.Component {
       console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) )
       console.log("LIST  addTile( )    ... this.children.length " + this.children.length  )
 
-      info.pkgInstalled = true;
-
       this.children[n].setInfo( info );
       this.children[n].show();
     }
@@ -32,13 +30,12 @@ export default class AppList extends lng.Component {
     set tiles( list )
     {
         // console.log("SETTING >>> tiles: " + JSON.stringify(list, 2, null) )
-        this.children = list.map((info, index) =>
+        this.children = list.map((tileInfo, index) =>
         {
             return {
               w: 210, h: 150,
-            //  info: info,
               type: AppTile,
-              info
+              tileInfo
             }
         })
     }

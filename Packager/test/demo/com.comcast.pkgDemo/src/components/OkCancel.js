@@ -81,7 +81,9 @@ export default class OkCancel extends lng.Component {
 
               _handleEnter() // could be OK or CANCEL button
               {
-                this.fireAncestors('$onRemoveOK', this.pkgId, (this.buttonIndex == 0) ? true : false);
+                var name = (this.buttonIndex == 0) ? '$onRemoveOK' : '$onRemoveCANCEL'
+
+                this.fireAncestors(name);
               }
 
               _handleKey(k)

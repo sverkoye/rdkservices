@@ -60,24 +60,6 @@ export default class AppTile extends lng.Component {
       }
     };
 
-    setInfo(i)
-    {
-    //  console.log('setInfo() ... this.info >>> ' + JSON.stringify(i) );
-
-      if(i.name)  this.setLabel(i.name)
-      else
-      if(i.label) this.setLabel(i.label)
-      else
-      if(i.pkgId) this.setLabel(i.pkgId)
-      else        this.setLabel("unknown22")
-
-      var check_mark_PNG = Utils.asset('images/check_mark.png');
-      var download_PNG   = Utils.asset('images/download3.png');
-
-      var icon = (i.pkgInstalled) ? check_mark_PNG : download_PNG;
-      this.setIcon(icon);
-    }
-
     setLabel(s)
     {
       var obj = this.tag("Label")
@@ -94,22 +76,22 @@ export default class AppTile extends lng.Component {
 
     _focus()
     {
-      var btn = this.tag("Button");
-      var bg  = btn.tag("RRect")
+      var btn  = this.tag("Button");
+      var tile =  btn.tag("RRect")
 
-      console.log("BUTTON:  pkgId: " + this.pkgId);
+      console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
 
-      bg.setSmooth('alpha', 1.00, {duration: 0.3});
-      bg.setSmooth('scale', 1.15, {duration: 0.3});
+      tile.setSmooth('scale', 1.15, {duration: 0.3});
     }
 
     _unfocus()
     {
-      var btn = this.tag("Button");
-      var bg  = btn.tag("RRect")
+      var btn  = this.tag("Button");
+      var tile =  btn.tag("RRect")
 
-      // bg.setSmooth('alpha', 0.5, {duration: 0.3});
-      bg.setSmooth('scale', 1.0, {duration: 0.3});
+      console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
+
+      tile.setSmooth('scale', 1.0, {duration: 0.3});
     }
 
     hide()
@@ -143,12 +125,6 @@ export default class AppTile extends lng.Component {
 
     _init()
     {
-      // console.log('AppTile() ... this.info >>> ' + JSON.stringify(this.info) );
-
-      // console.log('AppTile() ... this.info.showTile >>> ' + this.info.showTile );
-      // this.tag("Button").alpha = this.info.showTile;
-
-      this._installed = false;
       this.tag("Button").scale = 0;
 
       if(this.w && this.h)
@@ -159,31 +135,48 @@ export default class AppTile extends lng.Component {
         button.h = this.h;
       }
 
-      // var check_mark_PNG = Utils.asset('images/check_mark.png');
-      // var download_PNG   = Utils.asset('images/download3.png');
-
-      // let installed = this.info.installed;
-
-      // this.setInstalled( installed )
-      // this.setIcon(installed ? check_mark_PNG : download_PNG)
-
-      this.tileInfo = this.info;
+      this.info = this.tileInfo;
     }
 
-    set tileInfo( ii )
+    set info( ii )
     {
       if(ii == undefined || ii == null)
       {
+        console.log('SET info() ...ERROR: Bad Args ');
         return
       }
 
-      if(ii.pkgId)
+      this.setInfo(ii);
+    }
+
+    get info() { 
+      console.log('GET info()  - ' + this._info.pkgId);
+      return this._info; }
+
+    setInfo(ii)
+    {
+      if(ii.id)
       {
-        this.pkgId = ii.pkgId
-        //console.log('tileInfo() ... this.pkgId: ' + this.pkgId );
+        ii.pkgId = ii.id;
       }
 
-      this.setInfo(ii);
+      if(ii.name)  this.setLabel(ii.name)
+      else
+      if(ii.label) this.setLabel(ii.label)
+      else
+      if(ii.id)    this.setLabel(ii.id)
+      else
+      if(ii.pkgId) this.setLabel(ii.pkgId)
+      else         this.setLabel("unknown22")
+
+      var check_mark_PNG = Utils.asset('images/check_mark.png');
+      var download_PNG   = Utils.asset('images/download3.png');
+
+      var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
+      this.setIcon(icon);
+
+      this.pkgInfo = ii.pkgId;
+      this._info   = ii
     }
 
     startWiggle()
@@ -211,12 +204,31 @@ export default class AppTile extends lng.Component {
 
     setInstalled(v)
     {
-      this._installed = v;
+      if(this._info)
+      {
+        this._info.pkgInstalled = v;
+      }
     }
 
     isInstalled()
     {
-      return this._installed;
+      return this._info.pkgInstalled;
+    }
+
+    clickAnim()
+    {
+      var anim = this.tag('Button').animation({
+        duration: 0.35,
+        repeat: 1,
+        actions: [
+          {
+            t: '',
+            p: 'scale', v: { 0: 1.0, 0.5: 1.2, 1: 1.0},
+          },
+        ],
+      });
+
+      anim.start()
     }
 
   }//CLASS

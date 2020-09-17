@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Thu, 17 Sep 2020 13:51:49 GMT
+ * Generated: Thu, 17 Sep 2020 18:00:50 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3662,24 +3662,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	    };
 
-	    setInfo(i)
-	    {
-	    //  console.log('setInfo() ... this.info >>> ' + JSON.stringify(i) );
-
-	      if(i.name)  this.setLabel(i.name);
-	      else
-	      if(i.label) this.setLabel(i.label);
-	      else
-	      if(i.pkgId) this.setLabel(i.pkgId);
-	      else        this.setLabel("unknown22");
-
-	      var check_mark_PNG = Utils.asset('images/check_mark.png');
-	      var download_PNG   = Utils.asset('images/download3.png');
-
-	      var icon = (i.pkgInstalled) ? check_mark_PNG : download_PNG;
-	      this.setIcon(icon);
-	    }
-
 	    setLabel(s)
 	    {
 	      var obj = this.tag("Label");
@@ -3696,22 +3678,22 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    _focus()
 	    {
-	      var btn = this.tag("Button");
-	      var bg  = btn.tag("RRect");
+	      var btn  = this.tag("Button");
+	      var tile =  btn.tag("RRect");
 
-	      console.log("BUTTON:  pkgId: " + this.pkgId);
+	      console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
 
-	      bg.setSmooth('alpha', 1.00, {duration: 0.3});
-	      bg.setSmooth('scale', 1.15, {duration: 0.3});
+	      tile.setSmooth('scale', 1.15, {duration: 0.3});
 	    }
 
 	    _unfocus()
 	    {
-	      var btn = this.tag("Button");
-	      var bg  = btn.tag("RRect");
+	      var btn  = this.tag("Button");
+	      var tile =  btn.tag("RRect");
 
-	      // bg.setSmooth('alpha', 0.5, {duration: 0.3});
-	      bg.setSmooth('scale', 1.0, {duration: 0.3});
+	      console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
+
+	      tile.setSmooth('scale', 1.0, {duration: 0.3});
 	    }
 
 	    hide()
@@ -3745,12 +3727,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    _init()
 	    {
-	      // console.log('AppTile() ... this.info >>> ' + JSON.stringify(this.info) );
-
-	      // console.log('AppTile() ... this.info.showTile >>> ' + this.info.showTile );
-	      // this.tag("Button").alpha = this.info.showTile;
-
-	      this._installed = false;
 	      this.tag("Button").scale = 0;
 
 	      if(this.w && this.h)
@@ -3761,31 +3737,48 @@ var APP_com_comcast_pkgDemo = (function () {
 	        button.h = this.h;
 	      }
 
-	      // var check_mark_PNG = Utils.asset('images/check_mark.png');
-	      // var download_PNG   = Utils.asset('images/download3.png');
-
-	      // let installed = this.info.installed;
-
-	      // this.setInstalled( installed )
-	      // this.setIcon(installed ? check_mark_PNG : download_PNG)
-
-	      this.tileInfo = this.info;
+	      this.info = this.tileInfo;
 	    }
 
-	    set tileInfo( ii )
+	    set info( ii )
 	    {
 	      if(ii == undefined || ii == null)
 	      {
+	        console.log('SET info() ...ERROR: Bad Args ');
 	        return
 	      }
 
-	      if(ii.pkgId)
+	      this.setInfo(ii);
+	    }
+
+	    get info() { 
+	      console.log('GET info()  - ' + this._info.pkgId);
+	      return this._info; }
+
+	    setInfo(ii)
+	    {
+	      if(ii.id)
 	      {
-	        this.pkgId = ii.pkgId;
-	        //console.log('tileInfo() ... this.pkgId: ' + this.pkgId );
+	        ii.pkgId = ii.id;
 	      }
 
-	      this.setInfo(ii);
+	      if(ii.name)  this.setLabel(ii.name);
+	      else
+	      if(ii.label) this.setLabel(ii.label);
+	      else
+	      if(ii.id)    this.setLabel(ii.id);
+	      else
+	      if(ii.pkgId) this.setLabel(ii.pkgId);
+	      else         this.setLabel("unknown22");
+
+	      var check_mark_PNG = Utils.asset('images/check_mark.png');
+	      var download_PNG   = Utils.asset('images/download3.png');
+
+	      var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
+	      this.setIcon(icon);
+
+	      this.pkgInfo = ii.pkgId;
+	      this._info   = ii;
 	    }
 
 	    startWiggle()
@@ -3813,12 +3806,31 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    setInstalled(v)
 	    {
-	      this._installed = v;
+	      if(this._info)
+	      {
+	        this._info.pkgInstalled = v;
+	      }
 	    }
 
 	    isInstalled()
 	    {
-	      return this._installed;
+	      return this._info.pkgInstalled;
+	    }
+
+	    clickAnim()
+	    {
+	      var anim = this.tag('Button').animation({
+	        duration: 0.35,
+	        repeat: 1,
+	        actions: [
+	          {
+	            t: '',
+	            p: 'scale', v: { 0: 1.0, 0.5: 1.2, 1: 1.0},
+	          },
+	        ],
+	      });
+
+	      anim.start();
 	    }
 
 	  }//CLASS
@@ -3845,8 +3857,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	      console.log("LIST  addTile( n: "+n+",  info:  " + JSON.stringify(info, 2, null) );
 	      console.log("LIST  addTile( )    ... this.children.length " + this.children.length  );
 
-	      info.pkgInstalled = true;
-
 	      this.children[n].setInfo( info );
 	      this.children[n].show();
 	    }
@@ -3854,13 +3864,12 @@ var APP_com_comcast_pkgDemo = (function () {
 	    set tiles( list )
 	    {
 	        // console.log("SETTING >>> tiles: " + JSON.stringify(list, 2, null) )
-	        this.children = list.map((info, index) =>
+	        this.children = list.map((tileInfo, index) =>
 	        {
 	            return {
 	              w: 210, h: 150,
-	            //  info: info,
 	              type: AppTile,
-	              info
+	              tileInfo
 	            }
 	        });
 	    }
@@ -4048,7 +4057,9 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	              _handleEnter() // could be OK or CANCEL button
 	              {
-	                this.fireAncestors('$onRemoveOK', this.pkgId, (this.buttonIndex == 0) ? true : false);
+	                var name = (this.buttonIndex == 0) ? '$onRemoveOK' : '$onRemoveCANCEL';
+
+	                this.fireAncestors(name);
 	              }
 
 	              _handleKey(k)
@@ -4115,8 +4126,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	    // etc ..
 	  }
 	};
-
-	console.log(' >>> Creating ThunderJS ...');
 
 	var thunderJS$1 = null;
 
@@ -4372,8 +4381,11 @@ var APP_com_comcast_pkgDemo = (function () {
 	    this.tag('Console').text.text = str;
 	  }
 
-	  $onRemoveOK(pkg_id, okButton)
+	  $onRemoveOK() // 'okButton = true' indicates the OK button was clicked
 	  {
+	    var dlg = this.tag("OkCancel");
+	    var pkg_id = dlg.pkgId;
+
 	    console.log("onRemoveOK ENTER - ... pkg_id: " + pkg_id);
 
 	    if(pkg_id == undefined)
@@ -4384,9 +4396,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    this.removePkg(pkg_id);
 
-	    var dlg = this.tag("OkCancel");
-	    dlg.pkgId = pkg_id;
-	    dlg.setSmooth('alpha', 0, {duration: 0.3});
+	    dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
 
 	    var button = this.tag('InstalledList').children[this.installedButtonIndex];
 	    button.stopWiggle();
@@ -4394,14 +4404,21 @@ var APP_com_comcast_pkgDemo = (function () {
 	    this._setState('InstalledRowState');
 	}
 
-	  $onRemoveCANCEL(pkg_id, okButton)
+	  $onRemoveCANCEL()
 	  {
+	    var dlg = this.tag("OkCancel");
+	    var pkg_id = dlg.pkgId;
+
+	    console.log("onRemoveCANCEL ENTER - ... pkg_id: " + pkg_id);
+
+	    dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
+
 	    console.log("onRemoveCANCEL ENTER - ... info: " + pkg_id);
 
-	    var button = this.tag('AvailableList').children[this.storeButtonIndex];
+	    var button = this.tag('InstalledList').children[this.installedButtonIndex];
 	    button.stopWiggle();
 
-	   this._setState('InstalledRowState');
+	    this._setState('InstalledRowState');
 	  }
 
 	  $InstallClicked(pkg_id)
@@ -4423,16 +4440,20 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $LaunchClicked(pkg_id)
 	  {
+	    console.log("LaunchClicked() >>>  ENTER");
+	    console.log("LaunchClicked() >>>  ENTER");
+	    console.log("LaunchClicked() >>>  ENTER");
+
+	    console.log("LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id);
 	    var button = this.tag('InstalledList').children[this.installedButtonIndex];
 
-	    console.log("LAUNCH >>  isInstalled: " + button.isInstalled());
-
-	    if(button.isInstalled() == true)
+	    let info = InstalledAppMap[pkg_id];
+	    if(info) //button.isInstalled() == true)
 	    {
-	      var info = button.info;
-	      console.log("launchPkg ENTER - ... info: " + info);
+	      //var info = button.info;
+	      console.log("LaunchClicked Call >> launchPkg() ... info: " + info);
 
-	      // this.launchPkg(pkg_id, info);
+	      this.launchPkg(pkg_id, info);
 	    }
 	  }
 
@@ -4466,26 +4487,28 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    this.getAvailableSpace();
 
-	    InstalledAppMap = {}; // reset
+	    InstalledAppMap = {};    // reset
+	    InstalledApps   = null; // reset
 
 	    result.applications.map( (o) => InstalledAppMap[o.pkgId] = o ); // populate
 
-	    InstalledApps = result.applications;
+	    InstalledApps = result.applications; // update array
 
-	    this.tag("InstalledList").children.map( (o, i) =>
+	    this.tag("InstalledList").children.map( (t, i) =>
 	    {
 	      if(i < InstalledApps.length)
 	      {
 	        InstalledApps[i].pkgInstalled = true;
 
-	        console.log("getInstalled() - installed: " + InstalledApps[i].pkgInstalled);
+	        console.log("getInstalled() -     pkdId: " + InstalledApps[i].id);
+	       // console.log("getInstalled() - installed: " + InstalledApps[i].installed)
 
-	        o.tileInfo = InstalledApps[i];
-	        o.show(i * 0.15);
+	        t.info = InstalledApps[i];
+	        t.show(i * 0.15);
 	      }
 	      else
 	      {
-	        o.hide();
+	        t.hide();
 	      }
 	    });
 	  }
@@ -4515,6 +4538,30 @@ var APP_com_comcast_pkgDemo = (function () {
 	      })
 	    }
 	  }
+
+	  async launchPkg(pkg_id, info)
+	  {
+	    console.log("launchPkg ENTER - ... info: " + info);
+
+	    var info = AvailableApps[this.storeButtonIndex];
+
+	    let buttons  = this.tag('AvailableList').children;
+	    let button   = buttons[this.storeButtonIndex];
+
+	    let params =
+	    {
+	        "client": pkg_id,
+	        "uri": info.bundlePath,
+	        "mimeType": "application/dac.native"
+	    };
+
+	    var result = await thunderJS$1.call('org.rdk.RDKShell.1', 'launchApplication', params);
+
+	    // console.log('installPkg() >>> Called >>  RESULT: ' + JSON.stringify(result));
+
+	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+	  }
+
 
 	  async installPkg(pkg_id, info)
 	  {
@@ -4588,7 +4635,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	          if(ans.length == 1)
 	          {
 	            var info = ans[0];
-	            this.pkgInstalled(info);
+	            this.onPkgInstalled(info);
 	          }
 	        }
 	      }
@@ -4646,17 +4693,16 @@ var APP_com_comcast_pkgDemo = (function () {
 	    this.getInstalled();
 	  }
 
-	  pkgInstalled(info)
+	  onPkgInstalled(info)
 	  {
-	    console.log('pkgInstalled() ... Installed >>> ' + info.pkgId);
+	    console.log('onPkgInstalled() ... Installed >>> ' + info.pkgId);
 
-	    // console.log('pkgInstalled() ... children >>> ' + this.tag('InstalledList').children.length);
+	    // console.log('onPkgInstalled() ... children >>> ' + this.tag('InstalledList').children.length);
 
-	    info.installed = true;
+	    info.pkgInstalled = true;
 
 	    InstalledApps.push( info );
 	    InstalledAppMap[info.pkgId] = info; // populate
-	    info.pkgInstalled = true;
 
 	    this.tag('InstalledList').addTile(InstalledApps.length - 1, info);
 
@@ -4674,7 +4720,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	    });
 	  }
 
-
 	  handleToggleConsole()
 	  {
 	    let a = this.tag("ConsoleBG").alpha;
@@ -4690,7 +4735,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    let info = InstalledApps[this.storeButtonIndex];
 
-	    this.getPackageInfo(info.pkgId);
+	    this.getPackageInfo(info.pkgId || info.id);
 	  }
 
 	  // GLOBAL key handling
@@ -4761,7 +4806,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	                apps.map( (o) => o.pkgInstalled = false); //default
 
 	                AvailableApps = apps;
-	                InstalledApps = apps;
+	                InstalledApps = apps;//new Array(apps.length);
 
 	                this.tag("AvailableList").tiles = AvailableApps;
 	                this.tag("InstalledList").tiles = InstalledApps;
@@ -4781,8 +4826,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	                this.tag("AvailableList").tiles = AvailableApps;
 	              });
-
-	              //this.getInstalled();
 	            }
 	            fetchThunderCfg(url)
 	            {
@@ -4842,34 +4885,20 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            _handleEnter()
 	            {
-	              let info = AvailableApps[this.storeButtonIndex];
+	              let info   = AvailableApps[this.storeButtonIndex];
 	              let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
-	              console.log("INSTALL  _installed:  " + info._installed);
+	              //console.log("INSTALL  _installed:  " + info._installed)
 	              console.log("INSTALL   pkgId:" + info.pkgId);
-	              // console.log("INSTALL   button:" + button)
-	              console.log("INSTALL");
-	              console.log("INSTALL");
 
-	               // if(button._installed == false)
-	                {
-	                  console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId);
+	              console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId);
 
-	                  button.fireAncestors('$InstallClicked', info.pkgId);
+	              button.fireAncestors('$InstallClicked', info.pkgId);
 
-	                  var progress = button.tag("Progress");
+	              var progress = button.tag("Progress");
 
-	                  progress.setProgress(0); // reset
-	                  progress.setSmooth('alpha', 1, {duration: .1});
-	                }
-	                // else
-	                // {
-	                //   var check_mark_PNG = Utils.asset('images/check_mark.png');
-	                //   var download_PNG   = Utils.asset('images/download3.png');
-
-	                //   this.setInstalled(true)   // default
-	                //   this.setIcon(check_mark_PNG) // default
-	                // }
+	              progress.setProgress(0); // reset
+	              progress.setSmooth('alpha', 1, {duration: .1});
 	            }
 
 	            _handleDown()
@@ -4892,7 +4921,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	              //console.log("HANDLE _getFocused >>  OBJ: " + this.tag('AvailableList').children)
 	              return this.tag('AvailableList').children[this.storeButtonIndex]
 	            }
-
 	        }, //CLASS
 
 	        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4915,16 +4943,19 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	          _handleEnter()
 	          {
-	            console.log("LAUNCH");
-	            console.log("LAUNCH");
+	            console.log("InstalledRowState::_handleEnter() - ENTER");
 
 	            let info = InstalledApps[this.installedButtonIndex];
 	            let button = this.tag('InstalledList').children[this.installedButtonIndex];
 
-	            button.fireAncestors('$LaunchClicked', info.pkgId);
+	            // console.log("InstalledRowState::_handleEnter() - button: " + button);
+	            console.log("InstalledRowState::_handleEnter() - info: " + info);
+	            console.log("InstalledRowState::_handleEnter() - info.pkgId: " + info.pkgId);
 
-	            console.log("LAUNCH   info.pkgId: " + info.id);
-	            console.log("LAUNCH");
+	            button.fireAncestors('$LaunchClicked', info.pkgId);
+	            button.clickAnim();
+
+	            console.log("LAUNCH  this.installedButtonIndex: "+this.installedButtonIndex+" info.pkgId: " + info.pkgId);
 	          }
 
 	          _handleBack()
@@ -4946,17 +4977,16 @@ var APP_com_comcast_pkgDemo = (function () {
 	          {
 	            console.log("HANDLE OKC " );
 	            var button = this.tag('InstalledList').children[this.installedButtonIndex];
-	            var pkgId  = button.pkgId;
+	            var pkgId  = button.info.pkgId;
 
 	            button.startWiggle();
 
-	            var dlg = this.tag("OkCancel");
-
-	            dlg.pkgId = pkgId;
+	            var dlg    = this.tag("OkCancel");
+	            dlg.pkgId  = pkgId; // needed later
+	            dlg.button = button;
 
 	            dlg.setLabel("Remove '" + pkgId + "' app ?");
 	            dlg.setSmooth('alpha', 1, {duration: 0.3});
-	            // dlg.setFocus = true;
 
 	            dlg._setState('OKCState');
 	          }
