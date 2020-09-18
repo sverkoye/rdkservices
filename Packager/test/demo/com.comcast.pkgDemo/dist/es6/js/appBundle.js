@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Thu, 17 Sep 2020 20:44:30 GMT
+ * Generated: Fri, 18 Sep 2020 13:32:20 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -4565,7 +4565,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    let params =
 	    {
 	        "client": pkg_id,
-	        "uri": info.bundlePath,
+	        "uri": pkg_id, //TODO:  Unexpected... check why ...  // info.bundlePath,
 	        "mimeType": "application/dac.native"
 	    };
 
@@ -4781,6 +4781,11 @@ var APP_com_comcast_pkgDemo = (function () {
 	          {
 	            $enter()
 	            {
+	              // console.log(">>>>>>>>>>>>   STATE:  IntroState");
+
+	              var dlg = this.tag("OkCancel");
+	              dlg.setSmooth('alpha', 0, {duration: 0.0});
+
 	              let h1 =  (1080 + 79); // Move LOWER blind to below bottom (offscreen)
 	              let h2 = -(h1/2 + 79); // Move UPPER blins to above top    (offscreen)
 
@@ -4814,15 +4819,12 @@ var APP_com_comcast_pkgDemo = (function () {
 	                apps.map( (o) => o.pkgInstalled = false); //default
 
 	                AvailableApps = apps;
-	                InstalledApps = apps;//new Array(apps.length);
+	                InstalledApps = apps;
 
 	                this.tag("AvailableList").tiles = AvailableApps;
 	                this.tag("InstalledList").tiles = InstalledApps;
 
 	                this._setState('StoreRowState');
-
-	                this.tag("AvailableList").children.map( (o,n) => o.show(n * 0.15) );
-	              //  this.tag("InstalledList").children.map( (o, n) => o.show(n * 0.15) );
 	              })
 	              .catch(err =>
 	              {
@@ -4833,6 +4835,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	                console.log("... using DefaultApps");
 
 	                this.tag("AvailableList").tiles = AvailableApps;
+
+	                this._setState('StoreRowState');
 	              });
 	            }
 	            fetchThunderCfg(url)
@@ -4863,7 +4867,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            $enter()
 	            {
-	              console.log("SetupState - ENTER ");
+	              // console.log(">>>>>>>>>>>>   STATE:  SetupState");
 
 	              const URL_PARAMS = new window.URLSearchParams(window.location.search);
 	              var appURL       = URL_PARAMS.get('appList');
@@ -4872,7 +4876,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	              this.fetchThunderCfg(cfgURL);
 	              this.fetchAppList(appURL);
 
-	              this._setState('StoreRowState');
+	              // State advanced within 'fetchAppList()' above. 
 	            }
 	          },  //CLASS - SetupState
 	          // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4880,15 +4884,17 @@ var APP_com_comcast_pkgDemo = (function () {
 	          {
 	            $enter()
 	            {
-	              var dlg = this.tag("OkCancel");
-	              dlg.setSmooth('alpha', 0, {duration: 0.0});
+	              // console.log(">>>>>>>>>>>>   STATE:  StoreRowState");
 
-	              // // Set FOCUS to 1st package
-	              // //
-	              // if(this.tag('AvailableList').children.length >0)
-	              // {
-	              //   this.tag('AvailableList').children[this.storeButtonIndex].setFocus = true;
-	              // }
+	              // Set FOCUS to 1st package
+	              //
+	              var av_children = this.tag('AvailableList').children;
+	              if(av_children.length >0)
+	              {
+	                av_children[this.storeButtonIndex].setFocus = true;
+	              }
+
+	              av_children.map( (o,n) => o.show(n * 0.15) );
 	            }
 
 	            _handleEnter()
@@ -4923,7 +4929,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            _getFocused()
 	            {
-	              //console.log("HANDLE _getFocused >>  OBJ: " + this.tag('AvailableList').children)
 	              return this.tag('AvailableList').children[this.storeButtonIndex]
 	            }
 	        }, //CLASS
@@ -4931,6 +4936,11 @@ var APP_com_comcast_pkgDemo = (function () {
 	        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	        class InstalledRowState extends this
 	        {
+	          $enter()
+	          {
+	            console.log(">>>>>>>>>>>>   STATE:  InstalledRowState");
+	          }
+
 	          _handleUp()
 	          {
 	            this._setState('StoreRowState');
@@ -4964,8 +4974,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	          _getFocused()
 	          {
-	            //console.log("HANDLE _getFocused >>  OBJ: " + this.tag('AvailableList').children)
-
 	            return this.tag('InstalledList').children[this.installedButtonIndex]
 	          }
 	        },//class
@@ -4974,7 +4982,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	        {
 	          $enter()
 	          {
-	            console.log("HANDLE OKC " );
+	            // console.log(">>>>>>>>>>>>   STATE:  OKCStateEnter");
+
 	            var button = this.tag('InstalledList').children[this.installedButtonIndex];
 
 	            if(button == undefined)
@@ -4983,7 +4992,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	              this.setConsole('BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');
 	              return;
 	            }
-	            var pkgId  = button.info.pkgId;
+	            var pkgId = button.info.pkgId;
 
 	            button.startWiggle();
 

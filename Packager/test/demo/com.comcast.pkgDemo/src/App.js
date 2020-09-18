@@ -433,7 +433,7 @@ export default class App extends Lightning.Component
     let params =
     {
         "client": pkg_id,
-        "uri": info.bundlePath,
+        "uri": pkg_id, //TODO:  Unexpected... check why ...  // info.bundlePath,
         "mimeType": "application/dac.native"
     }
 
@@ -649,6 +649,11 @@ export default class App extends Lightning.Component
           {
             $enter()
             {
+              // console.log(">>>>>>>>>>>>   STATE:  IntroState");
+
+              var dlg = this.tag("OkCancel");
+              dlg.setSmooth('alpha', 0, {duration: 0.0});
+
               let h1 =  (1080 + 79); // Move LOWER blind to below bottom (offscreen)
               let h2 = -(h1/2 + 79); // Move UPPER blins to above top    (offscreen)
 
@@ -682,15 +687,12 @@ export default class App extends Lightning.Component
                 apps.map( (o) => o.pkgInstalled = false); //default
 
                 AvailableApps = apps;
-                InstalledApps = apps;//new Array(apps.length);
+                InstalledApps = apps;
 
                 this.tag("AvailableList").tiles = AvailableApps;
                 this.tag("InstalledList").tiles = InstalledApps;
 
                 this._setState('StoreRowState')
-
-                this.tag("AvailableList").children.map( (o,n) => o.show(n * 0.15) );
-              //  this.tag("InstalledList").children.map( (o, n) => o.show(n * 0.15) );
               })
               .catch(err =>
               {
@@ -701,6 +703,8 @@ export default class App extends Lightning.Component
                 console.log("... using DefaultApps");
 
                 this.tag("AvailableList").tiles = AvailableApps;
+
+                this._setState('StoreRowState')
               });
             }
             fetchThunderCfg(url)
@@ -731,7 +735,7 @@ export default class App extends Lightning.Component
 
             $enter()
             {
-              console.log("SetupState - ENTER ");
+              // console.log(">>>>>>>>>>>>   STATE:  SetupState");
 
               const URL_PARAMS = new window.URLSearchParams(window.location.search)
               var appURL       = URL_PARAMS.get('appList')
@@ -740,7 +744,7 @@ export default class App extends Lightning.Component
               this.fetchThunderCfg(cfgURL);
               this.fetchAppList(appURL);
 
-              this._setState('StoreRowState')
+              // State advanced within 'fetchAppList()' above. 
             }
           },  //CLASS - SetupState
           // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -748,15 +752,17 @@ export default class App extends Lightning.Component
           {
             $enter()
             {
-              var dlg = this.tag("OkCancel");
-              dlg.setSmooth('alpha', 0, {duration: 0.0});
+              // console.log(">>>>>>>>>>>>   STATE:  StoreRowState");
 
-              // // Set FOCUS to 1st package
-              // //
-              // if(this.tag('AvailableList').children.length >0)
-              // {
-              //   this.tag('AvailableList').children[this.storeButtonIndex].setFocus = true;
-              // }
+              // Set FOCUS to 1st package
+              //
+              var av_children = this.tag('AvailableList').children
+              if(av_children.length >0)
+              {
+                av_children[this.storeButtonIndex].setFocus = true;
+              }
+
+              av_children.map( (o,n) => o.show(n * 0.15) );
             }
 
             _handleEnter()
@@ -791,7 +797,6 @@ export default class App extends Lightning.Component
 
             _getFocused()
             {
-              //console.log("HANDLE _getFocused >>  OBJ: " + this.tag('AvailableList').children)
               return this.tag('AvailableList').children[this.storeButtonIndex]
             }
         }, //CLASS
@@ -799,6 +804,11 @@ export default class App extends Lightning.Component
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         class InstalledRowState extends this
         {
+          $enter()
+          {
+            console.log(">>>>>>>>>>>>   STATE:  InstalledRowState");
+          }
+
           _handleUp()
           {
             this._setState('StoreRowState');
@@ -832,8 +842,6 @@ export default class App extends Lightning.Component
 
           _getFocused()
           {
-            //console.log("HANDLE _getFocused >>  OBJ: " + this.tag('AvailableList').children)
-
             return this.tag('InstalledList').children[this.installedButtonIndex]
           }
         },//class
@@ -842,7 +850,8 @@ export default class App extends Lightning.Component
         {
           $enter()
           {
-            console.log("HANDLE OKC " )
+            // console.log(">>>>>>>>>>>>   STATE:  OKCStateEnter");
+
             var button = this.tag('InstalledList').children[this.installedButtonIndex]
 
             if(button == undefined)
@@ -851,7 +860,7 @@ export default class App extends Lightning.Component
               this.setConsole('BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');
               return;
             }
-            var pkgId  = button.info.pkgId;
+            var pkgId = button.info.pkgId;
 
             button.startWiggle();
 
