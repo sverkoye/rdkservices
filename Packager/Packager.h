@@ -158,8 +158,8 @@ namespace {
             {                 
                 uint32_t rc = this->_implementation->Remove(params.PkgId.Value(), params.Listener.Value());
 
-                response["task"]   = (rc > 0) ? std::to_string( rc ) : "Remove Failed";
-                response["result"] = (rc > 0);
+                response["task"]   = 123; // TODO ... (rc > 0) ? std::to_string( rc ) : "Remove Failed";
+                response["result"] = (rc > 0) ? "false" : "true"; // '0' is success
 
                 return rc;
             });
