@@ -346,62 +346,89 @@ export default class App extends Lightning.Component
 
   $LaunchClicked(pkg_id)
   {
-    console.log("LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
+    console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
 
     let info = InstalledAppMap[pkg_id];
-    if(info) //button.isInstalled() == true)
+    if(info)
     {
-      console.log("LaunchClicked Call >> launchPkg() ... info: " + info)
+      console.log("$LaunchClicked() >>> CALL launchPkg() ... info: " + info)
 
       this.launchPkg(pkg_id, info);
+    }
+    else
+    {
+      console.log("$LaunchClicked() >>> Error:  NO  info: " + info)
     }
   }
 
   async getAvailableSpace()
   {
-    var result = await thunderJS.call('Packager', 'getAvailableSpace', null);
+    try
+    {
+      var result = await thunderJS.call('Packager', 'getAvailableSpace', null);
 
-    //this.setConsole( beautify(result, null, 2, 100) )
+      this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
 
-    this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
   }
 
   async getPackageInfo(pkg_id)
   {
-    let info  = { "pkgId": pkg_id };
+    try
+    {
+      let info  = { "pkgId": pkg_id };
 
-    var result = await thunderJS.call('Packager', 'getPackageInfo', info);
+      var result = await thunderJS.call('Packager', 'getPackageInfo', info);
 
-    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
-
-    this.setConsole( beautify(result, null, 2, 100) )
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      this.setConsole( 'getPackageInfo() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
   }
 
   async getInstalled()
   {
-    console.log("getInstalled() - ENTER ")
+    // console.log("getInstalled() - ENTER ")
 
-    var result = await thunderJS.call('Packager', 'getInstalled', null);
+    try
+    {
+      var result = await thunderJS.call('Packager', 'getInstalled', null);
 
-    this.setConsole( beautify(result, null, 2, 100) )
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      this.setConsole( 'getInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      return;
+    }
 
     this.getAvailableSpace();
 
     InstalledAppMap = {}    // reset
     InstalledApps   = null; // reset
 
-    result.applications.map( (o) => InstalledAppMap[o.pkgId] = o ); // populate
+    //
+    // NOTE:  getInstalled() returns meta with 'id' -NOT- 'pkgId'
+    //
+    result.applications.map( (o) => InstalledAppMap[o.id] = o ); // populate
 
     InstalledApps = result.applications; // update array
 
+    // SHOW / HIDE tiles per installations
     this.tag("InstalledList").children.map( (t, i) =>
     {
       if(i < InstalledApps.length)
       {
         InstalledApps[i].pkgInstalled = true;
 
-        console.log("getInstalled() -     pkdId: " + InstalledApps[i].id)
-       // console.log("getInstalled() - installed: " + InstalledApps[i].installed)
+        // console.log("getInstalled() -     pkdId: " + InstalledApps[i].id)
 
         t.info = InstalledApps[i]
         t.show(i * 0.15);
@@ -418,11 +445,19 @@ export default class App extends Lightning.Component
   {
     let result = await thunderJS.call('Packager', 'isInstalled', pkd_id);
 
-    this.setConsole( beautify(result, null, 2, 100) )
+    try
+    {
+      let result = await thunderJS.call('Packager', 'isInstalled', pkd_id);
 
-    console.log('isInstalled() ... result: ' +  beautify(result, null, 2, 100) );
+      this.setConsole( beautify(result, null, 2, 100) )
 
-    return result;
+      return result;
+    }
+    catch(e)
+    {
+      this.setConsole( 'isInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      return false;
+    }
   }
 
   async launchPkg(pkg_id, info)
@@ -433,17 +468,22 @@ export default class App extends Lightning.Component
     let params =
     {
         "client": pkg_id,
-        "uri": pkg_id, //TODO:  Unexpected... check why ...  // info.bundlePath,
+        "uri": pkg_id, //TODO:  Unexpected... check why ?
+        // "uri": info.bundlePath,
         "mimeType": "application/dac.native"
     }
 
-    var result = await thunderJS.call('org.rdk.RDKShell.1', 'launchApplication', params);
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
-    // console.log('installPkg() >>> Called >>  RESULT: ' + JSON.stringify(result));
-
-    this.setConsole( beautify(result, null, 2, 100) )
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
   }
-
 
   async installPkg(thisPkgId, info)
   {
@@ -532,12 +572,18 @@ export default class App extends Lightning.Component
     myEvents.add( 'Packager', 'onVerification_FAILED', handleFailureVerification);
     myEvents.add( 'Packager', 'onInstall_FAILED',      handleFailureInstall);
 
-    var result = await thunderJS.call('Packager', 'install', info);
+    try
+    {
+      var result = await thunderJS.call('Packager', 'install', info);
+
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
 
     info.events = myEvents
-    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
-
-    this.setConsole( beautify(result, null, 2, 100) )
   }
 
   async removePkg(pkg_id)
@@ -554,18 +600,19 @@ export default class App extends Lightning.Component
       "pkgId": pkg_id
     }
 
-    var result = await thunderJS.call('Packager', 'remove', params);
+    try
+    {
+      var result = await thunderJS.call('Packager', 'remove', params);
 
-    console.log('Called >> Remove() ... RESULT: ' + JSON.stringify(result));
-    this.setConsole( beautify(result, null, 2, 100) )
-
-    // let buttons = this.tag('AvailableList').children
-    // let button  = buttons[this.installedButtonIndex];
-
-    // button.setIcon(Utils.asset('images/download3.png'))
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
 
     // Update the Installed
-
+    //
     this.getAvailableSpace()
     this.getInstalled();
   }

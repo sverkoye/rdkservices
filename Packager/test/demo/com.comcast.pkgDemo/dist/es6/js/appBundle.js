@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Fri, 18 Sep 2020 13:32:20 GMT
+ * Generated: Fri, 18 Sep 2020 13:55:27 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -4478,62 +4478,89 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $LaunchClicked(pkg_id)
 	  {
-	    console.log("LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id);
+	    console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id);
 
 	    let info = InstalledAppMap[pkg_id];
-	    if(info) //button.isInstalled() == true)
+	    if(info)
 	    {
-	      console.log("LaunchClicked Call >> launchPkg() ... info: " + info);
+	      console.log("$LaunchClicked() >>> CALL launchPkg() ... info: " + info);
 
 	      this.launchPkg(pkg_id, info);
+	    }
+	    else
+	    {
+	      console.log("$LaunchClicked() >>> Error:  NO  info: " + info);
 	    }
 	  }
 
 	  async getAvailableSpace()
 	  {
-	    var result = await thunderJS$2.call('Packager', 'getAvailableSpace', null);
+	    try
+	    {
+	      var result = await thunderJS$2.call('Packager', 'getAvailableSpace', null);
 
-	    //this.setConsole( beautify(result, null, 2, 100) )
+	      this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
 
-	    this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	    }
 	  }
 
 	  async getPackageInfo(pkg_id)
 	  {
-	    let info  = { "pkgId": pkg_id };
+	    try
+	    {
+	      let info  = { "pkgId": pkg_id };
 
-	    var result = await thunderJS$2.call('Packager', 'getPackageInfo', info);
+	      var result = await thunderJS$2.call('Packager', 'getPackageInfo', info);
 
-	    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
-
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'getPackageInfo() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	    }
 	  }
 
 	  async getInstalled()
 	  {
-	    console.log("getInstalled() - ENTER ");
+	    // console.log("getInstalled() - ENTER ")
 
-	    var result = await thunderJS$2.call('Packager', 'getInstalled', null);
+	    try
+	    {
+	      var result = await thunderJS$2.call('Packager', 'getInstalled', null);
 
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'getInstalled() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      return;
+	    }
 
 	    this.getAvailableSpace();
 
 	    InstalledAppMap = {};    // reset
 	    InstalledApps   = null; // reset
 
-	    result.applications.map( (o) => InstalledAppMap[o.pkgId] = o ); // populate
+	    //
+	    // NOTE:  getInstalled() returns meta with 'id' -NOT- 'pkgId'
+	    //
+	    result.applications.map( (o) => InstalledAppMap[o.id] = o ); // populate
 
 	    InstalledApps = result.applications; // update array
 
+	    // SHOW / HIDE tiles per installations
 	    this.tag("InstalledList").children.map( (t, i) =>
 	    {
 	      if(i < InstalledApps.length)
 	      {
 	        InstalledApps[i].pkgInstalled = true;
 
-	        console.log("getInstalled() -     pkdId: " + InstalledApps[i].id);
-	       // console.log("getInstalled() - installed: " + InstalledApps[i].installed)
+	        // console.log("getInstalled() -     pkdId: " + InstalledApps[i].id)
 
 	        t.info = InstalledApps[i];
 	        t.show(i * 0.15);
@@ -4550,11 +4577,19 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    let result = await thunderJS$2.call('Packager', 'isInstalled', pkd_id);
 
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    try
+	    {
+	      let result = await thunderJS$2.call('Packager', 'isInstalled', pkd_id);
 
-	    console.log('isInstalled() ... result: ' +  jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 
-	    return result;
+	      return result;
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'isInstalled() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      return false;
+	    }
 	  }
 
 	  async launchPkg(pkg_id, info)
@@ -4565,17 +4600,22 @@ var APP_com_comcast_pkgDemo = (function () {
 	    let params =
 	    {
 	        "client": pkg_id,
-	        "uri": pkg_id, //TODO:  Unexpected... check why ...  // info.bundlePath,
+	        "uri": pkg_id, //TODO:  Unexpected... check why ?
+	        // "uri": info.bundlePath,
 	        "mimeType": "application/dac.native"
 	    };
 
-	    var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'launchApplication', params);
+	    try
+	    {
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
-	    // console.log('installPkg() >>> Called >>  RESULT: ' + JSON.stringify(result));
-
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	    }
 	  }
-
 
 	  async installPkg(thisPkgId, info)
 	  {
@@ -4664,12 +4704,18 @@ var APP_com_comcast_pkgDemo = (function () {
 	    myEvents.add( 'Packager', 'onVerification_FAILED', handleFailureVerification);
 	    myEvents.add( 'Packager', 'onInstall_FAILED',      handleFailureInstall);
 
-	    var result = await thunderJS$2.call('Packager', 'install', info);
+	    try
+	    {
+	      var result = await thunderJS$2.call('Packager', 'install', info);
+
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	    }
 
 	    info.events = myEvents;
-	    // console.log('Called >>  RESULT: ' + JSON.stringify(result));
-
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
 	  }
 
 	  async removePkg(pkg_id)
@@ -4686,18 +4732,19 @@ var APP_com_comcast_pkgDemo = (function () {
 	      "pkgId": pkg_id
 	    };
 
-	    var result = await thunderJS$2.call('Packager', 'remove', params);
+	    try
+	    {
+	      var result = await thunderJS$2.call('Packager', 'remove', params);
 
-	    console.log('Called >> Remove() ... RESULT: ' + JSON.stringify(result));
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
-
-	    // let buttons = this.tag('AvailableList').children
-	    // let button  = buttons[this.installedButtonIndex];
-
-	    // button.setIcon(Utils.asset('images/download3.png'))
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	    }
+	    catch(e)
+	    {
+	      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	    }
 
 	    // Update the Installed
-
+	    //
 	    this.getAvailableSpace();
 	    this.getInstalled();
 	  }
