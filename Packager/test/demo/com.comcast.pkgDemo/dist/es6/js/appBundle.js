@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Fri, 18 Sep 2020 15:42:34 GMT
+ * Generated: Fri, 18 Sep 2020 16:11:18 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3593,7 +3593,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  disposeAll()
 	  {
-	    console.log( "EVENTS >>>   destroyAll() ");
+	    // console.log( "EVENTS >>>   destroyAll() ")
 
 	    this.events.map( ee => { ee.dispose(); } );
 	  }
@@ -4460,6 +4460,11 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      if( ans['available'] == "false")
 	      {
+	        var progress = button.tag("Progress");
+
+	        progress.reset(); // reset
+	        progress.setSmooth('alpha', 1, {duration: .1});
+
 	        var info = button.info;
 
 	        this.installPkg(pkg_id, info);
@@ -4478,8 +4483,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	    let info = InstalledAppMap[pkg_id];
 	    if(info)
 	    {
-	      console.log("$LaunchClicked() >>> CALL launchPkg() ... info: " + info);
-
 	      this.launchPkg(pkg_id, info);
 	    }
 	    else
@@ -4591,9 +4594,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  async launchPkg(pkg_id, info)
 	  {
-	    console.log("launchPkg ENTER - ... pkg_id: " + pkg_id);
-	    console.log("launchPkg ENTER - ... info: " +  info.bundlePath);
-
 	    let params =
 	    {
 	        "client": pkg_id,
@@ -4610,6 +4610,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    }
 	    catch(e)
 	    {
+	      console.log( 'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	      this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
@@ -4808,10 +4809,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	                 // 'INFO' key on remote
 	          this.handleGetInfo();
 	          break;
-
-	      default:
-	        console.log("GOT key code: " + k.keyCode);
-	          break;
 	    }
 
 	    return true;
@@ -4948,10 +4945,10 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	              button.fireAncestors('$InstallClicked', info.pkgId);
 
-	              var progress = button.tag("Progress");
+	              // var progress = button.tag("Progress")
 
-	              progress.reset(); // reset
-	              progress.setSmooth('alpha', 1, {duration: .1});
+	              // progress.reset(); // reset
+	              // progress.setSmooth('alpha', 1, {duration: .1});
 	            }
 
 	            _handleDown()

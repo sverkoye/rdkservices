@@ -329,6 +329,11 @@ export default class App extends Lightning.Component
     {
       if( ans['available'] == "false")
       {
+        var progress = button.tag("Progress")
+
+        progress.reset(); // reset
+        progress.setSmooth('alpha', 1, {duration: .1});
+
         var info = button.info;
 
         this.installPkg(pkg_id, info);
@@ -347,8 +352,6 @@ export default class App extends Lightning.Component
     let info = InstalledAppMap[pkg_id];
     if(info)
     {
-      console.log("$LaunchClicked() >>> CALL launchPkg() ... info: " + info)
-
       this.launchPkg(pkg_id, info);
     }
     else
@@ -460,9 +463,6 @@ export default class App extends Lightning.Component
 
   async launchPkg(pkg_id, info)
   {
-    console.log("launchPkg ENTER - ... pkg_id: " + pkg_id)
-    console.log("launchPkg ENTER - ... info: " +  info.bundlePath)
-
     let params =
     {
         "client": pkg_id,
@@ -479,6 +479,7 @@ export default class App extends Lightning.Component
     }
     catch(e)
     {
+      console.log( 'launchPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
@@ -679,7 +680,7 @@ export default class App extends Lightning.Component
           break;
 
       default:
-        console.log("GOT key code: " + k.keyCode)
+        //console.log("GOT key code: " + k.keyCode)
           break;
     }
 
@@ -817,10 +818,10 @@ export default class App extends Lightning.Component
 
               button.fireAncestors('$InstallClicked', info.pkgId);
 
-              var progress = button.tag("Progress")
+              // var progress = button.tag("Progress")
 
-              progress.reset(); // reset
-              progress.setSmooth('alpha', 1, {duration: .1});
+              // progress.reset(); // reset
+              // progress.setSmooth('alpha', 1, {duration: .1});
             }
 
             _handleDown()
