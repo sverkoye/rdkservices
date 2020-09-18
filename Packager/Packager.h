@@ -208,6 +208,8 @@ namespace {
             //
             Register<void, JsonObject>(kDAC_GetInstalledMethodName, [this](JsonObject& response) -> uint32_t
             {
+                LOGINFO(" >>>>> Call ... DAC::GetInstalled() "); 
+
                 Exchange::IPackager::IPackageInfoEx::IIterator *iter = this->_implementation->GetInstalled();
 
                 JsonArray list; // installed packages
