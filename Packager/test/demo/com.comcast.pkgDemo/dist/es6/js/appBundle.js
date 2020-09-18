@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Fri, 18 Sep 2020 16:11:18 GMT
+ * Generated: Fri, 18 Sep 2020 18:37:37 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3783,6 +3783,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    _init()
 	    {
+	      this._enabled = true;
 	      this.tag("Button").scale = 0;
 
 	      if(this.w && this.h)
@@ -3801,9 +3802,10 @@ var APP_com_comcast_pkgDemo = (function () {
 	      this.setInfo(ii);  // allow set 'null'
 	    }
 
-	    get info() { 
-	      console.log('GET info()  - ' + this._info.pkgId);
-	      return this._info; }
+	    get info()
+	    {
+	      return this._info;
+	    }
 
 	    setInfo(ii)
 	    {
@@ -3835,6 +3837,27 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 
 	      this._info = ii; // allow 'null'
+	    }
+
+	    isEnabled()
+	    {
+	      return this._enabled;
+	    }
+
+	    enable()
+	    {
+	      //console.log("APP TILE  >> enable() - " + this.info.pkgId)
+
+	      this.tag("Button").setSmooth('alpha', 1.0, {duration: 0.3});
+	      this._enabled = true;
+	    }
+
+	    disable()
+	    {
+	      //console.log("APP TILE  >> disable() - " + this.info.pkgId)
+
+	      this.tag("Button").setSmooth('alpha', 0.5, {duration: 0.3});
+	      this._enabled = false;
 	    }
 
 	    startWiggle()
@@ -4427,8 +4450,16 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
 
-	    var button = this.tag('InstalledList').children[this.installedButtonIndex];
-	    button.stopWiggle();
+	    var appButton = this.tag('InstalledList').children[this.installedButtonIndex];
+	    appButton.stopWiggle();
+
+	    // Enable STORE button - as it's uninstalled
+	    var storeButton = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkg_id; });
+
+	    if(storeButton.length > 0)
+	    {
+	      storeButton[0].enable();
+	    }
 
 	    this._setState('InstalledRowState');
 	}
@@ -4547,26 +4578,36 @@ var APP_com_comcast_pkgDemo = (function () {
 	    //
 	    // NOTE:  getInstalled() returns meta with 'id' -NOT- 'pkgId'
 	    //
-	    result.applications.map( (o) => InstalledAppMap[o.id] = o ); // populate
+	    result.applications.map( (o) => InstalledAppMap[o.id] = o ); // populate info
 
 	    InstalledApps = result.applications; // update array
 
+	    // DISABLE apps that are already installed...
+	    InstalledApps.map( have =>
+	    {
+	      let disable = AvailableApps.filter( o => o.pkgId == have.id );
+	      let dbutton = this.tag('AvailableList').children.filter( o => o.info.pkgId == disable[0].pkgId);
+
+	      if(dbutton.length > 0)
+	      {
+	        dbutton[0].disable();
+	      }
+	    });
+
 	    // SHOW / HIDE tiles per installations
-	    this.tag("InstalledList").children.map( (t, i) =>
+	    this.tag("InstalledList").children.map( (button, i) =>
 	    {
 	      if(i < InstalledApps.length)
 	      {
 	        InstalledApps[i].pkgInstalled = true;
 
-	        // console.log("getInstalled() -     pkdId: " + InstalledApps[i].id)
-
-	        t.info = InstalledApps[i];
-	        t.show(i * 0.15);
+	        button.info = InstalledApps[i];
+	        button.show(i * 0.15);
 	      }
 	      else
 	      {
-	        t.info = null;
-	        t.hide();
+	        button.info = null;
+	        button.hide();
 	      }
 	    });
 	  }
@@ -4672,10 +4713,10 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	          var ans = AvailableApps.filter( (o) => { return o.pkgId == notification.pkgId; });
 
-	          if(ans.length == 1)
+	          if(ans.length == 1) // IGNORE OTHER NOTTIFICATIONS
 	          {
 	            var info = ans[0];
-	            this.onPkgInstalled(info);
+	            this.onPkgInstalled(info, button);
 
 	            if(info.events)
 	            {
@@ -4687,20 +4728,22 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	    };
 
-	    myEvents.add( 'Packager', 'onDownloadCommence', handleProgress);
-	    myEvents.add( 'Packager', 'onDownloadComplete', handleProgress);
+	    {
+	      myEvents.add( 'Packager', 'onDownloadCommence', handleProgress);
+	      myEvents.add( 'Packager', 'onDownloadComplete', handleProgress);
 
-	    myEvents.add( 'Packager', 'onExtractCommence',  handleProgress);
-	    myEvents.add( 'Packager', 'onExtractComplete',  handleProgress);
+	      myEvents.add( 'Packager', 'onExtractCommence',  handleProgress);
+	      myEvents.add( 'Packager', 'onExtractComplete',  handleProgress);
 
-	    myEvents.add( 'Packager', 'onInstallCommence',  handleProgress);
-	    myEvents.add( 'Packager', 'onInstallComplete',  handleProgress);
+	      myEvents.add( 'Packager', 'onInstallCommence',  handleProgress);
+	      myEvents.add( 'Packager', 'onInstallComplete',  handleProgress);
 
-	    myEvents.add( 'Packager', 'onDownload_FAILED',     handleFailureDownload,) ;
-	    myEvents.add( 'Packager', 'onDecryption_FAILED',   handleFailureDecryption) ;
-	    myEvents.add( 'Packager', 'onExtraction_FAILED',   handleFailureExtraction) ;
-	    myEvents.add( 'Packager', 'onVerification_FAILED', handleFailureVerification);
-	    myEvents.add( 'Packager', 'onInstall_FAILED',      handleFailureInstall);
+	      myEvents.add( 'Packager', 'onDownload_FAILED',     handleFailureDownload,) ;
+	      myEvents.add( 'Packager', 'onDecryption_FAILED',   handleFailureDecryption) ;
+	      myEvents.add( 'Packager', 'onExtraction_FAILED',   handleFailureExtraction) ;
+	      myEvents.add( 'Packager', 'onVerification_FAILED', handleFailureVerification);
+	      myEvents.add( 'Packager', 'onInstall_FAILED',      handleFailureInstall);
+	    }
 
 	    try
 	    {
@@ -4747,9 +4790,9 @@ var APP_com_comcast_pkgDemo = (function () {
 	    this.getInstalled();
 	  }
 
-	  onPkgInstalled(info)
+	  onPkgInstalled(info, storeButton)
 	  {
-	    console.log('onPkgInstalled() ... Installed >>> ' + info.pkgId);
+	    // console.log('onPkgInstalled() ... Installed >>> ' + info.pkgId)
 
 	    info.pkgInstalled = true;
 
@@ -4757,6 +4800,9 @@ var APP_com_comcast_pkgDemo = (function () {
 	    InstalledAppMap[info.pkgId] = info; // populate
 
 	    this.tag('InstalledList').addTile(InstalledApps.length - 1, info);
+
+	    // Disable STORE button - as it's uninstalled
+	    storeButton.disable();
 
 	    this.getAvailableSpace();
 	  }
@@ -4878,6 +4924,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	                this._setState('StoreRowState');
 	              });
 	            }
+
 	            fetchThunderCfg(url)
 	            {
 	              // Fetch Thunder Cfg
@@ -4889,7 +4936,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	                console.log(' >>> Creating CUSTOM ThunderJS ...');
 	                thunderJS$2 = thunderJS$1(cfg);
 
-	                this.getInstalled();
+	                this.getInstalled(); // <<< needs THUNDER
 	              })
 	              .catch(err =>
 	              {
@@ -4915,7 +4962,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	              this.fetchThunderCfg(cfgURL);
 	              this.fetchAppList(appURL);
 
-	              // State advanced within 'fetchAppList()' above. 
+	              // State advanced within 'fetchAppList()' above.
 	            }
 	          },  //CLASS - SetupState
 	          // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4941,14 +4988,19 @@ var APP_com_comcast_pkgDemo = (function () {
 	              let info   = AvailableApps[this.storeButtonIndex];
 	              let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
+	              if(info == undefined)
+	              {
+	                return // ignore
+	              }
+
+	              if(button.isEnabled() == false)
+	              {
+	                return // IGNORE CLICK
+	              }
+
 	              console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId);
 
 	              button.fireAncestors('$InstallClicked', info.pkgId);
-
-	              // var progress = button.tag("Progress")
-
-	              // progress.reset(); // reset
-	              // progress.setSmooth('alpha', 1, {duration: .1});
 	            }
 
 	            _handleDown()
@@ -5025,7 +5077,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            var button = this.tag('InstalledList').children[this.installedButtonIndex];
 
-	            if(button == undefined)
+	            if(button == undefined || button.info == undefined)
 	            {
 	              console.error(  'BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');
 	              this.setConsole('BUTTON index:' + this.installedButtonIndex +'  - NOT FOUND');

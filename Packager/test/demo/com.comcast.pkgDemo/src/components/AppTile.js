@@ -125,6 +125,7 @@ export default class AppTile extends lng.Component {
 
     _init()
     {
+      this._enabled = true;
       this.tag("Button").scale = 0;
 
       if(this.w && this.h)
@@ -143,9 +144,10 @@ export default class AppTile extends lng.Component {
       this.setInfo(ii);  // allow set 'null'
     }
 
-    get info() { 
-      console.log('GET info()  - ' + this._info.pkgId);
-      return this._info; }
+    get info()
+    {
+      return this._info;
+    }
 
     setInfo(ii)
     {
@@ -177,6 +179,27 @@ export default class AppTile extends lng.Component {
       }
 
       this._info = ii // allow 'null'
+    }
+
+    isEnabled()
+    {
+      return this._enabled;
+    }
+
+    enable()
+    {
+      //console.log("APP TILE  >> enable() - " + this.info.pkgId)
+
+      this.tag("Button").setSmooth('alpha', 1.0, {duration: 0.3});
+      this._enabled = true;
+    }
+
+    disable()
+    {
+      //console.log("APP TILE  >> disable() - " + this.info.pkgId)
+
+      this.tag("Button").setSmooth('alpha', 0.5, {duration: 0.3});
+      this._enabled = false;
     }
 
     startWiggle()
