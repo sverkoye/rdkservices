@@ -321,15 +321,9 @@ export default class App extends Lightning.Component
 
   $InstallClicked(pkg_id)
   {
-    console.log("$InstallClicked() >>>  ENTER")
-    console.log("$InstallClicked() >>>  ENTER")
-    console.log("$InstallClicked() >>>  ENTER")
+    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
 
-    console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
-
-    var button = this.tag('AvailableList').children[this.storeButtonIndex];
-
-    // console.log("INSTALL >>  isInstalled: " + button.isInstalled())
+    let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
     this.isInstalled(pkg_id).then( (ans) =>
     {
@@ -337,16 +331,18 @@ export default class App extends Lightning.Component
       {
         var info = button.info;
 
-        console.log("CALL >> this.installPkg() ... info: " + info)
-
         this.installPkg(pkg_id, info);
+      }
+      else
+      {
+        console.log("CALL >> this.installPkg() ALREAY have ... pkg_id: " + pkg_id)
       }
     });
   }
 
   $LaunchClicked(pkg_id)
   {
-    console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
+    // console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
 
     let info = InstalledAppMap[pkg_id];
     if(info)
@@ -369,11 +365,11 @@ export default class App extends Lightning.Component
 
       this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
 
-      this.setConsole( beautify(result, null, 2, 100) )
+      //this.setConsole( beautify(result, null, 2, 100) )
     }
     catch(e)
     {
-      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' + beautify(e, null, 2, 100) );
     }
   }
 
@@ -381,9 +377,9 @@ export default class App extends Lightning.Component
   {
     try
     {
-      let info  = { "pkgId": pkg_id };
+      let params = { "pkgId": pkg_id };
 
-      var result = await thunderJS.call('Packager', 'getPackageInfo', info);
+      var result = await thunderJS.call('Packager', 'getPackageInfo', params);
 
       this.setConsole( beautify(result, null, 2, 100) )
     }
@@ -441,21 +437,23 @@ export default class App extends Lightning.Component
     });
   }
 
-  async isInstalled(pkd_id)
+  async isInstalled(pkg_id)
   {
-    let result = await thunderJS.call('Packager', 'isInstalled', pkd_id);
-
     try
     {
-      let result = await thunderJS.call('Packager', 'isInstalled', pkd_id);
+      let params = { "pkgId": pkg_id };
 
-      this.setConsole( beautify(result, null, 2, 100) )
+      let result = await thunderJS.call('Packager', 'isInstalled', params)
+
+//      console.log( 'DEBUG:  IsInstalled  ' + beautify(result, null, 2, 100) )
+//      this.setConsole(     'IsInstalled  ' + beautify(result, null, 2, 100) )
 
       return result;
     }
     catch(e)
     {
-      this.setConsole( 'isInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log('DEBUG:  isInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole(    'isInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       return false;
     }
   }
@@ -534,7 +532,7 @@ export default class App extends Lightning.Component
         let pc = notification.status / 8.0;
         progress.setProgress(pc);
 
-        console.log("HANDLER >> pkgId: "+thisPkgId+" ... progress = " + pc );
+        // console.log("HANDLER >> pkgId: "+thisPkgId+" ... progress = " + pc );
 
         if(pc == 1.0)
         {
@@ -608,7 +606,7 @@ export default class App extends Lightning.Component
     }
     catch(e)
     {
-      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'removePkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
 
     // Update the Installed
@@ -620,8 +618,6 @@ export default class App extends Lightning.Component
   onPkgInstalled(info)
   {
     console.log('onPkgInstalled() ... Installed >>> ' + info.pkgId)
-
-    // console.log('onPkgInstalled() ... children >>> ' + this.tag('InstalledList').children.length);
 
     info.pkgInstalled = true;
 
@@ -853,7 +849,7 @@ export default class App extends Lightning.Component
         {
           $enter()
           {
-            console.log(">>>>>>>>>>>>   STATE:  InstalledRowState");
+            // console.log(">>>>>>>>>>>>   STATE:  InstalledRowState");
           }
 
           _handleUp()

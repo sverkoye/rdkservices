@@ -28,7 +28,6 @@ export default class Progress extends lng.Component {
     setProgress(pc)
     {
       this.value = pc;
-      console.log(" setProgress: " + pc)
 
       var ww = (this.w -4) * pc;
 

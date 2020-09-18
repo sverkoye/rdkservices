@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Fri, 18 Sep 2020 13:55:27 GMT
+ * Generated: Fri, 18 Sep 2020 15:42:34 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3648,7 +3648,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	    setProgress(pc)
 	    {
 	      this.value = pc;
-	      console.log(" setProgress: " + pc);
 
 	      var ww = (this.w -4) * pc;
 
@@ -4453,15 +4452,9 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $InstallClicked(pkg_id)
 	  {
-	    console.log("$InstallClicked() >>>  ENTER");
-	    console.log("$InstallClicked() >>>  ENTER");
-	    console.log("$InstallClicked() >>>  ENTER");
+	    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
 
-	    console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
-
-	    var button = this.tag('AvailableList').children[this.storeButtonIndex];
-
-	    // console.log("INSTALL >>  isInstalled: " + button.isInstalled())
+	    let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
 	    this.isInstalled(pkg_id).then( (ans) =>
 	    {
@@ -4469,16 +4462,18 @@ var APP_com_comcast_pkgDemo = (function () {
 	      {
 	        var info = button.info;
 
-	        console.log("CALL >> this.installPkg() ... info: " + info);
-
 	        this.installPkg(pkg_id, info);
+	      }
+	      else
+	      {
+	        console.log("CALL >> this.installPkg() ALREAY have ... pkg_id: " + pkg_id);
 	      }
 	    });
 	  }
 
 	  $LaunchClicked(pkg_id)
 	  {
-	    console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id);
+	    // console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
 
 	    let info = InstalledAppMap[pkg_id];
 	    if(info)
@@ -4501,11 +4496,11 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	      this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
 
-	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      //this.setConsole( beautify(result, null, 2, 100) )
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' + jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
@@ -4513,9 +4508,9 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    try
 	    {
-	      let info  = { "pkgId": pkg_id };
+	      let params = { "pkgId": pkg_id };
 
-	      var result = await thunderJS$2.call('Packager', 'getPackageInfo', info);
+	      var result = await thunderJS$2.call('Packager', 'getPackageInfo', params);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -4573,21 +4568,23 @@ var APP_com_comcast_pkgDemo = (function () {
 	    });
 	  }
 
-	  async isInstalled(pkd_id)
+	  async isInstalled(pkg_id)
 	  {
-	    let result = await thunderJS$2.call('Packager', 'isInstalled', pkd_id);
-
 	    try
 	    {
-	      let result = await thunderJS$2.call('Packager', 'isInstalled', pkd_id);
+	      let params = { "pkgId": pkg_id };
 
-	      this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      let result = await thunderJS$2.call('Packager', 'isInstalled', params);
+
+	//      console.log( 'DEBUG:  IsInstalled  ' + beautify(result, null, 2, 100) )
+	//      this.setConsole(     'IsInstalled  ' + beautify(result, null, 2, 100) )
 
 	      return result;
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'isInstalled() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      console.log('DEBUG:  isInstalled() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole(    'isInstalled() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	      return false;
 	    }
 	  }
@@ -4666,7 +4663,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        let pc = notification.status / 8.0;
 	        progress.setProgress(pc);
 
-	        console.log("HANDLER >> pkgId: "+thisPkgId+" ... progress = " + pc );
+	        // console.log("HANDLER >> pkgId: "+thisPkgId+" ... progress = " + pc );
 
 	        if(pc == 1.0)
 	        {
@@ -4740,7 +4737,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'removePkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 
 	    // Update the Installed
@@ -4752,8 +4749,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	  onPkgInstalled(info)
 	  {
 	    console.log('onPkgInstalled() ... Installed >>> ' + info.pkgId);
-
-	    // console.log('onPkgInstalled() ... children >>> ' + this.tag('InstalledList').children.length);
 
 	    info.pkgInstalled = true;
 
@@ -4985,7 +4980,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        {
 	          $enter()
 	          {
-	            console.log(">>>>>>>>>>>>   STATE:  InstalledRowState");
+	            // console.log(">>>>>>>>>>>>   STATE:  InstalledRowState");
 	          }
 
 	          _handleUp()
