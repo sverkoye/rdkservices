@@ -8,6 +8,9 @@ import OkCancel  from "./components/OkCancel";
 
 import { DefaultApps as inventory, DefaultApps } from "./DefaultApps.js";
 
+const HOME_KEY = 77;
+const LIGHTNING_APP = "lightningapp";
+
 var AvailableApps = [];
 var InstalledApps = [];
 
@@ -292,6 +295,12 @@ export default class App extends Lightning.Component
       return;
     }
 
+    let info = InstalledAppMap[pkg_id];
+		if(info.appState == "SUSPENDED")
+		{
+			this.killPkg(pkg_id);
+    }
+
     this.removePkg(pkg_id);
 
     dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
@@ -345,6 +354,7 @@ export default class App extends Lightning.Component
         var info = button.info;
 
         this.installPkg(pkg_id, info);
+        info.appState = "STOPPED";
       }
       else
       {
@@ -360,11 +370,27 @@ export default class App extends Lightning.Component
     let info = InstalledAppMap[pkg_id];
     if(info)
     {
-      this.launchPkg(pkg_id, info);
+      if(info.appState == "STOPPED" || info.appState == undefined)
+		  {
+        this.launchPkg(pkg_id, info);
+
+        this.setConsole("Launched: " + jsonBeautify(info, null, 2, 100) );
+
+      }
+      else if(info.appState == "SUSPENDED")
+		  {
+			  this.resumePkg(pkg_id, info);
+
+			  this.setConsole("Resumed: " + jsonBeautify(info, null, 2, 100) );
+      }
+      else
+      {
+			  console.log("$LaunchClicked() >>> Error:  invalid app state: " + info);
+      }
     }
     else
     {
-      console.log("$LaunchClicked() >>> Error:  NO  info: " + info)
+      console.log("$LaunchClicked() >>> Error:  NO  info: " + info);
     }
   }
 
@@ -479,6 +505,180 @@ export default class App extends Lightning.Component
     }
   }
 
+  async addKeyIntercept()  // v1
+  {
+    let params =
+    {
+      "keyCode": HOME_KEY,
+      "modifiers": ["ctrl"],
+      "client": LIGHTNING_APP
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'addKeyIntercept', params);
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      console.log( 'addKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'addKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+  async removeKeyIntercept(pkg_id) // v1
+  {
+    let params =
+    {
+      "client": LIGHTNING_APP
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'removeKeyIntercept', params);
+
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      console.log( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+  async setFocus(pkg_id)
+  {
+    let params =
+    {
+        "client": pkg_id
+    };
+
+    try
+    {
+      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'setFocus', params);
+
+    this.setConsole( jsonBeautify(result, null, 2, 100) );
+    }
+    catch(e)
+    {
+      console.log( 'setFocus() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+      this.setConsole( 'setFocus >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+    }
+  }
+
+  async moveToFront(pkg_id)
+  {
+    let params =
+    {
+        "client": pkg_id
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'moveToFront', params);
+
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      console.log( 'moveToFront() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'moveToFront() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+  async moveToBack(pkg_id)
+  {
+    let params =
+    {
+        "client": pkg_id
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'moveToBack', params);
+      console.log(jsonBeautify(result, null, 2, 100));
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      console.log( 'moveToBack() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'moveToBack() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+  async suspendPkg(pkg_id, info)
+  {
+    let params =
+    {
+        "client": pkg_id
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'suspendApplication', params);
+
+      console.log(jsonBeautify(result, null, 2, 100));
+		  this.setConsole( jsonBeautify(result, null, 2, 100) );
+
+		  this.moveToBack(pkgId);
+		  this.setFocus(LIGHTNING_APP);
+		  info.appState = "SUSPENDED";
+		  this.launchedPkgId = "";
+    }
+    catch(e)
+    {
+      console.log( 'suspendPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'suspendPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+  async resumePkg(pkg_id, info)
+  {
+    let params =
+    {
+        "client": pkg_id
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'resumeApplication', params);
+
+      console.log( jsonBeautify(result, null, 2, 100) );
+		  this.setConsole( jsonBeautify(result, null, 2, 100) );
+
+		  this.moveToFront(pkgId);
+		  this.setFocus(pkgId);
+		  info.appState = "LAUNCHED";
+		  this.launchedPkgId = pkgId;
+    }
+    catch(e)
+    {
+      console.log( 'resumePkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'resumePkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+  async killPkg(pkg_id)
+  {
+    let params =
+    {
+        "client": pkg_id
+    }
+
+    try
+    {
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'kill', params);
+
+      this.setConsole( beautify(result, null, 2, 100) )
+    }
+    catch(e)
+    {
+      console.log( 'killPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'killPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+    }
+  }
+
+
   async launchPkg(pkg_id, info)
   {
     let params =
@@ -493,7 +693,13 @@ export default class App extends Lightning.Component
     {
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
-      this.setConsole( beautify(result, null, 2, 100) )
+      console.log(jsonBeautify(result, null, 2, 100));
+		  this.setConsole( jsonBeautify(result, null, 2, 100) );
+
+		  this.moveToFront(pkg_id);
+		  this.setFocus(pkg_id);
+		  info.appState = "LAUNCHED";
+		  this.launchedPkgId = pkg_id;
     }
     catch(e)
     {
@@ -657,6 +863,7 @@ export default class App extends Lightning.Component
   {
     this.storeButtonIndex     = 0;
     this.installedButtonIndex = 0;
+    this.launchedPkgId        = "";
 
     this.tag('Background').on('txLoaded', () =>
     {
@@ -677,7 +884,7 @@ export default class App extends Lightning.Component
 
   handleGetInfo()
   {
-    let info = InstalledApps[this.storeButtonIndex];
+    let info = InstalledApps[this.installedButtonIndex];
 
     this.getPackageInfo(info.pkgId || info.id);
   }
@@ -687,6 +894,28 @@ export default class App extends Lightning.Component
   {
     switch( k.keyCode )
     {
+      case HOME_KEY:
+      case 72: //'H' key
+        console.log("HOME code: " + k.keyCode);
+        this.setConsole( "HOME code: " + k.keyCode);
+
+        let info = InstalledAppMap[this.launchedPkgId];
+        if(info == "")
+        {
+          console.log("Ignoring HOME key, no apps running");
+          break;
+        }
+
+        if(info.appState == "LAUNCHED")
+        {
+          this.suspendPkg(info.pkgId, info);
+        }
+        else
+        {
+          console.log("Ignoring HOME key, no apps running");
+        }
+        break
+
       case 65:  // 'A' key on keyboard
       case 403: // 'A' key on remote
           this.handleGetInfoALL();
@@ -697,13 +926,13 @@ export default class App extends Lightning.Component
           this.handleToggleConsole();
           break;
 
-      case 73:   // 'I' key on keyboard
-                 // 'INFO' key on remote
+      case 73:  // 'I' key on keyboard
+                // 'INFO' key on remote
           this.handleGetInfo();
           break;
 
       default:
-        //console.log("GOT key code: " + k.keyCode)
+        console.log("GOT key code: " + k.keyCode)
           break;
     }
 
@@ -812,6 +1041,8 @@ export default class App extends Lightning.Component
               this.fetchThunderCfg(cfgURL);
               this.fetchAppList(appURL);
 
+              this.addKeyIntercept(); // Watch for HOME key
+
               // State advanced within 'fetchAppList()' above.
             }
           },  //CLASS - SetupState
@@ -908,7 +1139,12 @@ export default class App extends Lightning.Component
             button.clickAnim();
           }
 
-          _handleBack()
+          _handleDown() // DOWN key on the "Installed Row" - triggers the Delete OK/Cancel dialog
+          {
+            this._setState('OKCStateEnter')
+          }
+
+          _handleBack() // BACK key on the "Installed Row" - triggers the Delete OK/Cancel dialog
           {
             this._setState('OKCStateEnter')
           }
