@@ -4709,7 +4709,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'setFocus', params);
+	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'setFocus', params);
 
 	    this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
