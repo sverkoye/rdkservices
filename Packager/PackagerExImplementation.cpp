@@ -353,7 +353,7 @@ JUNK_SLEEP_MS(200);
 
         strtime.pop_back();  // NOTE:  Remove trailing '\n' >> illegal in JSON
 
-        uint32_t bytes = PackagerExUtils::folderSize(uuid_path);
+        uint64_t bytes = PackagerExUtils::folderSize(uuid_path);
 
         PackageInfoEx* pkg = Core::Service<PackageInfoEx>::Create<PackageInfoEx>();
 

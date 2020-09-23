@@ -134,7 +134,7 @@ namespace Plugin {
             static bool    removeFolder(const string& dirname);
             static bool    removeFolder(const char *dirname);
 
-            static int64_t folderSize(const char *d);
+            static uint64_t folderSize(const char *d);
 
             static std::string getGUID();
 

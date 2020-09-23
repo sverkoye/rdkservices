@@ -41,6 +41,10 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <iostream>
+#include <cstring>
+#include <cstdlib>
+
 #include "PackagerExUtils.h"
 
 #include "PackagerExImplementation.h"
@@ -109,16 +113,40 @@ void*                                PackagerExUtils::mData = nullptr;
         return g_file_test(f, G_FILE_TEST_EXISTS);
     }
 
-    int64_t PackagerExUtils::folderSize(const char *d)
+    uint64_t PackagerExUtils::folderSize(const char *d)
     {
+        int64_t total_size = 0;
+#if 1
+    string path(d);
+
+    // command to be executed
+    std::string cmd("du -sb ");
+    cmd.append(path);
+    cmd.append(" | cut -f1 2>&1");
+
+    // execute above command and get the output
+    FILE *stream = popen(cmd.c_str(), "r");
+    if (stream)
+    {
+        const int max_size = 256;
+        char readbuf[max_size];
+        if (fgets(readbuf, max_size, stream) != NULL)
+        {
+            return atoll(readbuf);
+        }   
+        pclose(stream);            
+    }           
+    // return error val
+    return -1;
+    
+#else        
         DIR *dd;
         struct dirent *de;
         struct stat buf;
 
         int exists;
-        int64_t total_size = 0;
 
-        dd = opendir(".");
+        dd = opendir(d);
         if (dd == NULL)
         {
             LOGERR("PackagerExUtils::folderSize( %s ) - FAILED", d);
@@ -144,6 +172,7 @@ void*                                PackagerExUtils::mData = nullptr;
         closedir(dd);
 
         // LOGINFO("PackagerExUtils::folderSize( %s )  = %jd", d, total_size);
+#endif
 
         return total_size;
     }
@@ -198,6 +227,20 @@ void*                                PackagerExUtils::mData = nullptr;
 
     bool PackagerExUtils::removeFolder(const char *dirname)
     {
+    if (dirname == nullptr)
+    {
+        LOGERR(" removeFolder() - bad args - NULL");
+        return 0;
+    }
+#if 1
+    string dd(dirname);
+
+    string cmd = "rm -rf " + dd;
+
+    LOGERR(" calling >>>  system( %s )", cmd.c_str() );
+
+    system(cmd.c_str());
+#else        
         const char *topdir = dirname;
 
         DIR *dir;
@@ -235,6 +278,7 @@ void*                                PackagerExUtils::mData = nullptr;
 
         // finally... remove the top folder
         PackagerExUtils::fileRemove(topdir);
+#endif
 
         return 1;
     }
