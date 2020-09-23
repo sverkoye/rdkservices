@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include <sqlite3.h>
 #include <glib.h>
 
@@ -117,29 +117,36 @@ void*                                PackagerExUtils::mData = nullptr;
     {
         int64_t total_size = 0;
 #if 1
-    string path(d);
+        string path(d);
 
-    // command to be executed
-    std::string cmd("du -sb ");
-    cmd.append(path);
-    cmd.append(" | cut -f1 2>&1");
+        // command to be executed
+        std::string cmd("du -sb ");
+        cmd.append(path);
+        cmd.append(" | cut -f1 2>&1");
 
-    // execute above command and get the output
-    FILE *stream = popen(cmd.c_str(), "r");
-    if (stream)
-    {
-        const int max_size = 256;
-        char readbuf[max_size];
-        if (fgets(readbuf, max_size, stream) != NULL)
+        // execute above command and get the output
+        FILE *stream = popen(cmd.c_str(), "r");
+        if (stream)
         {
-            return atoll(readbuf);
-        }   
-        pclose(stream);            
-    }           
-    // return error val
-    return -1;
-    
-#else        
+            const int max_size = 2048;
+            char readbuf[max_size];
+            if (fgets(readbuf, max_size, stream) != NULL)
+            {
+                pclose(stream);
+                return atoll(readbuf);
+            }
+
+            pclose(stream);
+
+            LOGERR("PackagerExUtils::folderSize( %s ) - parse FAILED", d);
+            return -1; // return error val
+        }
+        else
+        {
+            LOGERR("PackagerExUtils::folderSize( %s ) - command FAILED", d);
+            return -1; // return error val
+        }
+#else
         DIR *dd;
         struct dirent *de;
         struct stat buf;
@@ -240,7 +247,7 @@ void*                                PackagerExUtils::mData = nullptr;
     LOGERR(" calling >>>  system( %s )", cmd.c_str() );
 
     system(cmd.c_str());
-#else        
+#else
         const char *topdir = dirname;
 
         DIR *dir;
@@ -301,12 +308,12 @@ void*                                PackagerExUtils::mData = nullptr;
 
         sqlite3* &db = SQLITE;
 
-        term(); // ensure closed 
+        term(); // ensure closed
 
         bool shouldEncrypt = key && *key;
     #if defined(SQLITE_HAS_CODEC)
-        bool shouldReKey = shouldEncrypt && 
-                           PackagerExUtils::fileExists(filename) && 
+        bool shouldReKey = shouldEncrypt &&
+                           PackagerExUtils::fileExists(filename) &&
                           !PackagerExUtils::fileEncrypted(filename);
     #endif
         int rc = sqlite3_open(filename, &db);
@@ -318,7 +325,7 @@ void*                                PackagerExUtils::mData = nullptr;
         }
 
         // Based on pxCore, Copyright 2015-2018 John Robinson
-        // Licensed under the Apache License, Version 2.0 
+        // Licensed under the Apache License, Version 2.0
         if (shouldEncrypt)
         {
     #if defined(SQLITE_HAS_CODEC)
@@ -485,7 +492,7 @@ void*                                PackagerExUtils::mData = nullptr;
                 return false;
             }
         }
-    
+
         return true;
     }
 
@@ -577,7 +584,7 @@ void*                                PackagerExUtils::mData = nullptr;
             LOGERR(" ...  Bad Args...  NULL");
             return false;
         }
-    
+
 LOGINFO(" ... Adding row for '%s'... ", pkg->Name().c_str());
 
         bool success = false;
@@ -683,7 +690,7 @@ success = true;
                 sqlite3_finalize(stmt);
                 return result;
             }
-                        
+
             if ((result = sqlite3_bind_text(stmt, 5, pkg->Installed().c_str(), -1, SQLITE_TRANSIENT) ) != SQLITE_OK)
             {
                 LOGERR("ERROR inserting data ... Installed ... #5 ... %s", sqlite3_errmsg(db));
@@ -1006,7 +1013,7 @@ success = true;
 
 LOGINFO(" ... Extracting >>>  '%s' ", filename);
 
-      // Select which attributes we want to restore. 
+      // Select which attributes we want to restore.
       flags =  ARCHIVE_EXTRACT_TIME;
       flags |= ARCHIVE_EXTRACT_PERM;
       flags |= ARCHIVE_EXTRACT_ACL;
@@ -1057,10 +1064,10 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
 
         if(to_path != nullptr)
         {
-            std::string targetFilepath(to_path);// = "/opt/"; 
-            targetFilepath += archive_entry_pathname(entry); 
+            std::string targetFilepath(to_path);// = "/opt/";
+            targetFilepath += archive_entry_pathname(entry);
 
-            archive_entry_set_pathname(entry, targetFilepath.c_str()); 
+            archive_entry_set_pathname(entry, targetFilepath.c_str());
 
 //          LOGINFO(" EXTRACT >>>  entry: %s", targetFilepath.c_str());
         }
@@ -1082,7 +1089,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
 
           if (r < ARCHIVE_WARN)
           {
-            LOGERR(" ... Entry Size ... Unexpected > ARCHIVE_WARN");              
+            LOGERR(" ... Entry Size ... Unexpected > ARCHIVE_WARN");
             return DACrc_t::dac_FAIL;
           }
         }
@@ -1090,11 +1097,11 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
         r = archive_write_finish_entry(ext);
         if (r < ARCHIVE_OK)
         {
-          LOGERR("%s", archive_error_string(ext));          
+          LOGERR("%s", archive_error_string(ext));
         }
         if (r < ARCHIVE_WARN)
         {
-          LOGERR("  ...  Write Finish ... Unexpected > ARCHIVE_WARN");              
+          LOGERR("  ...  Write Finish ... Unexpected > ARCHIVE_WARN");
           return DACrc_t::dac_FAIL;
         }
       }
@@ -1203,7 +1210,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
         else
         {
             LOGERR(" ... Invalid URL: %s \n", url);
-            
+
             return DACrc_t::dac_FAIL;
         }
     }
@@ -1244,7 +1251,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
           curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
           curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
           curl_easy_setopt(curl, CURLOPT_USERAGENT, "Packager/1.0");
-          
+
           res = curl_easy_perform(curl);
 
           if(res == CURLE_OK)
@@ -1271,7 +1278,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
 
     //================================================================================================
 
-    JobPool::JobPool() : 
+    JobPool::JobPool() :
         mJobQ(), mLock(), mDataCondition(), mAcceptJobs(true)
     {
     }
@@ -1286,7 +1293,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
         std::unique_lock<std::mutex> lock(mLock);
         mJobQ.push(job);
 
-        // when we send the notification immediately, 
+        // when we send the notification immediately,
         // the consumer will try to get the lock , so unlock asap
         lock.unlock();
         mDataCondition.notify_one();
@@ -1298,10 +1305,10 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
         mAcceptJobs = false;
         lock.unlock();
 
-        // when we send the notification immediately, 
+        // when we send the notification immediately,
         // the consumer will try to get the lock , so unlock asap
         mDataCondition.notify_all();
-      
+
         //notify all waiting threads.
     }
 
@@ -1309,7 +1316,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
     {
         //std::function<void()> func;
         JobMeta_t job;
-        
+
         // FOO_T func;
 
         while (true)
@@ -1330,7 +1337,7 @@ LOGINFO(" ... Extracting >>>  '%s' ", filename);
 
                 job = mJobQ.front();
                 mJobQ.pop();
-                
+
             }//release the lock - scope !
 
             LOGINFO("CALLING JOB");
