@@ -8,12 +8,11 @@ import OkCancel   from "./components/OkCancel";
 
 import { DefaultApps as DefaultApps } from "./DefaultApps.js";
 
-const HOME_KEY = 77;
+const HOME_KEY      = 77;
 const LIGHTNING_APP = "lightningapp";
 
-var AvailableApps = [];
-var InstalledApps = [];
-
+var AvailableApps   = [];
+var InstalledApps   = [];
 var InstalledAppMap = {};
 
 const thunder_cfg = {
@@ -284,25 +283,72 @@ export default class App extends Lightning.Component
 
   $fireRESUME(pkgId)
   {
-    console.log(">>>>>>>>>>>>  fireRESUME()  pkgId: " + pkgId);
-    this.resumePkg(pkgId);
+    // console.log(">>>>>>>>>>>>  fireRESUME() ");
+
+    let info = InstalledApps[this.installedButtonIndex];
+
+    // console.log(">>>>>>>>>>>>  fireRESUME() info: "+ beautify(info, null, 2, 100) );
+
+    if(info != null)
+    {
+      this.resumePkg(info.pkgId, info);
+    }
   }
 
-  $fireKILL(pkgId)
+  $fireKILL()
   {
-    console.log(">>>>>>>>>>>>  fireKILL()  pkgId: " + pkgId);
-    this.killPkg(pkgId);
+    // console.log(">>>>>>>>>>>>  fireKILL() ");
+
+    let info = InstalledApps[this.installedButtonIndex];
+
+    // console.log(">>>>>>>>>>>>  fireKILL() info: "+ beautify(info, null, 2, 100) );
+
+    if(info != null)
+    {
+      this.killPkg(info.pkgId, info);
+    }
   }
 
   $fireTRASH(pkgId)
   {
-    console.log(">>>>>>>>>>>>  fireTRASH()  pkgId: " + pkgId);
+    let info = InstalledApps[this.installedButtonIndex];
+
+    // console.log(">>>>>>>>>>>>  fireTRASH() info: "+ beautify(info, null, 2, 100) );
+
     this._setState('OKCStateEnter');
+  }
+
+  findInstalledButton(pkgId)
+  {
+    var bb = this.tag('InstalledList').children.filter( (o) =>
+    {
+      if(o.info)
+      {
+        return o.info.pkgId == pkgId;
+      }
+      else
+      {
+        return false;
+      }
+    });
+
+    return bb.length == 0 ? null : bb[0];
   }
 
   findStoreButton(pkgId)
   {
-    var bb = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkgId; });
+    var bb = this.tag('AvailableList').children.filter( (o) =>
+    {
+      if(o.info)
+      {
+        return o.info.pkgId == pkgId;
+      }
+      else
+      {
+        return false;
+      }
+    });
+
     return bb.length == 0 ? null : bb[0];
   }
 
@@ -379,9 +425,9 @@ export default class App extends Lightning.Component
     this._setState('InstalledRowState');
   }
 
-  $InstallClicked(pkgId)
+  $fireINSTALL(pkgId)
   {
-    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkgId: " + pkgId);
+    // console.log("INSTALL >>  fireINSTALL() - ENTER .. pkgId: " + pkgId);
 
     let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
@@ -473,13 +519,6 @@ export default class App extends Lightning.Component
   {
     // console.log("getInstalled() - ENTER ")
 
-    let before = InstalledApps;
-
-    before.map( b =>
-    {
-      console.log( 'getInstalled() >>> BEFORE: ' +  beautify(b, null, 2, 100) );
-    });
-
     try
     {
       var result = await thunderJS.call('Packager', 'getInstalled', null);
@@ -558,12 +597,6 @@ export default class App extends Lightning.Component
     {
       this._setState('StoreRowState'); // No apps installed >>> BACK TO STORE 
     }
-
-    //let after = InstalledApps
-    InstalledApps.map( b =>
-    {
-      console.log( 'getInstalled() >>> AFTER: ' +  beautify(b, null, 2, 100) );
-    });
   }
 
   async isInstalled(pkgId)
@@ -705,12 +738,21 @@ export default class App extends Lightning.Component
       if(result.success)
       {
         this.moveToBack(pkgId);
-        this.setFocus("lightningapp");
+        this.setFocus(LIGHTNING_APP);
 
         info.appState      = "SUSPENDED";
         this.launchedPkgId = "";
 
         // TODO: APP BUTTON - setSuspended()
+        var appButton = this.findInstalledButton(pkgId);
+        if(appButton != null)
+        {
+          appButton.setSuspended();
+        }
+        else
+        {
+          console.log("suspendPkg() >>> Cannot find App Button for pkgId: " + pkgId);
+        }
       }
       else
       {
@@ -743,17 +785,24 @@ export default class App extends Lightning.Component
         this.moveToFront(pkgId);
         this.setFocus(pkgId);
 
-        info.appState      = "LAUNCHED";
+        info.appState      = "LAUNCHED"; // RESUMED
         this.launchedPkgId = pkgId;
 
         // TODO: APP BUTTON - setLaunched()
+        var appButton = this.findInstalledButton(pkgId);
+        if(appButton != null)
+        {
+          appButton.stopSuspended();
+        }
+        else
+        {
+          console.log("resumePkg() >>> Cannot find App Button for pkgId: " + pkgId);
+        }
       }
       else
       {
         console.log( 'resumePkg() failed!');
       }
-
-      this.launchedPkgId = pkgId;
     }
     catch(e)
     {
@@ -762,7 +811,7 @@ export default class App extends Lightning.Component
     }
   }
 
-  async killPkg(pkgId)
+  async killPkg(pkgId, info)
   {
     let params =
     {
@@ -771,10 +820,29 @@ export default class App extends Lightning.Component
 
     try
     {
-      // need to resume before stopping a container app....
-      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'resumeApplication', params);
+      // Need to resume before stopping a container app....
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'resumeApplication', params);
 
+      if(result.success)
+      {
+        info.appState = "STOPPED";
+      }
+      else
+      {
+        console.log( 'killPkg() >>> calling "resumeApplication" FAILED!');
+      }
+
+      // Next kill the App
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'kill', params);
+
+      if(result.success)
+      {
+        info.appState = "STOPPED";
+      }
+      else
+      {
+        console.log( 'killPkg() >>> calling "kill" FAILED!');
+      }
 
       this.setConsole( beautify(result, null, 2, 100) )
     }
@@ -786,12 +854,12 @@ export default class App extends Lightning.Component
   }
 
 
-  async launchPkg(pkdId, info)
+  async launchPkg(pkgId, info)
   {
     let params =
     {
-        "client": pkdId,
-        "uri": pkdId, //TODO:  Unexpected... check why ?
+        "client": pkgId,
+        "uri": pkgId, //TODO:  Unexpected... check why ?
         // "uri": info.bundlePath,
         "mimeType": "application/dac.native"
     }
@@ -805,11 +873,11 @@ export default class App extends Lightning.Component
 
       if(result.success)
       {
-        this.moveToFront(pkdId);
-        this.setFocus(pkdId);
+        this.moveToFront(pkgId);
+        this.setFocus(pkgId);
 
-        info.appState      = "LAUNCHED";
-        this.launchedPkgId = pkdId;
+        info.appState      = "LAUNCHED"; // 1st LAUNCH
+        this.launchedPkgId = pkgId;
 
         // TODO: APP BUTTON - setLaunched()
       }
@@ -817,8 +885,6 @@ export default class App extends Lightning.Component
       {
         console.log( 'launchPkg() failed to launch app!!!');
       }
-
-      this.launchedPkgId = pkdId;
     }
     catch(e)
     {
@@ -1019,7 +1085,7 @@ export default class App extends Lightning.Component
         this.setConsole( "HOME code: " + k.keyCode);
 
         let info = InstalledAppMap[this.launchedPkgId];
-        if(info == "")
+        if(info == "" || info == null)
         {
           console.log("Ignoring HOME key, no apps running");
           break;
@@ -1027,6 +1093,7 @@ export default class App extends Lightning.Component
 
         if(info.appState == "LAUNCHED")
         {
+          console.log("Calling >>> this.suspendPkg()  pkgId: " + info.pkgId );
           this.suspendPkg(info.pkgId, info);
         }
         else
@@ -1191,6 +1258,7 @@ export default class App extends Lightning.Component
 
               if(info == undefined)
               {
+                console.log("FIRE >>> INSTALL  NO info !")
                 return // ignore
               }
 
@@ -1201,7 +1269,7 @@ export default class App extends Lightning.Component
 
               console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId)
 
-              button.fireAncestors('$InstallClicked', info.pkgId);
+              button.fireAncestors('$fireINSTALL', info.pkgId);
             }
 
             _handleDown()

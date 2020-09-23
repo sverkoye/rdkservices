@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Wed, 23 Sep 2020 17:33:49 GMT
+ * Generated: Wed, 23 Sep 2020 20:40:36 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -4348,7 +4348,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	                var fireThis = '$fire' + button.btnId;
 
-	                button.fireAncestors(fireThis, this.info.id);  // <<< It's 'id' versus pkgId when installed   ¯\_(ツ)_/¯
+	                button.fireAncestors(fireThis);
 
 	                if(button.btnId == 'RESUME')
 	                {
@@ -4634,12 +4634,11 @@ var APP_com_comcast_pkgDemo = (function () {
 	  }
 	];
 
-	const HOME_KEY = 77;
+	const HOME_KEY      = 77;
 	const LIGHTNING_APP = "lightningapp";
 
-	var AvailableApps = [];
-	var InstalledApps = [];
-
+	var AvailableApps   = [];
+	var InstalledApps   = [];
 	var InstalledAppMap = {};
 
 	const thunder_cfg = {
@@ -4654,7 +4653,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  }
 	};
 
-	var thunderJS$3 = null;
+	var thunderJS$2 = null;
 
 	class App extends Lightning.Component
 	{
@@ -4910,25 +4909,72 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  $fireRESUME(pkgId)
 	  {
-	    console.log(">>>>>>>>>>>>  fireRESUME()  pkgId: " + pkgId);
-	    this.resumePkg(pkgId);
+	    // console.log(">>>>>>>>>>>>  fireRESUME() ");
+
+	    let info = InstalledApps[this.installedButtonIndex];
+
+	    // console.log(">>>>>>>>>>>>  fireRESUME() info: "+ beautify(info, null, 2, 100) );
+
+	    if(info != null)
+	    {
+	      this.resumePkg(info.pkgId, info);
+	    }
 	  }
 
-	  $fireKILL(pkgId)
+	  $fireKILL()
 	  {
-	    console.log(">>>>>>>>>>>>  fireKILL()  pkgId: " + pkgId);
-	    this.killPkg(pkgId);
+	    // console.log(">>>>>>>>>>>>  fireKILL() ");
+
+	    let info = InstalledApps[this.installedButtonIndex];
+
+	    // console.log(">>>>>>>>>>>>  fireKILL() info: "+ beautify(info, null, 2, 100) );
+
+	    if(info != null)
+	    {
+	      this.killPkg(info.pkgId, info);
+	    }
 	  }
 
 	  $fireTRASH(pkgId)
 	  {
-	    console.log(">>>>>>>>>>>>  fireTRASH()  pkgId: " + pkgId);
+	    let info = InstalledApps[this.installedButtonIndex];
+
+	    // console.log(">>>>>>>>>>>>  fireTRASH() info: "+ beautify(info, null, 2, 100) );
+
 	    this._setState('OKCStateEnter');
+	  }
+
+	  findInstalledButton(pkgId)
+	  {
+	    var bb = this.tag('InstalledList').children.filter( (o) =>
+	    {
+	      if(o.info)
+	      {
+	        return o.info.pkgId == pkgId;
+	      }
+	      else
+	      {
+	        return false;
+	      }
+	    });
+
+	    return bb.length == 0 ? null : bb[0];
 	  }
 
 	  findStoreButton(pkgId)
 	  {
-	    var bb = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkgId; });
+	    var bb = this.tag('AvailableList').children.filter( (o) =>
+	    {
+	      if(o.info)
+	      {
+	        return o.info.pkgId == pkgId;
+	      }
+	      else
+	      {
+	        return false;
+	      }
+	    });
+
 	    return bb.length == 0 ? null : bb[0];
 	  }
 
@@ -5005,9 +5051,9 @@ var APP_com_comcast_pkgDemo = (function () {
 	    this._setState('InstalledRowState');
 	  }
 
-	  $InstallClicked(pkgId)
+	  $fireINSTALL(pkgId)
 	  {
-	    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkgId: " + pkgId);
+	    // console.log("INSTALL >>  fireINSTALL() - ENTER .. pkgId: " + pkgId);
 
 	    let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
@@ -5067,7 +5113,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    try
 	    {
-	      var result = await thunderJS$3.call('Packager', 'getAvailableSpace', null);
+	      var result = await thunderJS$2.call('Packager', 'getAvailableSpace', null);
 
 	      this.tag('SpaceLeft').text.text = ("Space Remaining: " + result.availableSpaceInKB + " Kb");
 
@@ -5085,7 +5131,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      let params = { "pkgId": pkgId };
 
-	      var result = await thunderJS$3.call('Packager', 'getPackageInfo', params);
+	      var result = await thunderJS$2.call('Packager', 'getPackageInfo', params);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5099,16 +5145,9 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    // console.log("getInstalled() - ENTER ")
 
-	    let before = InstalledApps;
-
-	    before.map( b =>
-	    {
-	      console.log( 'getInstalled() >>> BEFORE: ' +  jsonBeautify(b, null, 2, 100) );
-	    });
-
 	    try
 	    {
-	      var result = await thunderJS$3.call('Packager', 'getInstalled', null);
+	      var result = await thunderJS$2.call('Packager', 'getInstalled', null);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5184,12 +5223,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      this._setState('StoreRowState'); // No apps installed >>> BACK TO STORE 
 	    }
-
-	    //let after = InstalledApps
-	    InstalledApps.map( b =>
-	    {
-	      console.log( 'getInstalled() >>> AFTER: ' +  jsonBeautify(b, null, 2, 100) );
-	    });
 	  }
 
 	  async isInstalled(pkgId)
@@ -5198,7 +5231,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      let params = { "pkgId": pkgId };
 
-	      let result = await thunderJS$3.call('Packager', 'isInstalled', params);
+	      let result = await thunderJS$2.call('Packager', 'isInstalled', params);
 
 	//      console.log( 'DEBUG:  IsInstalled  ' + beautify(result, null, 2, 100) )
 	//      this.setConsole(     'IsInstalled  ' + beautify(result, null, 2, 100) )
@@ -5224,7 +5257,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'addKeyIntercept', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'addKeyIntercept', params);
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
@@ -5243,7 +5276,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'removeKeyIntercept', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'removeKeyIntercept', params);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5263,7 +5296,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'setFocus', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'setFocus', params);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5283,7 +5316,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'moveToFront', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'moveToFront', params);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5303,7 +5336,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'moveToBack', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'moveToBack', params);
 	      console.log(jsonBeautify(result, null, 2, 100));
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5323,7 +5356,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'suspendApplication', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'suspendApplication', params);
 
 	      console.log(jsonBeautify(result, null, 2, 100));
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
@@ -5331,12 +5364,21 @@ var APP_com_comcast_pkgDemo = (function () {
 	      if(result.success)
 	      {
 	        this.moveToBack(pkgId);
-	        this.setFocus("lightningapp");
+	        this.setFocus(LIGHTNING_APP);
 
 	        info.appState      = "SUSPENDED";
 	        this.launchedPkgId = "";
 
 	        // TODO: APP BUTTON - setSuspended()
+	        var appButton = this.findInstalledButton(pkgId);
+	        if(appButton != null)
+	        {
+	          appButton.setSuspended();
+	        }
+	        else
+	        {
+	          console.log("suspendPkg() >>> Cannot find App Button for pkgId: " + pkgId);
+	        }
 	      }
 	      else
 	      {
@@ -5359,7 +5401,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'resumeApplication', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'resumeApplication', params);
 
 	      console.log( jsonBeautify(result, null, 2, 100) );
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
@@ -5369,17 +5411,24 @@ var APP_com_comcast_pkgDemo = (function () {
 	        this.moveToFront(pkgId);
 	        this.setFocus(pkgId);
 
-	        info.appState      = "LAUNCHED";
+	        info.appState      = "LAUNCHED"; // RESUMED
 	        this.launchedPkgId = pkgId;
 
 	        // TODO: APP BUTTON - setLaunched()
+	        var appButton = this.findInstalledButton(pkgId);
+	        if(appButton != null)
+	        {
+	          appButton.stopSuspended();
+	        }
+	        else
+	        {
+	          console.log("resumePkg() >>> Cannot find App Button for pkgId: " + pkgId);
+	        }
 	      }
 	      else
 	      {
 	        console.log( 'resumePkg() failed!');
 	      }
-
-	      this.launchedPkgId = pkgId;
 	    }
 	    catch(e)
 	    {
@@ -5388,7 +5437,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	    }
 	  }
 
-	  async killPkg(pkgId)
+	  async killPkg(pkgId, info)
 	  {
 	    let params =
 	    {
@@ -5397,10 +5446,29 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      // need to resume before stopping a container app....
+	      // Need to resume before stopping a container app....
 	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'resumeApplication', params);
 
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'kill', params);
+	      if(result.success)
+	      {
+	        info.appState = "STOPPED";
+	      }
+	      else
+	      {
+	        console.log( 'killPkg() >>> calling "resumeApplication" FAILED!');
+	      }
+
+	      // Next kill the App
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'kill', params);
+
+	      if(result.success)
+	      {
+	        info.appState = "STOPPED";
+	      }
+	      else
+	      {
+	        console.log( 'killPkg() >>> calling "kill" FAILED!');
+	      }
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5412,30 +5480,30 @@ var APP_com_comcast_pkgDemo = (function () {
 	  }
 
 
-	  async launchPkg(pkdId, info)
+	  async launchPkg(pkgId, info)
 	  {
 	    let params =
 	    {
-	        "client": pkdId,
-	        "uri": pkdId, //TODO:  Unexpected... check why ?
+	        "client": pkgId,
+	        "uri": pkgId, //TODO:  Unexpected... check why ?
 	        // "uri": info.bundlePath,
 	        "mimeType": "application/dac.native"
 	    };
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'launchApplication', params);
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
 	      console.log(jsonBeautify(result, null, 2, 100));
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 
 	      if(result.success)
 	      {
-	        this.moveToFront(pkdId);
-	        this.setFocus(pkdId);
+	        this.moveToFront(pkgId);
+	        this.setFocus(pkgId);
 
-	        info.appState      = "LAUNCHED";
-	        this.launchedPkgId = pkdId;
+	        info.appState      = "LAUNCHED"; // 1st LAUNCH
+	        this.launchedPkgId = pkgId;
 
 	        // TODO: APP BUTTON - setLaunched()
 	      }
@@ -5443,8 +5511,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	      {
 	        console.log( 'launchPkg() failed to launch app!!!');
 	      }
-
-	      this.launchedPkgId = pkdId;
 	    }
 	    catch(e)
 	    {
@@ -5455,7 +5521,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  async installPkg(thisPkgId, info)
 	  {
-	    var myEvents = new Events(thunderJS$3, thisPkgId);
+	    var myEvents = new Events(thunderJS$2, thisPkgId);
 
 	    let buttons  = this.tag('AvailableList').children;
 	    let button   = buttons[this.storeButtonIndex];
@@ -5544,7 +5610,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('Packager', 'install', info);
+	      var result = await thunderJS$2.call('Packager', 'install', info);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5572,7 +5638,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    try
 	    {
-	      var result = await thunderJS$3.call('Packager', 'remove', params);
+	      var result = await thunderJS$2.call('Packager', 'remove', params);
 
 	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
@@ -5645,7 +5711,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	        this.setConsole( "HOME code: " + k.keyCode);
 
 	        let info = InstalledAppMap[this.launchedPkgId];
-	        if(info == "")
+	        if(info == "" || info == null)
 	        {
 	          console.log("Ignoring HOME key, no apps running");
 	          break;
@@ -5653,6 +5719,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	        if(info.appState == "LAUNCHED")
 	        {
+	          console.log("Calling >>> this.suspendPkg()  pkgId: " + info.pkgId );
 	          this.suspendPkg(info.pkgId, info);
 	        }
 	        else
@@ -5754,7 +5821,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	              .then((cfg) =>
 	              {
 	                console.log(' >>> Creating CUSTOM ThunderJS ...');
-	                thunderJS$3 = thunderJS$1(cfg);
+	                thunderJS$2 = thunderJS$1(cfg);
 
 	                this.getInstalled(); // <<< needs THUNDER
 	              })
@@ -5763,7 +5830,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	                console.log("Failed to get URL: " + url);
 
 	                console.log(' >>> Creating DEFAULT ThunderJS ...');
-	                thunderJS$3 = thunderJS$1(thunder_cfg);
+	                thunderJS$2 = thunderJS$1(thunder_cfg);
 
 	                this.getInstalled();
 
@@ -5813,6 +5880,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	              if(info == undefined)
 	              {
+	                console.log("FIRE >>> INSTALL  NO info !");
 	                return // ignore
 	              }
 
@@ -5823,7 +5891,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	              console.log("FIRE >>> INSTALL   pkgId:" + info.pkgId);
 
-	              button.fireAncestors('$InstallClicked', info.pkgId);
+	              button.fireAncestors('$fireINSTALL', info.pkgId);
 	            }
 
 	            _handleDown()

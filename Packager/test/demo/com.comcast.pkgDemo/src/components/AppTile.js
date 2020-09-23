@@ -273,7 +273,7 @@ export default class StoreTile extends Tile {
 
                 var fireThis = '$fire' + button.btnId;
 
-                button.fireAncestors(fireThis, this.info.id);  // <<< It's 'id' versus pkgId when installed   ¯\_(ツ)_/¯
+                button.fireAncestors(fireThis);
 
                 if(button.btnId == 'RESUME')
                 {
