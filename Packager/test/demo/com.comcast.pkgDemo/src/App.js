@@ -1,12 +1,12 @@
 import { Lightning, Utils } from 'wpe-lightning-sdk'
 
-import beautify  from 'json-beautify'
-import ThunderJS from 'ThunderJS'
-import Events    from './components/Events'
-import AppList   from "./components/AppList";
-import OkCancel  from "./components/OkCancel";
+import beautify   from 'json-beautify'
+import ThunderJS  from 'ThunderJS'
+import Events     from './components/Events'
+import AppList    from "./components/AppList";
+import OkCancel   from "./components/OkCancel";
 
-import { DefaultApps as inventory, DefaultApps } from "./DefaultApps.js";
+import { DefaultApps as DefaultApps } from "./DefaultApps.js";
 
 const HOME_KEY = 77;
 const LIGHTNING_APP = "lightningapp";
@@ -68,7 +68,6 @@ export default class App extends Lightning.Component
         color: 0xff8888aa,
         src: Utils.asset('images/background1.png'),
       },
-
 
       Title: {
         mountX: 0.5,
@@ -282,38 +281,83 @@ export default class App extends Lightning.Component
     this.tag('Console').text.text = str;
   }
 
+
+  $fireRESUME(pkgId)
+  {
+    console.log(">>>>>>>>>>>>  fireRESUME()  pkgId: " + pkgId);
+    this.resumePkg(pkgId);
+  }
+
+  $fireKILL(pkgId)
+  {
+    console.log(">>>>>>>>>>>>  fireKILL()  pkgId: " + pkgId);
+    this.killPkg(pkgId);
+  }
+
+  $fireTRASH(pkgId)
+  {
+    console.log(">>>>>>>>>>>>  fireTRASH()  pkgId: " + pkgId);
+    this._setState('OKCStateEnter');
+  }
+
+  findStoreButton(pkgId)
+  {
+    var bb = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkgId; });
+    return bb.length == 0 ? null : bb[0];
+  }
+
   $onRemoveOK() // 'okButton = true' indicates the OK button was clicked
   {
     var dlg = this.tag("OkCancel");
-    var pkg_id = dlg.pkgId;
+    var pkgId = dlg.pkgId;
 
-    console.log("onRemoveOK ENTER - ... pkg_id: " + pkg_id);
+    console.log("onRemoveOK ENTER - ... pkgId: " + pkgId);
 
-    if(pkg_id == undefined)
+    if(pkgId == undefined)
     {
-      console.log("onRemoveOK() >>>  ERROR - ... pkg_id: " + pkg_id)
+      console.log("onRemoveOK() >>>  ERROR - ... pkgId: " + pkgId)
       return;
     }
 
-    let info = InstalledAppMap[pkg_id];
-		if(info.appState == "SUSPENDED")
-		{
-			this.killPkg(pkg_id);
+    let info = InstalledAppMap[pkgId];
+    if(info.appState == "SUSPENDED")
+    {
+      this.killPkg(pkgId);
     }
 
-    this.removePkg(pkg_id);
+    // this.removePkg(pkgId);
 
     dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
 
-    var appButton = this.tag('InstalledList').children[this.installedButtonIndex];
-    appButton.stopWiggle();
+    // Enable STORE button - as it's UNINSTALLED
+    let removeMe = this.tag('InstalledList').children[this.installedButtonIndex];
+    removeMe.stopWiggle();
 
-    // Enable STORE button - as it's uninstalled
-    var storeButton = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkg_id; });
+    //removeMe.hide();
 
-    if(storeButton.length > 0)
+    if(removeMe.tag("Button").scale == 1.0)
     {
-      storeButton[0].enable();
+      const anim = removeMe.tag('Button').animation({
+        duration: 0.5,
+        actions: [
+            { p: 'scale', v: { 0: 1, 0.5: 0.50, 1: 0.0 } },
+        ]
+      });
+      anim.start();
+
+      anim.on('finish', () =>
+      {
+        this.tag('InstalledList').childList.remove(removeMe);
+        this.tag('InstalledList').childList.add(removeMe); // move to end
+
+        this.removePkg(pkgId);
+      });
+    }
+
+    var storeButton = this.findStoreButton(pkgId);
+    if(storeButton != null)
+    {
+      storeButton.enable();
     }
 
     this._setState('InstalledRowState');
@@ -322,29 +366,28 @@ export default class App extends Lightning.Component
   $onRemoveCANCEL()
   {
     var dlg = this.tag("OkCancel");
-    var pkg_id = dlg.pkgId;
 
-    console.log("onRemoveCANCEL ENTER - ... pkg_id: " + pkg_id);
+    // console.log("onRemoveCANCEL ENTER - ... pkgId: " + pkgId);
 
     dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
 
-    console.log("onRemoveCANCEL ENTER - ... info: " + pkg_id)
+    // console.log("onRemoveCANCEL ENTER - ... info: " + pkgId)
 
-    var button = this.tag('InstalledList').children[this.installedButtonIndex];
-    button.stopWiggle();
+    var dontRemoveMe = this.tag('InstalledList').children[this.installedButtonIndex];
+    dontRemoveMe.stopWiggle();
 
     this._setState('InstalledRowState');
   }
 
-  $InstallClicked(pkg_id)
+  $InstallClicked(pkgId)
   {
-    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
+    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkgId: " + pkgId);
 
     let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
-    this.isInstalled(pkg_id).then( (ans) =>
+    this.isInstalled(pkgId).then( (ans) =>
     {
-      if( ans['available'] == "false")
+      if( ans['available'] == false)
       {
         var progress = button.tag("Progress")
 
@@ -353,39 +396,39 @@ export default class App extends Lightning.Component
 
         var info = button.info;
 
-        this.installPkg(pkg_id, info);
+        this.installPkg(pkgId, info);
         info.appState = "STOPPED";
       }
       else
       {
-        console.log("CALL >> this.installPkg() ALREAY have ... pkg_id: " + pkg_id)
+        console.log("CALL >> this.installPkg() ALREADY have ... pkgId: " + pkgId)
       }
     });
   }
 
-  $LaunchClicked(pkg_id)
+  $LaunchClicked(pkgId)
   {
-    // console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
+    // console.log("$LaunchClicked() >>>  ENTER - ... pkgId: " + pkgId)
 
-    let info = InstalledAppMap[pkg_id];
+    let info = InstalledAppMap[pkgId];
     if(info)
     {
       if(info.appState == "STOPPED" || info.appState == undefined)
-		  {
-        this.launchPkg(pkg_id, info);
+      {
+        this.launchPkg(pkgId, info);
 
-        this.setConsole("Launched: " + jsonBeautify(info, null, 2, 100) );
+        this.setConsole("Launched: " + beautify(info, null, 2, 100) );
 
       }
       else if(info.appState == "SUSPENDED")
-		  {
-			  this.resumePkg(pkg_id, info);
+      {
+        this.resumePkg(pkgId, info);
 
-			  this.setConsole("Resumed: " + jsonBeautify(info, null, 2, 100) );
+        this.setConsole("Resumed: " + beautify(info, null, 2, 100) );
       }
       else
       {
-			  console.log("$LaunchClicked() >>> Error:  invalid app state: " + info);
+        console.log("$LaunchClicked() >>> Error:  invalid app state: " + info);
       }
     }
     else
@@ -410,11 +453,11 @@ export default class App extends Lightning.Component
     }
   }
 
-  async getPackageInfo(pkg_id)
+  async getPackageInfo(pkgId)
   {
     try
     {
-      let params = { "pkgId": pkg_id };
+      let params = { "pkgId": pkgId };
 
       var result = await thunderJS.call('Packager', 'getPackageInfo', params);
 
@@ -430,6 +473,13 @@ export default class App extends Lightning.Component
   {
     // console.log("getInstalled() - ENTER ")
 
+    let before = InstalledApps;
+
+    before.map( b =>
+    {
+      console.log( 'getInstalled() >>> BEFORE: ' +  beautify(b, null, 2, 100) );
+    });
+
     try
     {
       var result = await thunderJS.call('Packager', 'getInstalled', null);
@@ -444,6 +494,25 @@ export default class App extends Lightning.Component
 
     this.getAvailableSpace();
 
+    // Preserve App States ...
+
+    for( var i = 0; i < result.applications.length; i++)
+    {
+      let app   = result.applications[i];
+      let match = InstalledApps.filter( o => o.pkgId == app.id );
+
+      if(match.length > 0)
+      {
+        // NOTE: If objects have a property with the same name,
+        //       then the right-most object property overwrites the previous one.
+        //
+        var merged = { ...match[0], ...app }; // prefer new 'info' from getInstalled()
+
+        result.applications[i] = merged;
+      }
+    }
+
+    // Update Apps ...
     InstalledAppMap = {}    // reset
     InstalledApps   = null; // reset
 
@@ -452,17 +521,19 @@ export default class App extends Lightning.Component
     //
     result.applications.map( (o) => InstalledAppMap[o.id] = o ); // populate info
 
-    InstalledApps = result.applications; // update array
+    InstalledApps = result.applications; // update INSTALLED array
 
-    // DISABLE apps that are already installed...
+    //
+    // APP STORE >>> DISABLE apps that are already installed...
+    //
     InstalledApps.map( have =>
     {
       let disable = AvailableApps.filter( o => o.pkgId == have.id );
-      let dbutton = this.tag('AvailableList').children.filter( o => o.info.pkgId == disable[0].pkgId);
 
-      if(dbutton.length > 0)
+      var storeButton = this.findStoreButton(disable[0].pkgId);
+      if(storeButton != null)
       {
-        dbutton[0].disable();
+        storeButton.disable(); // DISABLE
       }
     })
 
@@ -478,17 +549,28 @@ export default class App extends Lightning.Component
       }
       else
       {
-        button.info = null;
-        button.hide();
+        button.info = null; //  RESET
+        // button.hide();
       }
+    });
+
+    if(InstalledApps.length == 0)
+    {
+      this._setState('StoreRowState'); // No apps installed >>> BACK TO STORE 
+    }
+
+    //let after = InstalledApps
+    InstalledApps.map( b =>
+    {
+      console.log( 'getInstalled() >>> AFTER: ' +  beautify(b, null, 2, 100) );
     });
   }
 
-  async isInstalled(pkg_id)
+  async isInstalled(pkgId)
   {
     try
     {
-      let params = { "pkgId": pkg_id };
+      let params = { "pkgId": pkgId };
 
       let result = await thunderJS.call('Packager', 'isInstalled', params)
 
@@ -499,8 +581,8 @@ export default class App extends Lightning.Component
     }
     catch(e)
     {
-      console.log('DEBUG:  isInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
-      this.setConsole(    'isInstalled() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log('DEBUG:  isInstalled() >>> CAUGHT:  e: ' + beautify(e, null, 2, 100) );
+      this.setConsole(    'isInstalled() >>> CAUGHT:  e: ' + beautify(e, null, 2, 100) );
       return false;
     }
   }
@@ -521,12 +603,12 @@ export default class App extends Lightning.Component
     }
     catch(e)
     {
-      console.log( 'addKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'addKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'addKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async removeKeyIntercept(pkg_id) // v1
+  async removeKeyIntercept() // v1
   {
     let params =
     {
@@ -541,36 +623,36 @@ export default class App extends Lightning.Component
     }
     catch(e)
     {
-      console.log( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'removeKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async setFocus(pkg_id)
+  async setFocus(pkgId)
   {
     let params =
     {
-        "client": pkg_id
+        "client": pkgId
     };
 
     try
     {
-      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'setFocus', params);
+      var result = await thunderJS.call('org.rdk.RDKShell.1', 'setFocus', params);
 
-    this.setConsole( jsonBeautify(result, null, 2, 100) );
+      this.setConsole( beautify(result, null, 2, 100) );
     }
     catch(e)
     {
-      console.log( 'setFocus() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
-      this.setConsole( 'setFocus >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+      console.log(     'setFocus() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      this.setConsole( 'setFocus() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async moveToFront(pkg_id)
+  async moveToFront(pkgId)
   {
     let params =
     {
-        "client": pkg_id
+        "client": pkgId
     }
 
     try
@@ -581,110 +663,135 @@ export default class App extends Lightning.Component
     }
     catch(e)
     {
-      console.log( 'moveToFront() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'moveToFront() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'moveToFront() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async moveToBack(pkg_id)
+  async moveToBack(pkgId)
   {
     let params =
     {
-        "client": pkg_id
+        "client": pkgId
     }
 
     try
     {
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'moveToBack', params);
-      console.log(jsonBeautify(result, null, 2, 100));
+      console.log(beautify(result, null, 2, 100));
       this.setConsole( beautify(result, null, 2, 100) )
     }
     catch(e)
     {
-      console.log( 'moveToBack() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'moveToBack() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'moveToBack() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async suspendPkg(pkg_id, info)
+  async suspendPkg(pkgId, info)
   {
     let params =
     {
-        "client": pkg_id
+        "client": pkgId
     }
 
     try
     {
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'suspendApplication', params);
 
-      console.log(jsonBeautify(result, null, 2, 100));
-		  this.setConsole( jsonBeautify(result, null, 2, 100) );
+      console.log(beautify(result, null, 2, 100));
+      this.setConsole( beautify(result, null, 2, 100) );
 
-		  this.moveToBack(pkgId);
-		  this.setFocus(LIGHTNING_APP);
-		  info.appState = "SUSPENDED";
-		  this.launchedPkgId = "";
+      if(result.success)
+      {
+        this.moveToBack(pkgId);
+        this.setFocus("lightningapp");
+
+        info.appState      = "SUSPENDED";
+        this.launchedPkgId = "";
+
+        // TODO: APP BUTTON - setSuspended()
+      }
+      else
+      {
+        console.log( 'suspendPkg() failed!');
+      }
     }
     catch(e)
     {
-      console.log( 'suspendPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'suspendPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'suspendPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async resumePkg(pkg_id, info)
+  async resumePkg(pkgId, info)
   {
     let params =
     {
-        "client": pkg_id
+        "client": pkgId
     }
 
     try
     {
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'resumeApplication', params);
 
-      console.log( jsonBeautify(result, null, 2, 100) );
-		  this.setConsole( jsonBeautify(result, null, 2, 100) );
+      console.log( beautify(result, null, 2, 100) );
+      this.setConsole( beautify(result, null, 2, 100) );
 
-		  this.moveToFront(pkgId);
-		  this.setFocus(pkgId);
-		  info.appState = "LAUNCHED";
-		  this.launchedPkgId = pkgId;
+      if(result.success)
+      {
+        this.moveToFront(pkgId);
+        this.setFocus(pkgId);
+
+        info.appState      = "LAUNCHED";
+        this.launchedPkgId = pkgId;
+
+        // TODO: APP BUTTON - setLaunched()
+      }
+      else
+      {
+        console.log( 'resumePkg() failed!');
+      }
+
+      this.launchedPkgId = pkgId;
     }
     catch(e)
     {
-      console.log( 'resumePkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'resumePkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'resumePkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
-  async killPkg(pkg_id)
+  async killPkg(pkgId)
   {
     let params =
     {
-        "client": pkg_id
+        "client": pkgId
     }
 
     try
     {
+      // need to resume before stopping a container app....
+      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'resumeApplication', params);
+
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'kill', params);
 
       this.setConsole( beautify(result, null, 2, 100) )
     }
     catch(e)
     {
-      console.log( 'killPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'killPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'killPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
 
 
-  async launchPkg(pkg_id, info)
+  async launchPkg(pkdId, info)
   {
     let params =
     {
-        "client": pkg_id,
-        "uri": pkg_id, //TODO:  Unexpected... check why ?
+        "client": pkdId,
+        "uri": pkdId, //TODO:  Unexpected... check why ?
         // "uri": info.bundlePath,
         "mimeType": "application/dac.native"
     }
@@ -693,17 +800,29 @@ export default class App extends Lightning.Component
     {
       var result = await thunderJS.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
-      console.log(jsonBeautify(result, null, 2, 100));
-		  this.setConsole( jsonBeautify(result, null, 2, 100) );
+      console.log(beautify(result, null, 2, 100));
+      this.setConsole( beautify(result, null, 2, 100) );
 
-		  this.moveToFront(pkg_id);
-		  this.setFocus(pkg_id);
-		  info.appState = "LAUNCHED";
-		  this.launchedPkgId = pkg_id;
+      if(result.success)
+      {
+        this.moveToFront(pkdId);
+        this.setFocus(pkdId);
+
+        info.appState      = "LAUNCHED";
+        this.launchedPkgId = pkdId;
+
+        // TODO: APP BUTTON - setLaunched()
+      }
+      else
+      {
+        console.log( 'launchPkg() failed to launch app!!!');
+      }
+
+      this.launchedPkgId = pkdId;
     }
     catch(e)
     {
-      console.log( 'launchPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
+      console.log(     'launchPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
       this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  beautify(e, null, 2, 100) );
     }
   }
@@ -811,18 +930,18 @@ export default class App extends Lightning.Component
     info.events = myEvents
   }
 
-  async removePkg(pkg_id)
+  async removePkg(pkgId)
   {
-    console.log("removePkg() >>>    ENTER - ... pkg_id: " + pkg_id)
+    console.log("removePkg() >>>    ENTER - ... pkgId: " + pkgId)
 
-    if(pkg_id == undefined)
+    if(pkgId == undefined)
     {
-      console.log("removePkg() >>>  ERROR - ... pkg_id: " + pkg_id)
+      console.log("removePkg() >>>  ERROR - ... pkgId: " + pkgId)
       return;
     }
 
     var params = {
-      "pkgId": pkg_id
+      "pkgId": pkgId
     }
 
     try
@@ -853,7 +972,7 @@ export default class App extends Lightning.Component
 
     this.tag('InstalledList').addTile(InstalledApps.length - 1, info)
 
-    // Disable STORE button - as it's uninstalled
+    // Disable STORE button - as it's UNINSTALLED
     storeButton.disable();
 
     this.getAvailableSpace()
@@ -932,7 +1051,7 @@ export default class App extends Lightning.Component
           break;
 
       default:
-        console.log("GOT key code: " + k.keyCode)
+        // console.log("GOT key code: " + k.keyCode)
           break;
     }
 
@@ -985,8 +1104,8 @@ export default class App extends Lightning.Component
                 AvailableApps = apps;
                 InstalledApps = apps;
 
-                this.tag("AvailableList").tiles = AvailableApps;
-                this.tag("InstalledList").tiles = InstalledApps;
+                this.tag("AvailableList").storeTiles   = AvailableApps;
+                this.tag("InstalledList").appTiles = InstalledApps;
 
                 this._setState('StoreRowState')
               })
@@ -1041,6 +1160,7 @@ export default class App extends Lightning.Component
               this.fetchThunderCfg(cfgURL);
               this.fetchAppList(appURL);
 
+              this.setFocus(LIGHTNING_APP);
               this.addKeyIntercept(); // Watch for HOME key
 
               // State advanced within 'fetchAppList()' above.
@@ -1086,7 +1206,10 @@ export default class App extends Lightning.Component
 
             _handleDown()
             {
-              this._setState('InstalledRowState');
+              if(InstalledApps.length > 0)
+              {
+                this._setState('InstalledRowState');
+              }
             }
 
             _handleLeft()
@@ -1096,7 +1219,7 @@ export default class App extends Lightning.Component
 
             _handleRight()
             {
-              if(++this.storeButtonIndex > AvailableApps.length) this.storeButtonIndex = AvailableApps.length;
+              if(++this.storeButtonIndex > AvailableApps.length) this.storeButtonIndex = AvailableApps.length - 1;
             }
 
             _getFocused()
@@ -1125,7 +1248,7 @@ export default class App extends Lightning.Component
 
           _handleRight()
           {
-            if(++this.installedButtonIndex > InstalledApps.length - 1) this.installedButtonIndex = InstalledApps.length - 1;
+            if(++this.installedButtonIndex >= InstalledApps.length) this.installedButtonIndex = InstalledApps.length - 1;
           }
 
           _handleEnter()
@@ -1137,11 +1260,6 @@ export default class App extends Lightning.Component
 
             button.fireAncestors('$LaunchClicked', info.pkgId);
             button.clickAnim();
-          }
-
-          _handleDown() // DOWN key on the "Installed Row" - triggers the Delete OK/Cancel dialog
-          {
-            this._setState('OKCStateEnter')
           }
 
           _handleBack() // BACK key on the "Installed Row" - triggers the Delete OK/Cancel dialog
@@ -1160,6 +1278,12 @@ export default class App extends Lightning.Component
           $enter()
           {
             // console.log(">>>>>>>>>>>>   STATE:  OKCStateEnter");
+
+            if(this.installedButtonIndex <0)
+            {
+              console.error(  'BUTTON index:' + this.installedButtonIndex +'  - INVLAID');
+              return;
+            }
 
             var button = this.tag('InstalledList').children[this.installedButtonIndex]
 

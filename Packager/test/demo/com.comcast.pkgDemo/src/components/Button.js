@@ -1,4 +1,4 @@
-export default class AppTile extends lng.Component
+export default class Button extends lng.Component
 {
   static _template( )
   {

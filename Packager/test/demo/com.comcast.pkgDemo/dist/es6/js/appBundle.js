@@ -3,7 +3,7 @@
  * SDK version: 2.5.0
  * CLI version: 1.7.4
  *
- * Generated: Tue, 22 Sep 2020 17:00:10 GMT
+ * Generated: Wed, 23 Sep 2020 17:33:49 GMT
  */
 
 var APP_com_comcast_pkgDemo = (function () {
@@ -3188,7 +3188,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	  return str('', {'': value}, limit);
 	}
 
-	var jsonBeautify$1 = beautify;
+	var jsonBeautify = beautify;
 
 	/**
 	 * If not stated otherwise in this file or this component's LICENSE file the
@@ -3618,6 +3618,81 @@ var APP_com_comcast_pkgDemo = (function () {
 	  }
 	}//CLASS
 
+	class IconButton extends lng.Component
+	{
+	  static _template( )
+	  {
+	    let RR = lng.shaders.RoundedRectangle;
+
+	    return {
+	      flexItem: { margin: 40 },
+	      Button:
+	      {
+	        mount: 0.5,
+	        w: 45, h: 45,
+
+	        RRect:  {
+	          w: 45, h: 45, rect: true, color: 0x88888888, pivot: 0.5, alpha: 0.5, shader: { radius: 8, type: RR, stroke: 1, strokeColor: 0xFF333333 }
+	        },
+	        Image: {
+	          mount: 0.50,
+	          scale: 0.45,
+	          x: (45 * 0.5 ),
+	          y: (45 * 0.5 ),
+
+	          // alpha: 0.5,
+	          // shader:  { type: lng.shaders.Grayscale}
+	        },
+	      },
+	      }
+	    };
+
+	  _focus()
+	  {
+	    var bb  = this.tag("Button");
+	    var bg  = this.tag("RRect");
+	    var clr = this.clrFocus;
+
+	    bb.setSmooth('alpha', 1.00, {duration: 0.3});
+	    bg.setSmooth('alpha', 1.00, {duration: 0.3});
+
+	    bb.setSmooth('scale', 1.18, {duration: 0.3});
+	    bg.setSmooth('color',  clr, {duration: 0.3});
+	  }
+
+	  _unfocus()
+	  {
+	    var bb  = this.tag("Button");
+	    var bg  = this.tag("RRect");
+	    var clr = this.clrBlur;
+
+	   // bb.setSmooth('alpha', 0.50, {duration: 0.3});
+	    bg.setSmooth('alpha', 0.50, {duration: 0.3});
+
+	    bb.setSmooth('scale', 1.00, {duration: 0.3});
+	    bg.setSmooth('color',  clr, {duration: 0.3});
+	  }
+
+	  _init()
+	  {
+	    if(this.clrFocus == undefined) this.clrFocus = 0xFFaaaaaa; // #aaaaaaFF
+	    if(this.clrBlur  == undefined) this.clrBlur  = 0xFF888888; // #888888FF
+
+	    // var button = this.tag("Button");
+
+	    // button.w = this.w;
+	    // button.h = this.h;
+
+	   var image = this.tag("Image");
+
+	   image.patch( {src: this.src1 } );
+	  }
+
+	  setClrFocus(clr)      { this.clrFocus = clr;};
+	  setClrBlur(clr)       { this.clrBlur  = clr;};
+
+	}//CLASS
+
 	class Progress extends lng.Component {
 	    static _template( )
 	    {
@@ -3661,7 +3736,243 @@ var APP_com_comcast_pkgDemo = (function () {
 	    }
 	  }//CLASS
 
-	class AppTile extends lng.Component {
+	class StoreTile extends lng.Component {
+	    static _template( )
+	    {
+	      var pts = 20;
+	      var frameClr = 0xFF666666;  // #666666FF
+	      var textClr  = 0xFFffffff;  // #ffffffFF
+
+	      var stroke    = 2;
+	      var strokeClr = 0xFF444444;
+
+	      let RR = { radius: 20, type: lng.shaders.RoundedRectangle, stroke: stroke, strokeColor: strokeClr};
+
+	      return {
+	        flexItem: { margin: 40 },
+	        alpha: 1.0,
+	        pivot: 0.5,
+	        w: 210, h: 150,
+	          Button:
+	          {
+	            scale: 0.0,
+	            pivotY: 1.0,
+
+	            RRect:
+	            {
+	                w: 210, h: 150, rtt: true, rect: true, pivot: 0.5, alpha: 1.0, color: frameClr, shader: RR,
+
+	                Image: {
+	                  mount: 0.5,
+	                  src: Utils.asset('images/crate2_80x80.png'),
+	                  x: (w => 0.45 * w),
+	                  y: 150 * 0.40 //(h => 0.40 * h)
+	                },
+
+	                Label:
+	                { mountX: 0.5, mountY: 1.0,
+	                  x: (w => 0.5 * w),
+	                  y: 150 - 5, //(h => h - 5),
+	                  text: {  text: "Label 11", fontFace: 'Regular', fontSize: pts, textColor: textClr,
+
+	                  shadow: true,
+	                  shadowColor: 0xFF000000,
+	                  shadowOffsetX: 2,
+	                  shadowOffsetY: 2,
+	                  shadowBlur: 8,
+	                  },
+	                },
+
+	                Icon: {
+	                  alpha: 1.0,
+	                  mountX: 1.0,
+	                  scale: 0.52,
+	                  x: (w => w + 4),
+	                  y: (h => 0)
+	                },
+
+	                Buttons:
+	                {
+	                  flex: {direction: 'row'},
+	                  alpha: 0.5,
+	                  mountX: 0.5,
+	                  x: 210 / 2,
+	                  y: 150,
+
+	                  Button1: { btnId: "CHECK", flexItem: { margin: 30 }, type: IconButton, src1: Utils.asset('images/check_mark80x80.png')  },
+	                  Button2: { btnId: "KILL",  flexItem: { margin: 30 }, type: IconButton, src1: Utils.asset('images/x_mark.png')           },
+	                  Button3: { btnId: "TRASH", flexItem: { margin: 30 }, type: IconButton, src1: Utils.asset('images/TrashCan80x80.png')    },
+	                }
+	              }, //RRect
+
+	              Progress: { type: Progress, mountX: 0.0, x: 0, y: 190, w: 210, h: 8, alpha: 0.0 },
+
+	          },//Button
+	      }
+	    };
+
+	    setLabel(s)
+	    {
+	      var obj = this.tag("Label");
+	      obj.text.text = s;
+	    }
+
+	    setIcon(s)
+	    {
+	      var btn = this.tag("Button");
+	      var icn = btn.tag("Icon");
+
+	      icn.patch( {src: s } );
+	    }
+
+	    _focus()
+	    {
+	      var btn  = this.tag("Button");
+	      var tile =  btn.tag("RRect");
+
+	      // console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
+
+	      tile.setSmooth('scale',  1.15, {duration: 0.3});
+	    }
+
+	    _unfocus()
+	    {
+	      var btn  = this.tag("Button");
+	      var tile =  btn.tag("RRect");
+
+	      // console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
+
+	      tile.setSmooth('scale', 1.0, {duration: 0.3});
+	    }
+
+	    hide()
+	    {
+	      if(this.tag("Button").scale == 1.0)
+	      {
+	        const anim = this.tag('Button').animation({
+	          duration: 0.5,
+	          actions: [
+	              { p: 'scale', v: { 0: 1, 0.5: 0.50, 1: 0.0 } },
+	          ]
+	        });
+	        anim.start();
+	      }
+	    }
+
+	    show(d = 0)
+	    {
+	      if(this.tag("Button").scale == 0.0)
+	      {
+	        const anim = this.tag('Button').animation({
+	          duration: 0.5,
+	          delay: d,
+	          actions: [
+	              { p: 'scale', v: { 0: 0, 0.5: 0.50, 1: 1.0 } },
+	          ]
+	        });
+	        anim.start();
+	      }
+	    }
+
+	    _init()
+	    {
+	      this.buttonIndex = 0;
+
+	      this._enabled = true;
+	      this.tag("Button").scale = 0;
+
+	      if(this.w && this.h)
+	      {
+	        let button = this.tag("Button");
+
+	        button.w = this.w;
+	        button.h = this.h;
+	      }
+
+	      this.info = this.tileInfo;
+
+	      this._setState('PassiveState');
+	    }
+
+	    set info( ii )
+	    {
+	      this.setInfo(ii);  // allow set 'null'
+	    }
+
+	    get info()
+	    {
+	      return this._info;
+	    }
+
+	    setInfo(ii)
+	    {
+	      // var check_mark_PNG = Utils.asset('images/check_mark.png');
+	      // var download_PNG   = Utils.asset('images/download3.png');
+
+	      if(ii)
+	      {
+	        if(ii.id)
+	        {
+	          ii.pkgId = ii.id;
+	        }
+
+	        if(ii.name)  this.setLabel(ii.name);
+	        else
+	        if(ii.label) this.setLabel(ii.label);
+	        else
+	        if(ii.id)    this.setLabel(ii.id);
+	        else
+	        if(ii.pkgId) this.setLabel(ii.pkgId);
+	        else         this.setLabel("unknown22");
+
+	        // var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
+	        // this.setIcon(icon);
+	      }
+
+	      this._info = ii; // allow 'null'
+	    }
+
+	    isEnabled()
+	    {
+	      return this._enabled;
+	    }
+
+	    enable()
+	    {
+	      //console.log("APP TILE  >> enable() - " + this.info.pkgId)
+
+	      this.tag("Button").setSmooth('alpha', 1.0, {duration: 0.3});
+	      this._enabled = true;
+	    }
+
+	    disable()
+	    {
+	      //console.log("APP TILE  >> disable() - " + this.info.pkgId)
+
+	      this.tag("Button").setSmooth('alpha', 0.5, {duration: 0.3});
+	      this._enabled = false;
+	    }
+
+	    clickAnim()
+	    {
+	      var anim = this.tag('Button').animation({
+	        duration: 0.35,
+	        repeat: 1,
+	        actions: [
+	          {
+	            t: '',
+	            p: 'scale', v: { 0: 1.0, 0.5: 1.2, 1: 1.0},
+	          },
+	        ],
+	      });
+
+	      anim.start();
+	    }
+
+	    //////////////////////////////////////////////////////////////////////////////////////////////////
+	  }//CLASS
+
+	class StoreTile$1 extends StoreTile {
 	    static _template( )
 	    {
 	      var pts = 20;
@@ -3718,69 +4029,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	    };
 
-	    setLabel(s)
-	    {
-	      var obj = this.tag("Label");
-	      obj.text.text = s;
-	    }
-
-	    setIcon(s)
-	    {
-	      var btn = this.tag("Button");
-	      var icn = btn.tag("Icon");
-
-	      icn.patch( {src: s } );
-	    }
-
-	    _focus()
-	    {
-	      var btn  = this.tag("Button");
-	      var tile =  btn.tag("RRect");
-
-	      // console.log("BUTTON: focus() >> pkgId: " + this._info.pkgId);
-
-	      tile.setSmooth('scale', 1.15, {duration: 0.3});
-	    }
-
-	    _unfocus()
-	    {
-	      var btn  = this.tag("Button");
-	      var tile =  btn.tag("RRect");
-
-	      // console.log("BUTTON: unfocus() >> pkgId: " + this._info.pkgId);
-
-	      tile.setSmooth('scale', 1.0, {duration: 0.3});
-	    }
-
-	    hide()
-	    {
-	      if(this.tag("Button").scale == 1.0)
-	      {
-	        const anim = this.tag('Button').animation({
-	          duration: 0.5,
-	          actions: [
-	              { p: 'scale', v: { 0: 1, 0.5: 0.50, 1: 0.0 } },
-	          ]
-	        });
-	        anim.start();
-	      }
-	    }
-
-	    show(d = 0)
-	    {
-	      if(this.tag("Button").scale == 0.0)
-	      {
-	        const anim = this.tag('Button').animation({
-	          duration: 0.5,
-	          delay: d,
-	          actions: [
-	              { p: 'scale', v: { 0: 0, 0.5: 0.50, 1: 1.0 } },
-	          ]
-	        });
-	        anim.start();
-	      }
-	    }
-
 	    _init()
 	    {
 	      this._enabled = true;
@@ -3795,92 +4043,9 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 
 	      this.info = this.tileInfo;
-	    }
 
-	    set info( ii )
-	    {
-	      this.setInfo(ii);  // allow set 'null'
-	    }
-
-	    get info()
-	    {
-	      return this._info;
-	    }
-
-	    setInfo(ii)
-	    {
-	      var check_mark_PNG = Utils.asset('images/check_mark.png');
-	      var download_PNG   = Utils.asset('images/download3.png');
-
-	      if(ii)
-	      {
-	        if(ii.id)
-	        {
-	          ii.pkgId = ii.id;
-	        }
-
-	        if(ii.name)  this.setLabel(ii.name);
-	        else
-	        if(ii.label) this.setLabel(ii.label);
-	        else
-	        if(ii.id)    this.setLabel(ii.id);
-	        else
-	        if(ii.pkgId) this.setLabel(ii.pkgId);
-	        else         this.setLabel("unknown22");
-
-	        var icon = (ii.pkgInstalled) ? check_mark_PNG : download_PNG;
-	        this.setIcon(icon);
-	      }
-	      else
-	      {
-	        this.setIcon(download_PNG);
-	      }
-
-	      this._info = ii; // allow 'null'
-	    }
-
-	    isEnabled()
-	    {
-	      return this._enabled;
-	    }
-
-	    enable()
-	    {
-	      //console.log("APP TILE  >> enable() - " + this.info.pkgId)
-
-	      this.tag("Button").setSmooth('alpha', 1.0, {duration: 0.3});
-	      this._enabled = true;
-	    }
-
-	    disable()
-	    {
-	      //console.log("APP TILE  >> disable() - " + this.info.pkgId)
-
-	      this.tag("Button").setSmooth('alpha', 0.5, {duration: 0.3});
-	      this._enabled = false;
-	    }
-
-	    startWiggle()
-	    {
-	        this.wiggleAnim = this.tag('Image').animation({
-	            duration: 0.11*3,
-	            repeat: -1,
-	            actions: [
-	              {
-	                t: '',
-	                repeat: -1,
-	                p: 'rotation', v: { 0: 0.0, 0.25: -0.14, 0.5: 0.0, 0.75: 0.14, 1: 0.0},
-	              },
-	            ],
-	          });
-
-	        this.wiggleAnim.start();
-	    }
-
-	    stopWiggle()
-	    {
-	      this.wiggleAnim.stop();
-	      this.wiggleAnim = null;
+	      var download_PNG = Utils.asset('images/download3.png');
+	      this.setIcon(download_PNG);
 	    }
 
 	    setInstalled(v)
@@ -3914,6 +4079,300 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	  }//CLASS
 
+	class StoreTile$2 extends StoreTile {
+	    static _template( )
+	    {
+	      var pts = 20;
+	      var frameClr = 0xFF666666;  // #666666FF
+	      var textClr  = 0xFFffffff;  // #ffffffFF
+
+	      var stroke    = 2;
+	      var strokeClr = 0xFF444444;
+
+	      let RR = { radius: 20, type: lng.shaders.RoundedRectangle, stroke: stroke, strokeColor: strokeClr};
+
+	      return {
+	        flexItem: { margin: 40 },
+	        alpha: 1.0,
+	        pivot: 0.5,
+	        w: 210, h: 150,
+	          Button:
+	          {
+	            scale: 0.0,
+	            pivotY: 1.0,
+
+	            RRect:
+	            {
+	                w: 210, h: 150, rtt: true, rect: true, pivot: 0.5, alpha: 1.0, color: frameClr, shader: RR,
+
+	                Image: {
+	                  mount: 0.5,
+	                  src: Utils.asset('images/crate2_80x80.png'),
+	                  x: (w => 0.45 * w),
+	                  y: 150 * 0.40 //(h => 0.40 * h)
+	                },
+
+	                Label:
+	                { mountX: 0.5, mountY: 1.0,
+	                  x: (w => 0.5 * w),
+	                  y: 150 - 5, //(h => h - 5),
+	                  text: {  text: "Label 11", fontFace: 'Regular', fontSize: pts, textColor: textClr,
+
+	                  shadow: true,
+	                  shadowColor: 0xFF000000,
+	                  shadowOffsetX: 2,
+	                  shadowOffsetY: 2,
+	                  shadowBlur: 8,
+	                  },
+	                },
+
+	                Icon: {
+	                  alpha: 1.0,
+	                  mountX: 1.0,
+	                  scale: 0.52,
+	                  x: (w => w + 4),
+	                  y: (h => 0)
+	                },
+
+	                Buttons:
+	                {
+	                  flex: {direction: 'row'},
+	                  alpha: 0.5,
+	                  mountX: 0.5,
+	                  x: 210 / 2,
+	                  y: 150,
+
+	                  Button1: { btnId: "RESUME", flexItem: { margin: 30 }, type: IconButton, src1: Utils.asset('images/check_mark80x80.png')  },
+	                  Button2: { btnId: "KILL",   flexItem: { margin: 30 }, type: IconButton, src1: Utils.asset('images/x_mark.png')           },
+	                  Button3: { btnId: "TRASH",  flexItem: { margin: 30 }, type: IconButton, src1: Utils.asset('images/TrashCan80x80.png')    },
+	                }
+	              }, //RRect
+
+	              Progress: { type: Progress, mountX: 0.0, x: 0, y: 190, w: 210, h: 8, alpha: 0.0 },
+
+	          },//Button
+	      }
+	    };
+
+	    setSuspended()
+	    {
+	      var btn = this.tag("Button");
+	      var icn = btn.tag("Icon");
+
+	      icn.patch( {src: Utils.asset('images/sleep80x80.png')  } );
+
+	      this.startSnooze();
+	    }
+
+	    stopSuspended()
+	    {
+	      this.stopSnooze();
+	    }
+
+	    startSnooze()
+	    {
+	        this.tag('Icon').setSmooth('alpha', 1.0, {duration: 0.3});
+
+	        this.snoozeAnim = this.tag('Icon').animation({
+	            duration: 1.75,
+	            repeat: -1,
+	            actions: [
+	              {
+	                t: '',
+	                repeat: -1,
+	                p: 'scale',
+	                v: { 0.00: 0.30, 0.25: 0.60, 0.50: 0.65, 0.75: 0.60, 1.00: 0.30 },
+	              },
+	            ],
+	          });
+
+	        this.snoozeAnim.start();
+	    }
+
+	    stopSnooze()
+	    {
+	      if(this.snoozeAnim == null)
+	      {
+	        console.log("stopSnooze() ... Already stopped.  Null");
+	        return;
+	      }
+
+	      this.snoozeAnim.on('stop', ()=>
+	      {
+	        this.tag('Icon').setSmooth('alpha', 0.0, {duration: 1.73});
+
+	        this.snoozeAnim = null;
+	      });
+
+	      this.snoozeAnim.stop();
+	    }
+
+	    _init()
+	    {
+	      this.buttonIndex = 0;
+
+	      this._enabled = true;
+	      this.tag("Button").scale = 0;
+
+	      if(this.w && this.h)
+	      {
+	        let button = this.tag("Button");
+
+	        button.w = this.w;
+	        button.h = this.h;
+	      }
+
+	      this.info = this.tileInfo;
+
+	      this._setState('PassiveState');
+	    }
+
+	    startWiggle()
+	    {
+	        this.wiggleAnim = this.tag('Image').animation({
+	            duration: 0.11*3,
+	            repeat: -1,
+	            actions: [
+	              {
+	                t: '',
+	                repeat: -1,
+	                p: 'rotation', v: { 0: 0.0, 0.25: -0.14, 0.5: 0.0, 0.75: 0.14, 1: 0.0},
+	              },
+	            ],
+	          });
+
+	        this.wiggleAnim.start();
+	    }
+
+	    stopWiggle()
+	    {
+	      if(this.wiggleAnim)
+	      {
+	        this.wiggleAnim.stop();
+	        this.wiggleAnim = null;
+	      }
+	    }
+
+	    setInstalled(v)
+	    {
+	      if(this._info)
+	      {
+	        this._info.pkgInstalled = v;
+	      }
+	    }
+
+	    isInstalled()
+	    {
+	      return this._info.pkgInstalled;
+	    }
+
+	    clickAnim()
+	    {
+	      var anim = this.tag('Button').animation({
+	        duration: 0.35,
+	        repeat: 1,
+	        actions: [
+	          {
+	            t: '',
+	            p: 'scale', v: { 0: 1.0, 0.5: 1.2, 1: 1.0},
+	          },
+	        ],
+	      });
+
+	      anim.start();
+	    }
+
+	    //////////////////////////////////////////////////////////////////////////////////////////////////
+	    //////////////////////////////////////////////////////////////////////////////////////////////////
+	    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	    static _states(){
+	      return [
+	            class PassiveState extends this
+	            {
+	              $enter()
+	              {
+	                // console.log(">>>>>>>>>>>>   STATE:  PassiveState");
+
+	                var btn  = this.tag("Button");
+	                var tile =  btn.tag("RRect");
+
+	                tile.setSmooth('h', 150 , {duration: 0.3});
+
+	                this._setState('PassiveState');
+	              }
+
+	              _handleDown()
+	              {
+	                this._setState('AppStateButtons');
+	              }
+	            },
+	            class AppStateButtons extends this
+	            {
+	              $enter()
+	              {
+	                console.log(">>>>>>>>>>>>   STATE:  AppStateButtons");
+
+	                var btn  = this.tag("Button");
+	                var tile =  btn.tag("RRect");
+
+	                tile.setSmooth('h', 210 , {duration: 0.3});
+	              }
+
+	              _handleUp()
+	              {
+	                this._setState('PassiveState');
+	              }
+
+	              _handleLeft()
+	              {
+	                // console.log(">>>>>>>>>>>>   LEFT:  this.buttonIndex: " + this.buttonIndex);
+
+	                if(--this.buttonIndex < 0) this.buttonIndex = 0;
+	              }
+
+	              _handleRight()
+	              {
+	                var btns = this.tag("Buttons");
+
+	                // console.log(">>>>>>>>>>>>   RIGHT:  this.buttonIndex: " + this.buttonIndex);
+	                if(++this.buttonIndex >= btns.children.length) this.buttonIndex = btns.children.length - 1;
+	              }
+
+	              _handleEnter()
+	              {
+	                console.log(">>>>>>>>>>>>  _handleEnter()  " + this.buttonIndex );
+
+	                var btns = this.tag("Buttons");
+	                var button = btns.children[this.buttonIndex];
+
+	                var fireThis = '$fire' + button.btnId;
+
+	                button.fireAncestors(fireThis, this.info.id);  // <<< It's 'id' versus pkgId when installed   ¯\_(ツ)_/¯
+
+	                if(button.btnId == 'RESUME')
+	                {
+	                  this.setSuspended();
+	                }
+	                else
+	                if(button.btnId == 'KILL')
+	                {
+	                  this.stopSuspended();
+	                }
+	              }
+
+	              _getFocused()
+	              {
+	                // console.log(">>>>>>>>>>>>  _getFocused()  ");
+
+	                var btns  = this.tag("Buttons");
+	                return btns.children[this.buttonIndex]
+	              }
+	            },
+	        ]
+	      };
+	  }//CLASS
+
 	class AppList extends lng.Component {
 
 	    static _template() {
@@ -3940,22 +4399,35 @@ var APP_com_comcast_pkgDemo = (function () {
 	      this.children[n].show();
 	    }
 
-	    set tiles( list )
+	    set storeTiles( list )
 	    {
 	        // console.log("SETTING >>> tiles: " + JSON.stringify(list, 2, null) )
 	        this.children = list.map((tileInfo, index) =>
 	        {
 	            return {
 	              w: 210, h: 150,
-	              type: AppTile,
+	              type: StoreTile$1,
 	              tileInfo
 	            }
 	        });
 	    }
 
+
+	    set appTiles( list )
+	    {
+	        // console.log("SETTING >>> tiles: " + JSON.stringify(list, 2, null) )
+	        this.children = list.map((tileInfo, index) =>
+	        {
+	            return {
+	              w: 210, h: 150,
+	              type: StoreTile$2,
+	              tileInfo
+	            }
+	        });
+	    }
 	  }//CLASS
 
-	class AppTile$1 extends lng.Component
+	class Button extends lng.Component
 	{
 	  static _template( )
 	  {
@@ -4058,8 +4530,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	              },
 	            },
 
-	            OkButton:    { type: AppTile$1, label: "Ok",     clrFocus: 0xFF008800, mount: 0.5, x: (w => 0.25 * w), y: (h => h - 35), w: 150, h: 40 },
-	            CancelButton:{ type: AppTile$1, label: "Cancel", clrFocus: 0xFF880000, mount: 0.5, x: (w => 0.75 * w), y: (h => h - 35), w: 150, h: 40 },
+	            OkButton:    { type: Button, label: "Ok",     clrFocus: 0xFF008800, mount: 0.5, x: (w => 0.25 * w), y: (h => h - 35), w: 150, h: 40 },
+	            CancelButton:{ type: Button, label: "Cancel", clrFocus: 0xFF880000, mount: 0.5, x: (w => 0.75 * w), y: (h => h - 35), w: 150, h: 40 },
 	        }//Dialog
 	      }
 	    };
@@ -4222,7 +4694,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	        color: 0xff8888aa,
 	        src: Utils.asset('images/background1.png'),
 	      },
-
 
 	      Title: {
 	        mountX: 0.5,
@@ -4436,38 +4907,83 @@ var APP_com_comcast_pkgDemo = (function () {
 	    this.tag('Console').text.text = str;
 	  }
 
+
+	  $fireRESUME(pkgId)
+	  {
+	    console.log(">>>>>>>>>>>>  fireRESUME()  pkgId: " + pkgId);
+	    this.resumePkg(pkgId);
+	  }
+
+	  $fireKILL(pkgId)
+	  {
+	    console.log(">>>>>>>>>>>>  fireKILL()  pkgId: " + pkgId);
+	    this.killPkg(pkgId);
+	  }
+
+	  $fireTRASH(pkgId)
+	  {
+	    console.log(">>>>>>>>>>>>  fireTRASH()  pkgId: " + pkgId);
+	    this._setState('OKCStateEnter');
+	  }
+
+	  findStoreButton(pkgId)
+	  {
+	    var bb = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkgId; });
+	    return bb.length == 0 ? null : bb[0];
+	  }
+
 	  $onRemoveOK() // 'okButton = true' indicates the OK button was clicked
 	  {
 	    var dlg = this.tag("OkCancel");
-	    var pkg_id = dlg.pkgId;
+	    var pkgId = dlg.pkgId;
 
-	    console.log("onRemoveOK ENTER - ... pkg_id: " + pkg_id);
+	    console.log("onRemoveOK ENTER - ... pkgId: " + pkgId);
 
-	    if(pkg_id == undefined)
+	    if(pkgId == undefined)
 	    {
-	      console.log("onRemoveOK() >>>  ERROR - ... pkg_id: " + pkg_id);
+	      console.log("onRemoveOK() >>>  ERROR - ... pkgId: " + pkgId);
 	      return;
 	    }
 
-	    let info = InstalledAppMap[pkg_id];
-			if(info.appState == "SUSPENDED")
-			{
-				this.killPkg(pkg_id);
+	    let info = InstalledAppMap[pkgId];
+	    if(info.appState == "SUSPENDED")
+	    {
+	      this.killPkg(pkgId);
 	    }
 
-	    this.removePkg(pkg_id);
+	    // this.removePkg(pkgId);
 
 	    dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
 
-	    var appButton = this.tag('InstalledList').children[this.installedButtonIndex];
-	    appButton.stopWiggle();
+	    // Enable STORE button - as it's UNINSTALLED
+	    let removeMe = this.tag('InstalledList').children[this.installedButtonIndex];
+	    removeMe.stopWiggle();
 
-	    // Enable STORE button - as it's uninstalled
-	    var storeButton = this.tag('AvailableList').children.filter( (o) => { return o.info.pkgId == pkg_id; });
+	    //removeMe.hide();
 
-	    if(storeButton.length > 0)
+	    if(removeMe.tag("Button").scale == 1.0)
 	    {
-	      storeButton[0].enable();
+	      const anim = removeMe.tag('Button').animation({
+	        duration: 0.5,
+	        actions: [
+	            { p: 'scale', v: { 0: 1, 0.5: 0.50, 1: 0.0 } },
+	        ]
+	      });
+	      anim.start();
+
+	      anim.on('finish', () =>
+	      {
+	        this.tag('InstalledList').childList.remove(removeMe);
+	        this.tag('InstalledList').childList.add(removeMe); // move to end
+
+	        this.removePkg(pkgId);
+	      });
+	    }
+
+	    var storeButton = this.findStoreButton(pkgId);
+	    if(storeButton != null)
+	    {
+	      storeButton.enable();
 	    }
 
 	    this._setState('InstalledRowState');
@@ -4476,29 +4992,28 @@ var APP_com_comcast_pkgDemo = (function () {
 	  $onRemoveCANCEL()
 	  {
 	    var dlg = this.tag("OkCancel");
-	    var pkg_id = dlg.pkgId;
 
-	    console.log("onRemoveCANCEL ENTER - ... pkg_id: " + pkg_id);
+	    // console.log("onRemoveCANCEL ENTER - ... pkgId: " + pkgId);
 
 	    dlg.setSmooth('alpha', 0, {duration: 0.3}); // HIDE
 
-	    console.log("onRemoveCANCEL ENTER - ... info: " + pkg_id);
+	    // console.log("onRemoveCANCEL ENTER - ... info: " + pkgId)
 
-	    var button = this.tag('InstalledList').children[this.installedButtonIndex];
-	    button.stopWiggle();
+	    var dontRemoveMe = this.tag('InstalledList').children[this.installedButtonIndex];
+	    dontRemoveMe.stopWiggle();
 
 	    this._setState('InstalledRowState');
 	  }
 
-	  $InstallClicked(pkg_id)
+	  $InstallClicked(pkgId)
 	  {
-	    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkg_id: " + pkg_id);
+	    // console.log("INSTALL >>  InstallClicked() - ENTER .. pkgId: " + pkgId);
 
 	    let button = this.tag('AvailableList').children[this.storeButtonIndex];
 
-	    this.isInstalled(pkg_id).then( (ans) =>
+	    this.isInstalled(pkgId).then( (ans) =>
 	    {
-	      if( ans['available'] == "false")
+	      if( ans['available'] == false)
 	      {
 	        var progress = button.tag("Progress");
 
@@ -4507,39 +5022,39 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	        var info = button.info;
 
-	        this.installPkg(pkg_id, info);
+	        this.installPkg(pkgId, info);
 	        info.appState = "STOPPED";
 	      }
 	      else
 	      {
-	        console.log("CALL >> this.installPkg() ALREAY have ... pkg_id: " + pkg_id);
+	        console.log("CALL >> this.installPkg() ALREADY have ... pkgId: " + pkgId);
 	      }
 	    });
 	  }
 
-	  $LaunchClicked(pkg_id)
+	  $LaunchClicked(pkgId)
 	  {
-	    // console.log("$LaunchClicked() >>>  ENTER - ... pkg_id: " + pkg_id)
+	    // console.log("$LaunchClicked() >>>  ENTER - ... pkgId: " + pkgId)
 
-	    let info = InstalledAppMap[pkg_id];
+	    let info = InstalledAppMap[pkgId];
 	    if(info)
 	    {
 	      if(info.appState == "STOPPED" || info.appState == undefined)
-			  {
-	        this.launchPkg(pkg_id, info);
+	      {
+	        this.launchPkg(pkgId, info);
 
 	        this.setConsole("Launched: " + jsonBeautify(info, null, 2, 100) );
 
 	      }
 	      else if(info.appState == "SUSPENDED")
-			  {
-				  this.resumePkg(pkg_id, info);
+	      {
+	        this.resumePkg(pkgId, info);
 
-				  this.setConsole("Resumed: " + jsonBeautify(info, null, 2, 100) );
+	        this.setConsole("Resumed: " + jsonBeautify(info, null, 2, 100) );
 	      }
 	      else
 	      {
-				  console.log("$LaunchClicked() >>> Error:  invalid app state: " + info);
+	        console.log("$LaunchClicked() >>> Error:  invalid app state: " + info);
 	      }
 	    }
 	    else
@@ -4560,23 +5075,23 @@ var APP_com_comcast_pkgDemo = (function () {
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' + jsonBeautify$1(e, null, 2, 100) );
+	      this.setConsole( 'getAvailableSpace() >>> CAUGHT:  e: ' + jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async getPackageInfo(pkg_id)
+	  async getPackageInfo(pkgId)
 	  {
 	    try
 	    {
-	      let params = { "pkgId": pkg_id };
+	      let params = { "pkgId": pkgId };
 
 	      var result = await thunderJS$3.call('Packager', 'getPackageInfo', params);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'getPackageInfo() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      this.setConsole( 'getPackageInfo() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
@@ -4584,20 +5099,46 @@ var APP_com_comcast_pkgDemo = (function () {
 	  {
 	    // console.log("getInstalled() - ENTER ")
 
+	    let before = InstalledApps;
+
+	    before.map( b =>
+	    {
+	      console.log( 'getInstalled() >>> BEFORE: ' +  jsonBeautify(b, null, 2, 100) );
+	    });
+
 	    try
 	    {
 	      var result = await thunderJS$3.call('Packager', 'getInstalled', null);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'getInstalled() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      this.setConsole( 'getInstalled() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	      return;
 	    }
 
 	    this.getAvailableSpace();
 
+	    // Preserve App States ...
+
+	    for( var i = 0; i < result.applications.length; i++)
+	    {
+	      let app   = result.applications[i];
+	      let match = InstalledApps.filter( o => o.pkgId == app.id );
+
+	      if(match.length > 0)
+	      {
+	        // NOTE: If objects have a property with the same name,
+	        //       then the right-most object property overwrites the previous one.
+	        //
+	        var merged = { ...match[0], ...app }; // prefer new 'info' from getInstalled()
+
+	        result.applications[i] = merged;
+	      }
+	    }
+
+	    // Update Apps ...
 	    InstalledAppMap = {};    // reset
 	    InstalledApps   = null; // reset
 
@@ -4606,17 +5147,19 @@ var APP_com_comcast_pkgDemo = (function () {
 	    //
 	    result.applications.map( (o) => InstalledAppMap[o.id] = o ); // populate info
 
-	    InstalledApps = result.applications; // update array
+	    InstalledApps = result.applications; // update INSTALLED array
 
-	    // DISABLE apps that are already installed...
+	    //
+	    // APP STORE >>> DISABLE apps that are already installed...
+	    //
 	    InstalledApps.map( have =>
 	    {
 	      let disable = AvailableApps.filter( o => o.pkgId == have.id );
-	      let dbutton = this.tag('AvailableList').children.filter( o => o.info.pkgId == disable[0].pkgId);
 
-	      if(dbutton.length > 0)
+	      var storeButton = this.findStoreButton(disable[0].pkgId);
+	      if(storeButton != null)
 	      {
-	        dbutton[0].disable();
+	        storeButton.disable(); // DISABLE
 	      }
 	    });
 
@@ -4632,17 +5175,28 @@ var APP_com_comcast_pkgDemo = (function () {
 	      }
 	      else
 	      {
-	        button.info = null;
-	        button.hide();
+	        button.info = null; //  RESET
+	        // button.hide();
 	      }
+	    });
+
+	    if(InstalledApps.length == 0)
+	    {
+	      this._setState('StoreRowState'); // No apps installed >>> BACK TO STORE 
+	    }
+
+	    //let after = InstalledApps
+	    InstalledApps.map( b =>
+	    {
+	      console.log( 'getInstalled() >>> AFTER: ' +  jsonBeautify(b, null, 2, 100) );
 	    });
 	  }
 
-	  async isInstalled(pkg_id)
+	  async isInstalled(pkgId)
 	  {
 	    try
 	    {
-	      let params = { "pkgId": pkg_id };
+	      let params = { "pkgId": pkgId };
 
 	      let result = await thunderJS$3.call('Packager', 'isInstalled', params);
 
@@ -4653,8 +5207,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	    }
 	    catch(e)
 	    {
-	      console.log('DEBUG:  isInstalled() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole(    'isInstalled() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log('DEBUG:  isInstalled() >>> CAUGHT:  e: ' + jsonBeautify(e, null, 2, 100) );
+	      this.setConsole(    'isInstalled() >>> CAUGHT:  e: ' + jsonBeautify(e, null, 2, 100) );
 	      return false;
 	    }
 	  }
@@ -4671,16 +5225,16 @@ var APP_com_comcast_pkgDemo = (function () {
 	    try
 	    {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'addKeyIntercept', params);
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      console.log( 'addKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'addKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'addKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'addKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async removeKeyIntercept(pkg_id) // v1
+	  async removeKeyIntercept() // v1
 	  {
 	    let params =
 	    {
@@ -4691,80 +5245,80 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'removeKeyIntercept', params);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      console.log( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'removeKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'removeKeyIntercept() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async setFocus(pkg_id)
+	  async setFocus(pkgId)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id
+	        "client": pkgId
 	    };
 
 	    try
 	    {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'setFocus', params);
 
-	    this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      console.log( 'setFocus() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
-	      this.setConsole( 'setFocus >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      console.log(     'setFocus() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'setFocus() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async moveToFront(pkg_id)
+	  async moveToFront(pkgId)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id
+	        "client": pkgId
 	    };
 
 	    try
 	    {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'moveToFront', params);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      console.log( 'moveToFront() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'moveToFront() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'moveToFront() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'moveToFront() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async moveToBack(pkg_id)
+	  async moveToBack(pkgId)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id
+	        "client": pkgId
 	    };
 
 	    try
 	    {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'moveToBack', params);
 	      console.log(jsonBeautify(result, null, 2, 100));
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      console.log( 'moveToBack() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'moveToBack() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'moveToBack() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'moveToBack() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async suspendPkg(pkg_id, info)
+	  async suspendPkg(pkgId, info)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id
+	        "client": pkgId
 	    };
 
 	    try
@@ -4772,25 +5326,35 @@ var APP_com_comcast_pkgDemo = (function () {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'suspendApplication', params);
 
 	      console.log(jsonBeautify(result, null, 2, 100));
-			  this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 
-			  this.moveToBack(pkgId);
-			  this.setFocus(LIGHTNING_APP);
-			  info.appState = "SUSPENDED";
-			  this.launchedPkgId = "";
+	      if(result.success)
+	      {
+	        this.moveToBack(pkgId);
+	        this.setFocus("lightningapp");
+
+	        info.appState      = "SUSPENDED";
+	        this.launchedPkgId = "";
+
+	        // TODO: APP BUTTON - setSuspended()
+	      }
+	      else
+	      {
+	        console.log( 'suspendPkg() failed!');
+	      }
 	    }
 	    catch(e)
 	    {
-	      console.log( 'suspendPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'suspendPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'suspendPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'suspendPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async resumePkg(pkg_id, info)
+	  async resumePkg(pkgId, info)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id
+	        "client": pkgId
 	    };
 
 	    try
@@ -4798,47 +5362,62 @@ var APP_com_comcast_pkgDemo = (function () {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'resumeApplication', params);
 
 	      console.log( jsonBeautify(result, null, 2, 100) );
-			  this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 
-			  this.moveToFront(pkgId);
-			  this.setFocus(pkgId);
-			  info.appState = "LAUNCHED";
-			  this.launchedPkgId = pkgId;
+	      if(result.success)
+	      {
+	        this.moveToFront(pkgId);
+	        this.setFocus(pkgId);
+
+	        info.appState      = "LAUNCHED";
+	        this.launchedPkgId = pkgId;
+
+	        // TODO: APP BUTTON - setLaunched()
+	      }
+	      else
+	      {
+	        console.log( 'resumePkg() failed!');
+	      }
+
+	      this.launchedPkgId = pkgId;
 	    }
 	    catch(e)
 	    {
-	      console.log( 'resumePkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'resumePkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'resumePkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'resumePkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
-	  async killPkg(pkg_id)
+	  async killPkg(pkgId)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id
+	        "client": pkgId
 	    };
 
 	    try
 	    {
+	      // need to resume before stopping a container app....
+	      var result = await thunderJS$2.call('org.rdk.RDKShell.1', 'resumeApplication', params);
+
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'kill', params);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      console.log( 'killPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'killPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'killPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'killPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
 
-	  async launchPkg(pkg_id, info)
+	  async launchPkg(pkdId, info)
 	  {
 	    let params =
 	    {
-	        "client": pkg_id,
-	        "uri": pkg_id, //TODO:  Unexpected... check why ?
+	        "client": pkdId,
+	        "uri": pkdId, //TODO:  Unexpected... check why ?
 	        // "uri": info.bundlePath,
 	        "mimeType": "application/dac.native"
 	    };
@@ -4848,17 +5427,29 @@ var APP_com_comcast_pkgDemo = (function () {
 	      var result = await thunderJS$3.call('org.rdk.RDKShell.1', 'launchApplication', params);
 
 	      console.log(jsonBeautify(result, null, 2, 100));
-			  this.setConsole( jsonBeautify(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 
-			  this.moveToFront(pkg_id);
-			  this.setFocus(pkg_id);
-			  info.appState = "LAUNCHED";
-			  this.launchedPkgId = pkg_id;
+	      if(result.success)
+	      {
+	        this.moveToFront(pkdId);
+	        this.setFocus(pkdId);
+
+	        info.appState      = "LAUNCHED";
+	        this.launchedPkgId = pkdId;
+
+	        // TODO: APP BUTTON - setLaunched()
+	      }
+	      else
+	      {
+	        console.log( 'launchPkg() failed to launch app!!!');
+	      }
+
+	      this.launchedPkgId = pkdId;
 	    }
 	    catch(e)
 	    {
-	      console.log( 'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
-	      this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      console.log(     'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
+	      this.setConsole( 'launchPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 	  }
 
@@ -4892,7 +5483,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	        }, 1.2 * 1000); //ms
 
-	        this.setConsole( jsonBeautify$1(notification, null, 2, 100) );
+	        this.setConsole( jsonBeautify(notification, null, 2, 100) );
 	      }
 	    };
 
@@ -4955,39 +5546,39 @@ var APP_com_comcast_pkgDemo = (function () {
 	    {
 	      var result = await thunderJS$3.call('Packager', 'install', info);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      this.setConsole( 'installPkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 
 	    info.events = myEvents;
 	  }
 
-	  async removePkg(pkg_id)
+	  async removePkg(pkgId)
 	  {
-	    console.log("removePkg() >>>    ENTER - ... pkg_id: " + pkg_id);
+	    console.log("removePkg() >>>    ENTER - ... pkgId: " + pkgId);
 
-	    if(pkg_id == undefined)
+	    if(pkgId == undefined)
 	    {
-	      console.log("removePkg() >>>  ERROR - ... pkg_id: " + pkg_id);
+	      console.log("removePkg() >>>  ERROR - ... pkgId: " + pkgId);
 	      return;
 	    }
 
 	    var params = {
-	      "pkgId": pkg_id
+	      "pkgId": pkgId
 	    };
 
 	    try
 	    {
 	      var result = await thunderJS$3.call('Packager', 'remove', params);
 
-	      this.setConsole( jsonBeautify$1(result, null, 2, 100) );
+	      this.setConsole( jsonBeautify(result, null, 2, 100) );
 	    }
 	    catch(e)
 	    {
-	      this.setConsole( 'removePkg() >>> CAUGHT:  e: ' +  jsonBeautify$1(e, null, 2, 100) );
+	      this.setConsole( 'removePkg() >>> CAUGHT:  e: ' +  jsonBeautify(e, null, 2, 100) );
 	    }
 
 	    // Update the Installed
@@ -5007,7 +5598,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	    this.tag('InstalledList').addTile(InstalledApps.length - 1, info);
 
-	    // Disable STORE button - as it's uninstalled
+	    // Disable STORE button - as it's UNINSTALLED
 	    storeButton.disable();
 
 	    this.getAvailableSpace();
@@ -5084,10 +5675,6 @@ var APP_com_comcast_pkgDemo = (function () {
 	                // 'INFO' key on remote
 	          this.handleGetInfo();
 	          break;
-
-	      default:
-	        console.log("GOT key code: " + k.keyCode);
-	          break;
 	    }
 
 	    return true;
@@ -5139,8 +5726,8 @@ var APP_com_comcast_pkgDemo = (function () {
 	                AvailableApps = apps;
 	                InstalledApps = apps;
 
-	                this.tag("AvailableList").tiles = AvailableApps;
-	                this.tag("InstalledList").tiles = InstalledApps;
+	                this.tag("AvailableList").storeTiles   = AvailableApps;
+	                this.tag("InstalledList").appTiles = InstalledApps;
 
 	                this._setState('StoreRowState');
 	              })
@@ -5195,6 +5782,7 @@ var APP_com_comcast_pkgDemo = (function () {
 	              this.fetchThunderCfg(cfgURL);
 	              this.fetchAppList(appURL);
 
+	              this.setFocus(LIGHTNING_APP);
 	              this.addKeyIntercept(); // Watch for HOME key
 
 	              // State advanced within 'fetchAppList()' above.
@@ -5240,7 +5828,10 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            _handleDown()
 	            {
-	              this._setState('InstalledRowState');
+	              if(InstalledApps.length > 0)
+	              {
+	                this._setState('InstalledRowState');
+	              }
 	            }
 
 	            _handleLeft()
@@ -5250,7 +5841,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            _handleRight()
 	            {
-	              if(++this.storeButtonIndex > AvailableApps.length) this.storeButtonIndex = AvailableApps.length;
+	              if(++this.storeButtonIndex > AvailableApps.length) this.storeButtonIndex = AvailableApps.length - 1;
 	            }
 
 	            _getFocused()
@@ -5279,7 +5870,7 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	          _handleRight()
 	          {
-	            if(++this.installedButtonIndex > InstalledApps.length - 1) this.installedButtonIndex = InstalledApps.length - 1;
+	            if(++this.installedButtonIndex >= InstalledApps.length) this.installedButtonIndex = InstalledApps.length - 1;
 	          }
 
 	          _handleEnter()
@@ -5291,11 +5882,6 @@ var APP_com_comcast_pkgDemo = (function () {
 
 	            button.fireAncestors('$LaunchClicked', info.pkgId);
 	            button.clickAnim();
-	          }
-
-	          _handleDown() // DOWN key on the "Installed Row" - triggers the Delete OK/Cancel dialog
-	          {
-	            this._setState('OKCStateEnter');
 	          }
 
 	          _handleBack() // BACK key on the "Installed Row" - triggers the Delete OK/Cancel dialog
@@ -5314,6 +5900,12 @@ var APP_com_comcast_pkgDemo = (function () {
 	          $enter()
 	          {
 	            // console.log(">>>>>>>>>>>>   STATE:  OKCStateEnter");
+
+	            if(this.installedButtonIndex <0)
+	            {
+	              console.error(  'BUTTON index:' + this.installedButtonIndex +'  - INVLAID');
+	              return;
+	            }
 
 	            var button = this.tag('InstalledList').children[this.installedButtonIndex];
 

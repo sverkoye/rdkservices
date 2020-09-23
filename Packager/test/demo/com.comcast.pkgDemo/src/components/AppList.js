@@ -1,5 +1,6 @@
 
-import AppTile  from "./AppTile";
+import StoreTile   from "./StoreTile";
+import AppTile from "./AppTile";
 
 export default class AppList extends lng.Component {
 
@@ -27,7 +28,21 @@ export default class AppList extends lng.Component {
       this.children[n].show();
     }
 
-    set tiles( list )
+    set storeTiles( list )
+    {
+        // console.log("SETTING >>> tiles: " + JSON.stringify(list, 2, null) )
+        this.children = list.map((tileInfo, index) =>
+        {
+            return {
+              w: 210, h: 150,
+              type: StoreTile,
+              tileInfo
+            }
+        })
+    }
+
+
+    set appTiles( list )
     {
         // console.log("SETTING >>> tiles: " + JSON.stringify(list, 2, null) )
         this.children = list.map((tileInfo, index) =>
@@ -39,5 +54,4 @@ export default class AppList extends lng.Component {
             }
         })
     }
-
   }//CLASS
