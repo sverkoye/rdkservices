@@ -43,13 +43,19 @@ namespace Plugin {
 
     void DACApplication::StartContainer()
     {
+        string display = _config.ClientIdentifier.Value();
+        if (display.empty())
+        {
+		SYSLOG(Trace::Error, (_T("DISPLAY name is empty")));
+		return;
+        }
         JsonObject result;
         JsonObject param;
         Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T("127.0.0.1:9998")));
         auto remoteObject = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T("org.rdk.OCIContainer.1"), _T(""));
         param["containerId"] = _service->Callsign();
         param["bundlePath"] = _dacappBundlePath;
-        param["westerosSocket"] = std::string("/run/") + _config.ClientIdentifier.Value();
+        param["westerosSocket"] = std::string("/run/") + display;
         string jsonstring;
         param.ToString(jsonstring);
         SYSLOG(Trace::Information, (_T("container START PARAMS = %s"), jsonstring.c_str()));
