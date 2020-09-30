@@ -44,11 +44,14 @@ namespace Plugin {
     void DACApplication::StartContainer()
     {
         string display = _config.ClientIdentifier.Value();
+
         if (display.empty())
         {
 		SYSLOG(Trace::Error, (_T("DISPLAY name is empty")));
-		return;
+		display = "wst-"+_service->Callsign();
+		SYSLOG(Trace::Error, (_T("Guessing DISPLAY name is %s"), display.c_str()));
         }
+
         JsonObject result;
         JsonObject param;
         Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T("127.0.0.1:9998")));
