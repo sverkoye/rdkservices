@@ -130,10 +130,9 @@ namespace {
                                                                  params.Url.Value(),   params.Token.Value(),
                                                                  params.Listener.Value()); 
                     JsonObject result;
-                    result["success"] = true;
 
-                    response["task"]   = std::to_string( task );
-                    response["result"] = result;
+                    response["task"] = std::to_string( task );
+                    returnResponse(true);
 
                     return 0;
                 }
@@ -158,9 +157,8 @@ namespace {
             {                 
                 uint32_t rc = this->_implementation->Remove(params.PkgId.Value(), params.Listener.Value());
 
-                response["task"]   = 123; // TODO ... (rc > 0) ? std::to_string( rc ) : "Remove Failed";
-                response["result"] = (rc > 0) ? false : true; // '0' is success
-
+                response["task"] = 123; // TODO ... (rc > 0) ? std::to_string( rc ) : "Remove Failed";
+                returnResponse( rc == 0); // '0' is success
                 return rc;
             });
             //
@@ -170,8 +168,8 @@ namespace {
             {
                 uint32_t rc = this->_implementation->Cancel(params.Task.Value(), params.Listener.Value());
 
-                response["task"]   = (rc > 0) ? std::to_string( rc ) : "Cancel Failed";
-                response["result"] = (rc > 0);
+                response["task"] = (rc > 0) ? std::to_string( rc ) : "Cancel Failed";
+                returnResponse(rc > 0);
 
                 return rc;
             });
@@ -184,6 +182,7 @@ namespace {
                 uint32_t ans    = this->_implementation->IsInstalled(params.PkgId.Value());
 
                 response["available"] = ans ? true : false;
+                returnResponse(true);
 
                 return result;
             });
@@ -198,7 +197,8 @@ namespace {
                 
                 LOGINFO(" >>>>> Call ... DAC::GetInstallProgress()   pc: [%d]", pc); 
 
-                response["percentage"] =  std::to_string(pc);
+                response["percentage"] = pc;
+                returnResponse(true);
 
                 return result;
             });
@@ -242,6 +242,7 @@ namespace {
                 }
                
                 response["applications"] = list;
+                returnResponse(true);
 
                 return 0;
             });
@@ -258,6 +259,7 @@ namespace {
                     LOGINFO("Packager::GetPackageInfo >> LAMBDA - App: '%s'   - FOUND", params.PkgId.Value().c_str());
 
                     response = PackageInfoEx::pkg2json( pkg );
+                    returnResponse(true);
 
                     // PackageInfoEx::printPkg( (PackageInfoEx *) pkg); /// DEBUG
 
@@ -273,6 +275,7 @@ namespace {
 
                     // response["task"]   = (rc >  0) ? std::to_string( rc ) : "Install Failed";
                     response["result"] = "not found";
+                    returnResponse(false);
                 }
 
                 return 0; 
@@ -285,6 +288,7 @@ namespace {
                 int64_t bytes = this->_implementation->GetAvailableSpace();
 
                 response["availableSpaceInKB"] = std::to_string(bytes);
+                returnResponse(true);
 
                 return 0;
             });
