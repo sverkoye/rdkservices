@@ -21,6 +21,7 @@ add_definitions (-DUSE_SOUND_PLAYER)
 add_definitions (-DENABLE_DCS_BUILD_FLAGS)
 
 add_definitions (-DUSE_IARM)
+add_definitions (-DRFC_ENABLED)
 add_definitions (-DUSE_IARMBUS)
 option(USE_IARM "USE_IARM" ON)
 add_definitions (-DUSE_DEVICE_SETTINGS_SERVICE)

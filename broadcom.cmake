@@ -28,6 +28,7 @@ add_definitions (-DUSE_SOUND_PLAYER)
 #DeadCodeStrip(DCS)...forRNG150sizereduction
 add_definitions (-DENABLE_DCS_BUILD_FLAGS)
 
+add_definitions (-DRFC_ENABLED)
 add_definitions (-DUSE_IARM)
 option(USE_IARM "USE_IARM" ON)
 add_definitions (-DUSE_DEVICE_SETTINGS_SERVICE)
