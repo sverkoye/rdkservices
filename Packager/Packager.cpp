@@ -47,6 +47,8 @@ namespace {
             if (_implementation->Configure(_service) != Core::ERROR_NONE) {
                 result = _T("Couldn't initialize PACKAGER instance");
             }
+
+            _implementation->Register(&_notification);
         }
 
         return (result);
