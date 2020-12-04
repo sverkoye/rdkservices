@@ -164,7 +164,7 @@ namespace Plugin {
         uint32_t                   GetInstallProgress( const string& task);
         PackageInfoEx::IIterator*  GetInstalled();
         PackageInfoEx*             GetPackageInfo(const string& pkgId);
-        int64_t                    GetAvailableSpace();
+        uint64_t                   GetAvailableSpace();
 
       //  uint32_t                   getNextTaskID()  { return _taskNumber++; }
 

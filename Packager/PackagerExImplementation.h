@@ -113,8 +113,8 @@ namespace Plugin {
         void setInstalled( string v)        { _installed = v;                 };
         void setInstalled( uchar_t *v )     { _installed = uchar2string(v);   };
 
-        int64_t  SizeInBytes()        const override { return _sizeInBytes; };
-        void setSizeInBytes( int64_t v)     { _sizeInBytes = v;               };
+        uint64_t  SizeInBytes()       const override { return _sizeInBytes;   };
+        void setSizeInBytes( uint64_t v)     { _sizeInBytes = v;              };
 
         string  Type()                const override { return _type;          };
         void setType( string v)             { _type = v;                      };
@@ -209,7 +209,7 @@ namespace Plugin {
         string   _version;
         string   _pkgId;
         string   _installed;    // timestamp
-        int64_t  _sizeInBytes;  // bytes
+        uint64_t  _sizeInBytes;  // bytes
         string   _type;
 
         int _refCount;

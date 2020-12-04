@@ -459,9 +459,9 @@ JUNK_SLEEP_MS(200);
     return pkg;
   }
 
-  int64_t PackagerImplementation::GetAvailableSpace()
+  uint64_t PackagerImplementation::GetAvailableSpace()
   {
-    int64_t used_bytes = PackagerExUtils::sumSizeInBytes();
+    uint64_t used_bytes = PackagerExUtils::sumSizeInBytes();
 
     // LOGINFO("PackagerExImplementation::GetAvailableSpace()  ... used_bytes: %jd ", used_bytes);
     // LOGINFO("PackagerExImplementation::GetAvailableSpace()  ... STORE_BYTES_QUOTA: %jd ", STORE_BYTES_QUOTA);
