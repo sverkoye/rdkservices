@@ -1768,7 +1768,7 @@ namespace WPEFramework {
                     }
                 }
                 configSet["clientidentifier"] = displayName;
-                if (!type.empty() && type == "Netflix")
+                if (!newPluginFound && !type.empty() && type == "Netflix")
                 {
                     std::cout << "setting launchtosuspend for Netflix: " << suspend << std::endl;
                     configSet["launchtosuspend"] = suspend;

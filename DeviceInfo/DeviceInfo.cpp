@@ -137,6 +137,16 @@ namespace Plugin {
             newElement.Name = interfaces.Name();
             newElement.Mac = interfaces.MACAddress(':');
             JsonData::DeviceInfo::AddressesData& element(addressInfo.Add(newElement));
+
+            // get an interface with a public IP address, then we will have a proper MAC address..
+            Core::IPV4AddressIterator selectedNode(interfaces.IPV4Addresses());
+
+            while (selectedNode.Next() == true) {
+                Core::JSON::String nodeName;
+                nodeName = selectedNode.Address().HostAddress();
+
+                element.Ip.Add(nodeName);
+            }
         }
     }
 
